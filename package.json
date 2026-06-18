@@ -1,0 +1,52 @@
+{
+  "name": "personal-pollo",
+  "version": "0.1.0",
+  "description": "Personal health and fitness desktop application",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:server": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron .",
+    "dev:web": "vite --host",
+    "build:renderer": "vite build",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview",
+    "start": "electron ."
+  },
+  "build": {
+    "appId": "com.personalpollo.app",
+    "productName": "Personal Pollo",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "src/main/main.js"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^5.0.12",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "chart.js": "^4.4.1"
+  }
+}
