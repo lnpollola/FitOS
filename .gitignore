@@ -21,3 +21,9 @@ lerna-debug.log*
 node_modules/
 dist/
 build/
+
+# Apple Health Export
+apple-healt-export/
+
+# Build artifacts (Electron AppImage, unpacked binaries)
+release/
