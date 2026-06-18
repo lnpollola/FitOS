@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Personal Pollo</title>
   <link rel="stylesheet" href="styles/main.css" />
+  <script type="module">
+    import { strings } from './locales/es.js';
+    document.title = strings.appTitle;
+    document.querySelector('.sidebar-header h1').textContent = strings.appTitle;
+    document.querySelectorAll('.nav-list li').forEach(li => {
+      const view = li.dataset.view;
+      if (strings.nav[view]) li.textContent = strings.nav[view];
+    });
+  </script>
 </head>
 <body>
   <div id="app">
@@ -13,13 +22,13 @@
         <h1>Personal Pollo</h1>
       </div>
       <ul class="nav-list">
-        <li data-view="dashboard" class="active">Dashboard</li>
-        <li data-view="activity">Activity</li>
-        <li data-view="diet">Diet Plan</li>
-        <li data-view="energy">Energy Balance</li>
-        <li data-view="measurements">Body Measurements</li>
-        <li data-view="training">Strength Training</li>
-        <li data-view="profile">Profile &amp; Settings</li>
+        <li data-view="dashboard" class="active">Panel</li>
+        <li data-view="activity">Actividad</li>
+        <li data-view="diet">Plan de Dieta</li>
+        <li data-view="energy">Balance Energético</li>
+        <li data-view="measurements">Mediciones Corporales</li>
+        <li data-view="training">Entrenamiento de Fuerza</li>
+        <li data-view="profile">Perfil y Ajustes</li>
       </ul>
     </nav>
     <main id="content">

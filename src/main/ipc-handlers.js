@@ -1,6 +1,7 @@
 const { ipcMain, dialog } = require('electron');
 const { getDb } = require('../db/database');
 const { exportAllData, importAllData } = require('../db/import-export');
+const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData } = require('./apple-health-import');
 
 function registerIpcHandlers(mainWindow) {
   // Profile
@@ -65,6 +66,32 @@ function registerIpcHandlers(mainWindow) {
       GROUP BY sport_type
       ORDER BY total_calories DESC
     `).all(startDate);
+  });
+
+  // Apple Health XML import
+  ipcMain.handle('db:checkHealthsync', () => {
+    return !!getHealthsyncPath();
+  });
+
+  ipcMain.handle('db:installHealthsync', async () => {
+    try {
+      await installHealthsync();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  ipcMain.handle('db:importAppleHealthXML', async (_event, xmlPath) => {
+    const result = { created: 0, skipped: 0, errors: [] };
+    try {
+      await parseHealthsyncXML(xmlPath);
+      const migration = migrateHealthData(mainWindow);
+      Object.assign(result, migration);
+    } catch (e) {
+      result.errors.push(e.message);
+    }
+    return result;
   });
 
   // CSV import
@@ -495,6 +522,91 @@ function registerIpcHandlers(mainWindow) {
       measurementDelta,
       nextWorkout: nextWorkout?.date || null,
     };
+  });
+
+  // Elaborated dishes
+  ipcMain.handle('db:saveDish', (_event, dish) => {
+    const db = getDb();
+    const result = db.prepare(`
+      INSERT INTO elaborated_dishes (name, description, total_kcal, total_protein, total_carbs, total_fat, servings)
+      VALUES (@name, @description, @total_kcal, @total_protein, @total_carbs, @total_fat, @servings)
+    `).run(dish);
+    return result.lastInsertRowid;
+  });
+
+  ipcMain.handle('db:getDishes', () => {
+    const db = getDb();
+    return db.prepare('SELECT * FROM elaborated_dishes ORDER BY name').all();
+  });
+
+  ipcMain.handle('db:getDishIngredients', (_event, dishId) => {
+    const db = getDb();
+    return db.prepare(`
+      SELECT di.*, fi.name as food_name, fi.kcal_per_100g, fi.protein_per_100g, fi.carbs_per_100g, fi.fat_per_100g
+      FROM dish_ingredients di
+      JOIN food_items fi ON di.food_item_id = fi.id
+      WHERE di.dish_id = ?
+    `).all(dishId);
+  });
+
+  ipcMain.handle('db:deleteDish', (_event, dishId) => {
+    const db = getDb();
+    db.prepare('DELETE FROM elaborated_dishes WHERE id = ?').run(dishId);
+    return true;
+  });
+
+  ipcMain.handle('db:saveDishIngredient', (_event, ingredient) => {
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO dish_ingredients (dish_id, food_item_id, grams)
+      VALUES (@dish_id, @food_item_id, @grams)
+    `).run(ingredient);
+    return true;
+  });
+
+  // Meal dish options
+  ipcMain.handle('db:linkDishToMeal', (_event, link) => {
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO meal_dish_options (meal_template_id, dish_id, sort_order)
+      VALUES (@meal_template_id, @dish_id, @sort_order)
+    `).run(link);
+    return true;
+  });
+
+  ipcMain.handle('db:getDishesForMeal', (_event, mealTemplateId) => {
+    const db = getDb();
+    return db.prepare(`
+      SELECT mdo.*, ed.name as dish_name, ed.total_kcal, ed.total_protein, ed.total_carbs, ed.total_fat
+      FROM meal_dish_options mdo
+      JOIN elaborated_dishes ed ON mdo.dish_id = ed.id
+      WHERE mdo.meal_template_id = ?
+      ORDER BY mdo.sort_order
+    `).all(mealTemplateId);
+  });
+
+  ipcMain.handle('db:unlinkDish', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM meal_dish_options WHERE id = ?').run(id);
+    return true;
+  });
+
+  // Workout plans
+  ipcMain.handle('db:getWorkoutPlans', () => {
+    const db = getDb();
+    return db.prepare('SELECT * FROM workout_plans ORDER BY min_sessions, name').all();
+  });
+
+  ipcMain.handle('db:getPlanDays', (_event, planId) => {
+    const db = getDb();
+    return db.prepare('SELECT * FROM workout_plan_days WHERE plan_id = ? ORDER BY day_number').all(planId);
+  });
+
+  ipcMain.handle('db:getExercisesByIds', (_event, ids) => {
+    const db = getDb();
+    if (!ids || ids.length === 0) return [];
+    const placeholders = ids.map(() => '?').join(',');
+    return db.prepare(`SELECT * FROM exercise_library WHERE id IN (${placeholders})`).all(...ids);
   });
 
   // Export / Import
