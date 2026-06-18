@@ -27,6 +27,11 @@ export const strings = {
     mostRecentEntry: 'Entrada más reciente',
     sinceLastMeasurement: 'Desde la última medición',
     plannedTraining: 'Entrenamiento planificado',
+    dailySteps: 'Pasos de Hoy',
+    hrResting: 'FC en Reposo',
+    sleepAvg: 'Sueño Medio',
+    hrvAvg: 'HRV Media',
+    healthLastUpdate: 'Datos de salud',
   },
 
   // Activity

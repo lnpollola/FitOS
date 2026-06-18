@@ -1,9 +1,11 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const os = require('os');
 const { app } = require('electron');
 const { seedIfEmpty } = require('./seed-data');
 
 let db;
+let healthsyncDb;
 
 function getDbPath() {
   const userDataPath = app.getPath('userData');
@@ -266,4 +268,19 @@ function getDb() {
   return db;
 }
 
-module.exports = { initDatabase, getDb, getDbPath };
+function initHealthsyncDb() {
+  const dbPath = path.join(os.homedir(), '.healthsync', 'healthsync.db');
+  healthsyncDb = new Database(dbPath, { readonly: true });
+  return healthsyncDb;
+}
+
+function getHealthsyncDb() {
+  return healthsyncDb;
+}
+
+function testHealthsyncConnection() {
+  const row = healthsyncDb.prepare("SELECT COUNT(*) as total FROM sqlite_master WHERE type='table'").get();
+  return row.total;
+}
+
+module.exports = { initDatabase, getDb, getDbPath, initHealthsyncDb, getHealthsyncDb, testHealthsyncConnection };
