@@ -1,0 +1,66 @@
+## ADDED Requirements
+
+### Requirement: Electron desktop application shell
+
+The system SHALL run as an Electron desktop application with a single-window interface, native menus, and system integration.
+
+#### Scenario: Application launches as native window
+
+- **WHEN** the user starts the application
+- **THEN** the system SHALL open a native desktop window with a title bar, application menu, and the dashboard view loaded
+
+#### Scenario: Application has a native menu bar
+
+- **WHEN** the user clicks the application menu
+- **THEN** the system SHALL show menu items for File (data export/import), View (navigate to domains), and Help (about)
+
+### Requirement: Navigation layout with sidebar
+
+The application SHALL render a single-page layout with a left sidebar navigation and a main content area.
+
+#### Scenario: Sidebar shows domain navigation
+
+- **WHEN** the application is running
+- **THEN** the navigation SHALL appear as a left sidebar with labeled navigation items: Dashboard, Activity, Diet Plan, Energy Balance, Body Measurements, Strength Training, Profile & Settings
+
+#### Scenario: Clicking a nav item switches the main view
+
+- **WHEN** a user clicks a navigation item
+- **THEN** the main content area SHALL display the corresponding domain view without reloading the window
+
+### Requirement: All data stored locally in SQLite
+
+The system SHALL store all health data in a local SQLite database using better-sqlite3, with no external database or cloud service.
+
+#### Scenario: Data persisted across app restarts
+
+- **WHEN** a user enters data and restarts the application
+- **THEN** the data SHALL still be present and displayed in the relevant views
+
+#### Scenario: App works fully offline
+
+- **WHEN** a user runs the application with no internet connection
+- **THEN** all features SHALL function normally — data entry, viewing history, calculations — using only locally stored data
+
+### Requirement: Data export and import for backup
+
+The system SHALL allow users to export all their data as a single JSON file and import it back on the same or a different machine.
+
+#### Scenario: Export all data
+
+- **WHEN** a user selects "Export Data" from the File menu or Settings
+- **THEN** the system SHALL generate and save a JSON file containing all stored records via a native save dialog
+
+#### Scenario: Import data from backup
+
+- **WHEN** a user selects "Import Data" and chooses a previously exported JSON file via a native open dialog
+- **THEN** the system SHALL restore all records from the file, replacing any existing data after user confirmation
+
+### Requirement: Dashboard as the landing view
+
+The system SHALL display a unified dashboard as the default view, showing summary cards from all domains.
+
+#### Scenario: Dashboard shows key metrics
+
+- **WHEN** a user opens the application
+- **THEN** the dashboard SHALL display summary cards: today's planned calories, weekly energy balance status, latest weight, latest measurement delta, and next planned workout

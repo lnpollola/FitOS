@@ -1,13 +1,18 @@
 ## ADDED Requirements
 
-### Requirement: Import daily activity metrics from file upload
+### Requirement: Import daily activity metrics from Apple Watch CSV export
 
-The system SHALL accept CSV or JSON file uploads containing wearable/health-dashboard daily metrics and normalize them into a canonical activity-day record.
+The system SHALL accept CSV file uploads exported from Apple Watch / Apple Health containing daily metrics and per-sport workout data, and normalize them into canonical activity-day records with sport-specific activity breakdowns.
 
-#### Scenario: Successful CSV import with all fields
+#### Scenario: Successful CSV import with daily metrics and sport activities
 
-- **WHEN** a user uploads a well-formed CSV containing date, steps, active_calories, heart_rate_avg, sleep_hours, and weight_kg columns
-- **THEN** the system SHALL parse all rows, create activity-day records, and display a success summary showing date range and record count
+- **WHEN** a user uploads a CSV export containing date, steps, active_calories, resting_calories, heart_rate_avg, sleep_hours, weight_kg, and per-sport workout rows (cycling, boxing, HIIT, walking, football, paddle)
+- **THEN** the system SHALL parse all rows, create an activity-day record for each date, and create individual sport-activity records for each workout with calories, duration, and sport type
+
+#### Scenario: Import recognizes known sport types
+
+- **WHEN** a CSV contains workout rows with sport labels (cycling, boxing, HIIT, walking, football, paddle)
+- **THEN** the system SHALL map each workout to a canonical sport type and store it as a structured sport-activity record
 
 #### Scenario: Partial import with missing optional fields
 
@@ -16,7 +21,7 @@ The system SHALL accept CSV or JSON file uploads containing wearable/health-dash
 
 #### Scenario: Invalid file format rejected
 
-- **WHEN** a user uploads a file with an unsupported format (e.g., .xlsx or .png)
+- **WHEN** a user uploads a file with an unsupported format
 - **THEN** the system SHALL reject the upload and display an error message listing supported formats
 
 ### Requirement: Manual entry of daily metrics
@@ -35,14 +40,23 @@ The system SHALL allow users to manually enter or edit daily metrics (steps, act
 
 ### Requirement: View activity history as a timeline
 
-The system SHALL display a scrollable daily timeline of activity metrics with date, step count, calorie burn, and weight.
+The system SHALL display a scrollable daily timeline of activity metrics with date, step count, calorie burn (total and per-sport breakdown), and weight.
 
 #### Scenario: Timeline shows most recent first
 
 - **WHEN** a user navigates to the activity timeline view
-- **THEN** the system SHALL display activity-day records sorted by date descending, with the most recent entry at the top
+- **THEN** the system SHALL display activity-day records sorted by date descending, with the most recent entry at the top, including a per-sport breakdown of activity calories
 
 #### Scenario: Timeline highlights missing days
 
 - **WHEN** a date in the timeline range has no activity-day record
 - **THEN** the system SHALL display that date with a dashed outline or placeholder indicating no data
+
+### Requirement: View sport activity breakdown
+
+The system SHALL display a breakdown of calories burned per sport type over a selected period (day, week, month).
+
+#### Scenario: Weekly sport activity summary
+
+- **WHEN** a user views the weekly activity summary
+- **THEN** the system SHALL show a bar chart or table with total calories per sport type for the selected week
