@@ -1,35 +1,37 @@
+import { strings } from '../locales/es.js';
+
 export function init() {
   const container = document.getElementById('view-energy');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">Adaptive Fat-Loss Planning</h2>
+    <h2 style="margin-bottom:20px">${strings.adaptive.title}</h2>
     <div class="card">
-      <h2>Target Weight-Loss Pace</h2>
+      <h2>${strings.adaptive.targetPace}</h2>
       <div class="form-group">
-        <label>Target loss rate (kg/week): <span id="pace-value">0.5</span></label>
+        <label>${strings.adaptive.targetPace}: <span id="pace-value">0.5</span> ${strings.adaptive.kgPerWeek}</label>
         <input type="range" id="target-pace" min="0.25" max="1.0" step="0.05" value="0.5" style="width:100%" />
       </div>
-      <p style="font-size:13px;color:var(--text-secondary)">Recommended: 0.5-1.0 kg/week for sustainable fat loss</p>
-      <button class="btn btn-primary" id="btn-calc-deficit">Calculate Deficit</button>
+      <p style="font-size:13px;color:var(--text-secondary)">${strings.adaptive.targetPaceDesc}</p>
+      <button class="btn btn-primary" id="btn-calc-deficit">${strings.adaptive.calculateDeficit}</button>
     </div>
     <div class="card">
-      <h2>Current Status</h2>
-      <div id="current-status"><div class="empty-state"><p>Complete your profile and log some data to see your status</p></div></div>
+      <h2>${strings.adaptive.currentStatus}</h2>
+      <div id="current-status"><div class="empty-state"><p>${strings.adaptive.statusEmpty}</p></div></div>
     </div>
     <div class="card">
-      <h2>Adherence Evaluation</h2>
-      <div id="adherence-eval"><div class="empty-state"><p>Log at least 1 week of weight data for adherence evaluation</p></div></div>
+      <h2>${strings.adaptive.adherenceEval}</h2>
+      <div id="adherence-eval"><div class="empty-state"><p>${strings.adaptive.adherenceEmpty}</p></div></div>
     </div>
     <div class="card">
-      <h2>Recomposition Detection</h2>
-      <div id="recomp-detection"><div class="empty-state"><p>Need 4+ weeks of measurements for recomposition analysis</p></div></div>
+      <h2>${strings.adaptive.recompDetection}</h2>
+      <div id="recomp-detection"><div class="empty-state"><p>${strings.adaptive.recompEmpty}</p></div></div>
     </div>
     <div class="card">
-      <h2>Slot Adjustment Recommendations</h2>
-      <div id="adjustment-recs"><div class="empty-state"><p>Set a target pace and evaluate adherence to get recommendations</p></div></div>
+      <h2>${strings.adaptive.slotAdjustments}</h2>
+      <div id="adjustment-recs"><div class="empty-state"><p>${strings.adaptive.slotEmpty}</p></div></div>
     </div>
     <div class="card">
-      <h2>Adjustment History</h2>
-      <div id="adjustment-history"><div class="empty-state"><p>No adjustments logged yet</p></div></div>
+      <h2>${strings.adaptive.adjustmentHistory}</h2>
+      <div id="adjustment-history"><div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div></div>
     </div>
   `;
 
@@ -56,7 +58,7 @@ export function init() {
     const el = document.getElementById('current-status');
 
     if (!profile) {
-      el.innerHTML = `<div class="empty-state"><p>Complete your profile first (Profile & Settings tab)</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.completeProfileFirst}</p></div>`;
       return;
     }
 
@@ -78,18 +80,18 @@ export function init() {
     const isSafe = targetIntake >= safeMin;
 
     let html = `
-      <p>Estimated Maintenance (TDEE): <strong>${maintenance.toFixed(0)} kcal</strong></p>
-      <p>Target pace: <strong>${pace} kg/week</strong></p>
-      <p>Target daily deficit: <strong>${targetDeficit.toFixed(0)} kcal</strong></p>
-      <p>Target daily intake: <strong>${targetIntake.toFixed(0)} kcal</strong></p>
-      <p>Safe minimum: <strong>${safeMin} kcal</strong> (${profile.sex === 'female' ? '1200 women / 1500 men' : '1500 men / 1200 women'})</p>
-      <p>Status: <strong style="color:${isSafe ? '#4ecdc4' : '#e94560'}">${isSafe ? 'Safe ✓' : 'Below minimum - adjust pace ✗'}</strong></p>
+      <p>${strings.adaptive.estimatedMaintenance}: <strong>${maintenance.toFixed(0)} kcal</strong></p>
+      <p>${strings.adaptive.targetPaceLabel}: <strong>${pace} ${strings.adaptive.kgPerWeek}</strong></p>
+      <p>${strings.adaptive.targetDailyDeficit}: <strong>${targetDeficit.toFixed(0)} kcal</strong></p>
+      <p>${strings.adaptive.targetDailyIntake}: <strong>${targetIntake.toFixed(0)} kcal</strong></p>
+      <p>${strings.adaptive.safeMinimum}: <strong>${safeMin} kcal</strong></p>
+      <p>${strings.adaptive.status}: <strong style="color:${isSafe ? '#4ecdc4' : '#e94560'}">${isSafe ? strings.adaptive.statusSafe : strings.adaptive.statusBelowMin}</strong></p>
     `;
 
     if (targetIntake < safeMin) {
       const maxDeficit = maintenance - safeMin;
       const maxPace = (maxDeficit * 7) / deficitPerKg;
-      html += `<p style="color:#e94560;margin-top:8px">Suggested max pace: ${Math.max(0, maxPace).toFixed(2)} kg/week to stay above ${safeMin} kcal floor</p>`;
+      html += `<p style="color:#e94560;margin-top:8px">${strings.adaptive.suggestedMaxPace}: ${Math.max(0, maxPace).toFixed(2)} ${strings.adaptive.kgPerWeek}</p>`;
     }
 
     el.innerHTML = html;
@@ -116,10 +118,10 @@ export function init() {
     const onTrack = Math.abs(actualRate - pace) < 0.2;
 
     el.innerHTML = `
-      <p>Trend Weight (14-day MA): <strong>${trendWeight.toFixed(1)} kg</strong></p>
-      <p>Actual loss rate: <strong>${Math.abs(actualRate).toFixed(2)} kg/week</strong></p>
-      <p>Target: <strong>${pace} kg/week</strong></p>
-      <p>Adherence: <strong style="color:${onTrack ? '#4ecdc4' : '#e94560'}">${onTrack ? 'On track ✓' : 'Needs adjustment ⚠'}</strong></p>
+      <p>${strings.adaptive.trendWeight}: <strong>${trendWeight.toFixed(1)} kg</strong></p>
+      <p>${strings.adaptive.actualLossRate}: <strong>${Math.abs(actualRate).toFixed(2)} ${strings.adaptive.kgPerWeek}</strong></p>
+      <p>${strings.adaptive.target}: <strong>${pace} ${strings.adaptive.kgPerWeek}</strong></p>
+      <p>${strings.adaptive.adherence}: <strong style="color:${onTrack ? '#4ecdc4' : '#e94560'}">${onTrack ? strings.adaptive.onTrack : strings.adaptive.needsAdjustment}</strong></p>
     `;
   }
 
@@ -150,14 +152,14 @@ export function init() {
     const isRecomp = weightStable && waistDecreasing;
 
     let html = `
-      <p>Period: ${first.date} to ${last.date} (${recent.length} measurements)</p>
-      <p>Weight change: <strong>${(last.weight_kg - first.weight_kg).toFixed(1)} kg</strong> ${weightStable ? '(stable ✓)' : ''}</p>
-      <p>Waist change: <strong>${(last.waist_cm - first.waist_cm).toFixed(1)} cm</strong> ${waistDecreasing ? '(decreasing ✓)' : ''}</p>
+      <p>${strings.adaptive.period}: ${first.date} → ${last.date} (${recent.length} mediciones)</p>
+      <p>${strings.adaptive.weightChange}: <strong>${(last.weight_kg - first.weight_kg).toFixed(1)} kg</strong> ${weightStable ? `(${strings.adaptive.stable})` : ''}</p>
+      <p>${strings.adaptive.waistChange}: <strong>${(last.waist_cm - first.waist_cm).toFixed(1)} cm</strong> ${waistDecreasing ? `(${strings.adaptive.decreasing})` : ''}</p>
     `;
     if (bfFirst !== null && bfLast !== null) {
-      html += `<p>Body fat: ${bfFirst.toFixed(1)}% → ${bfLast.toFixed(1)}%</p>`;
+      html += `<p>${strings.adaptive.bodyFat}: ${bfFirst.toFixed(1)}% → ${bfLast.toFixed(1)}%</p>`;
     }
-    html += `<p>Status: <strong style="color:${isRecomp ? '#4ecdc4' : '#a0a0b0'}">${isRecomp ? 'Recomposition detected ✓' : 'No recomposition pattern'}</strong></p>`;
+    html += `<p>${strings.adaptive.status}: <strong style="color:${isRecomp ? '#4ecdc4' : '#a0a0b0'}">${isRecomp ? strings.adaptive.recompDetected : strings.adaptive.noRecomp}</strong></p>`;
 
     el.innerHTML = html;
   }
@@ -189,9 +191,9 @@ export function init() {
     const safeMin = profile.sex === 'female' ? 1200 : 1500;
     const currentIntake = balance.planned_intake;
 
-    let html = `<p>Current daily deficit: <strong>${currentDeficit.toFixed(0)} kcal</strong></p>`;
-    html += `<p>Target daily deficit: <strong>${targetDeficit.toFixed(0)} kcal</strong></p>`;
-    html += `<p>Adjustment needed: <strong>${deficitGap > 0 ? '+' : ''}${deficitGap.toFixed(0)} kcal</strong></p>`;
+    let html = `<p>${strings.adaptive.currentDailyDeficit}: <strong>${currentDeficit.toFixed(0)} kcal</strong></p>`;
+    html += `<p>${strings.adaptive.targetDailyDeficitLabel}: <strong>${targetDeficit.toFixed(0)} kcal</strong></p>`;
+    html += `<p>${strings.adaptive.adjustmentNeeded}: <strong>${deficitGap > 0 ? '+' : ''}${deficitGap.toFixed(0)} kcal</strong></p>`;
 
     if (Math.abs(deficitGap) > 50) {
       const carbAdjust = deficitGap > 0 ? Math.min(deficitGap / 4, currentIntake * 0.2 / 4) : Math.max(deficitGap / 4, -currentIntake * 0.2 / 4);
@@ -201,20 +203,20 @@ export function init() {
       const cappedFatAdjust = Math.abs(fatAdjust);
 
       html += `
-        <p style="margin-top:12px;font-weight:bold">Suggested slot adjustments:</p>
-        <p>Reduce carbs by: <strong>~${cappedCarbAdjust.toFixed(0)}g</strong> across carb slots</p>
-        <p>Reduce fats by: <strong>~${cappedFatAdjust.toFixed(0)}g</strong> across fat slots</p>
-        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">Max adjustment capped at 20% of current intake for safety</p>
+        <p style="margin-top:12px;font-weight:bold">${strings.adaptive.slotAdjustments}:</p>
+        <p>${strings.adaptive.reduceCarbs}: <strong>~${cappedCarbAdjust.toFixed(0)}g</strong></p>
+        <p>${strings.adaptive.reduceFats}: <strong>~${cappedFatAdjust.toFixed(0)}g</strong></p>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">${strings.adaptive.maxAdjustment}</p>
       `;
 
       html += `
         <div style="margin-top:16px;display:flex;gap:8px">
-          <button class="btn btn-primary" id="btn-accept-adjustment">Apply Recommendation</button>
-          <button class="btn btn-secondary" id="btn-dismiss-adjustment">Dismiss</button>
+          <button class="btn btn-primary" id="btn-accept-adjustment">${strings.adaptive.applyRecommendation}</button>
+          <button class="btn btn-secondary" id="btn-dismiss-adjustment">${strings.adaptive.dismiss}</button>
         </div>
       `;
     } else {
-      html += `<p style="color:#4ecdc4;margin-top:8px">Current deficit is close to target — no adjustment needed ✓</p>`;
+      html += `<p style="color:#4ecdc4;margin-top:8px">${strings.adaptive.adjustmentApplied}</p>`;
     }
 
     el.innerHTML = html;
@@ -232,13 +234,13 @@ export function init() {
           deficitGap,
         }));
         loadHistory();
-        el.innerHTML = `<p style="color:#4ecdc4">Adjustment applied and logged ✓</p>`;
+        el.innerHTML = `<p style="color:#4ecdc4">${strings.adaptive.adjustmentApplied}</p>`;
       });
     }
 
     if (dismissBtn) {
       dismissBtn.addEventListener('click', () => {
-        el.innerHTML = `<div class="empty-state"><p>Adjustment dismissed</p></div>`;
+        el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.adjustmentDismissed}</p></div>`;
       });
     }
   }
@@ -247,17 +249,17 @@ export function init() {
     const el = document.getElementById('adjustment-history');
     const lastAdj = await api.getSetting('last_adjustment');
     if (!lastAdj) {
-      el.innerHTML = `<div class="empty-state"><p>No adjustments logged yet</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div>`;
       return;
     }
     const adj = JSON.parse(lastAdj);
     el.innerHTML = `
       <table>
-        <thead><tr><th>Date</th><th>Pace</th><th>Target Deficit</th><th>Current Deficit</th><th>Gap</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Ritmo</th><th>Déficit Objetivo</th><th>Déficit Actual</th><th>Brecha</th></tr></thead>
         <tbody>
           <tr>
             <td>${adj.date}</td>
-            <td>${adj.pace} kg/wk</td>
+            <td>${adj.pace} kg/sem</td>
             <td>${adj.targetDeficit.toFixed(0)} kcal</td>
             <td>${adj.currentDeficit.toFixed(0)} kcal</td>
             <td>${adj.deficitGap > 0 ? '+' : ''}${adj.deficitGap.toFixed(0)} kcal</td>

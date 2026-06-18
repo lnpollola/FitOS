@@ -1,3 +1,5 @@
+import { strings } from './locales/es.js';
+
 export function addFormValidation(formEl) {
   const inputs = formEl.querySelectorAll('input, select');
   inputs.forEach(input => {
@@ -24,16 +26,16 @@ function validateField(input) {
   let error = '';
 
   if (input.required && !input.value.trim()) {
-    error = 'This field is required';
+    error = strings.validation.fieldRequired;
   } else if (input.type === 'number' && input.value) {
     const val = parseFloat(input.value);
     const min = parseFloat(input.min);
     const max = parseFloat(input.max);
-    if (input.min && val < min) error = `Minimum value is ${min}`;
-    else if (input.max && val > max) error = `Maximum value is ${max}`;
-    else if (input.step && input.step.includes('.') && isNaN(val)) error = 'Enter a valid number';
+    if (input.min && val < min) error = `${strings.validation.minValue} ${min}`;
+    else if (input.max && val > max) error = `${strings.validation.maxValue} ${max}`;
+    else if (input.step && input.step.includes('.') && isNaN(val)) error = strings.validation.enterValidNumber;
   } else if (input.type === 'date' && input.value && isNaN(Date.parse(input.value))) {
-    error = 'Enter a valid date';
+    error = strings.validation.enterValidDate;
   }
 
   if (errorEl) errorEl.textContent = error;

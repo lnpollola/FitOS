@@ -182,7 +182,84 @@ function createTables() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS elaborated_dishes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      total_kcal REAL,
+      total_protein REAL,
+      total_carbs REAL,
+      total_fat REAL,
+      servings REAL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS dish_ingredients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dish_id INTEGER NOT NULL,
+      food_item_id INTEGER NOT NULL,
+      grams REAL NOT NULL,
+      FOREIGN KEY (dish_id) REFERENCES elaborated_dishes(id) ON DELETE CASCADE,
+      FOREIGN KEY (food_item_id) REFERENCES food_items(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_dish_options (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      meal_template_id INTEGER NOT NULL,
+      dish_id INTEGER NOT NULL,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (meal_template_id) REFERENCES meal_templates(id),
+      FOREIGN KEY (dish_id) REFERENCES elaborated_dishes(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      min_sessions INTEGER NOT NULL,
+      max_sessions INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_plan_days (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plan_id INTEGER NOT NULL,
+      day_number INTEGER NOT NULL,
+      focus_area TEXT,
+      exercise_ids TEXT,
+      FOREIGN KEY (plan_id) REFERENCES workout_plans(id)
+    );
   `);
+
+  // Schema migrations
+  const schemaVersion = db.prepare("SELECT value FROM settings WHERE key = 'schema_version'").get()?.value;
+  if (!schemaVersion || parseInt(schemaVersion) < 1) {
+    // Migration 1: Add practical_examples column
+    const hasExamples = db.prepare("SELECT COUNT(*) as cnt FROM pragma_table_info('exercise_library') WHERE name='practical_examples'").get();
+    if (hasExamples.cnt === 0) {
+      db.exec("ALTER TABLE exercise_library ADD COLUMN practical_examples TEXT");
+    }
+
+    // Migration 2: Expand sport_types
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sport_activities_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        sport_type TEXT NOT NULL CHECK (sport_type IN ('running', 'cycling', 'walking', 'swimming', 'yoga', 'HIIT', 'strength', 'football', 'paddle', 'boxing', 'other')),
+        calories REAL,
+        duration_minutes REAL,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+    const oldCount = db.prepare("SELECT COUNT(*) as cnt FROM sport_activities").get().cnt;
+    if (oldCount > 0) {
+      db.prepare("INSERT OR IGNORE INTO sport_activities_v2 (id, date, sport_type, calories, duration_minutes, created_at) SELECT id, date, sport_type, calories, duration_minutes, created_at FROM sport_activities").run();
+    }
+    db.exec("DROP TABLE IF EXISTS sport_activities");
+    db.exec("ALTER TABLE sport_activities_v2 RENAME TO sport_activities");
+
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '1')").run();
+  }
 }
 
 function getDb() {

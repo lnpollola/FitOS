@@ -115,6 +115,59 @@ const EXERCISES = [
   { name: 'Kettlebell Swing', muscle_group: 'Glutes/Hamstrings', equipment: 'Kettlebell', movement_pattern: 'Hip Hinge' },
 ];
 
+const WORKOUT_PLANS = [
+  {
+    name: '2x Superior/Inferior',
+    min_sessions: 2, max_sessions: 2,
+    days: [
+      { day_number: 1, focus_area: 'Superior — Pecho, Hombros, Tríceps', exercise_ids: '79,80,83,85,97,100' },
+      { day_number: 2, focus_area: 'Inferior — Cuádriceps, Isquios, Glúteos', exercise_ids: '67,69,70,73,75,105' },
+    ]
+  },
+  {
+    name: '3x Empuje/Tracción/Piernas',
+    min_sessions: 3, max_sessions: 3,
+    days: [
+      { day_number: 1, focus_area: 'Empuje — Pecho, Hombros, Tríceps', exercise_ids: '79,81,83,85,100,101' },
+      { day_number: 2, focus_area: 'Tracción — Espalda, Bíceps, Delts Posteriores', exercise_ids: '89,90,91,94,97,98' },
+      { day_number: 3, focus_area: 'Piernas — Cuádriceps, Isquios, Glúteos, Gemelos', exercise_ids: '67,69,70,71,73,74' },
+    ]
+  },
+  {
+    name: '4x Superior/Inferior (2x cada uno)',
+    min_sessions: 4, max_sessions: 4,
+    days: [
+      { day_number: 1, focus_area: 'Superior — Empuje (Pecho, Hombros, Tríceps)', exercise_ids: '79,80,83,85,100,102' },
+      { day_number: 2, focus_area: 'Inferior — Cuádriceps, Glúteos, Gemelos', exercise_ids: '67,69,75,76,73,112' },
+      { day_number: 3, focus_area: 'Superior — Tracción (Espalda, Bíceps, Delts)', exercise_ids: '89,91,92,94,97,99' },
+      { day_number: 4, focus_area: 'Inferior — Isquios, Glúteos, Core', exercise_ids: '70,71,77,104,106,114' },
+    ]
+  },
+  {
+    name: '5x Push/Pull/Legs/Upper/Lower',
+    min_sessions: 5, max_sessions: 5,
+    days: [
+      { day_number: 1, focus_area: 'Empuje — Pecho, Hombros, Tríceps', exercise_ids: '81,82,83,85,100,101' },
+      { day_number: 2, focus_area: 'Tracción — Espalda, Bíceps', exercise_ids: '89,90,91,93,97,98' },
+      { day_number: 3, focus_area: 'Piernas — Cuádriceps, Isquios, Glúteos', exercise_ids: '67,69,70,71,76,77' },
+      { day_number: 4, focus_area: 'Superior — Espalda, Hombros, Bíceps, Tríceps', exercise_ids: '79,84,85,94,99,102' },
+      { day_number: 5, focus_area: 'Inferior — Isquios, Glúteos, Gemelos, Core', exercise_ids: '70,73,74,77,104,114' },
+    ]
+  },
+  {
+    name: '6x Push/Pull/Legs/Upper/Lower/Full Body',
+    min_sessions: 6, max_sessions: 6,
+    days: [
+      { day_number: 1, focus_area: 'Empuje — Pecho, Hombros, Tríceps', exercise_ids: '79,81,83,85,100,101' },
+      { day_number: 2, focus_area: 'Tracción — Espalda, Bíceps', exercise_ids: '89,90,91,94,97,98' },
+      { day_number: 3, focus_area: 'Piernas — Cuádriceps, Isquios, Glúteos', exercise_ids: '67,69,70,71,76,77' },
+      { day_number: 4, focus_area: 'Superior completo', exercise_ids: '79,83,85,89,91,97,100' },
+      { day_number: 5, focus_area: 'Inferior completo', exercise_ids: '67,70,71,73,74,105' },
+      { day_number: 6, focus_area: 'Cuerpo completo — ejercicios compuestos', exercise_ids: '79,81,89,91,69,77,112,114' },
+    ]
+  },
+];
+
 function seedIfEmpty(db) {
 
   const foodCount = db.prepare('SELECT COUNT(*) as count FROM food_items').get().count;
@@ -154,6 +207,23 @@ function seedIfEmpty(db) {
     });
     transaction();
     console.log(`Seeded ${EXERCISES.length} exercises`);
+  }
+
+  const plansCount = db.prepare('SELECT COUNT(*) as count FROM workout_plans').get().count;
+  if (plansCount === 0) {
+    const insertPlan = db.prepare('INSERT INTO workout_plans (name, min_sessions, max_sessions) VALUES (?, ?, ?)');
+    const insertDay = db.prepare('INSERT INTO workout_plan_days (plan_id, day_number, focus_area, exercise_ids) VALUES (?, ?, ?, ?)');
+    const transaction = db.transaction(() => {
+      for (const plan of WORKOUT_PLANS) {
+        const result = insertPlan.run(plan.name, plan.min_sessions, plan.max_sessions);
+        const planId = result.lastInsertRowid;
+        for (const day of plan.days) {
+          insertDay.run(planId, day.day_number, day.focus_area, day.exercise_ids);
+        }
+      }
+    });
+    transaction();
+    console.log(`Seeded ${WORKOUT_PLANS.length} workout plans`);
   }
 }
 

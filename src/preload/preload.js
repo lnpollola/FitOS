@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   navigate: (view) => ipcRenderer.send('navigate', view),
   onNavigate: (callback) => ipcRenderer.on('navigate', (_event, view) => callback(view)),
   onDataChanged: (callback) => ipcRenderer.on('data-changed', () => callback()),
+  onHealthImportProgress: (callback) => ipcRenderer.on('health-import-progress', (_event, msg) => callback(msg)),
 
   // Profile
   getProfile: () => ipcRenderer.invoke('db:getProfile'),
@@ -54,6 +55,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Dashboard
   getDashboardData: () => ipcRenderer.invoke('db:getDashboardData'),
+
+  // Elaborated dishes
+  saveDish: (dish) => ipcRenderer.invoke('db:saveDish', dish),
+  getDishes: () => ipcRenderer.invoke('db:getDishes'),
+  getDishIngredients: (dishId) => ipcRenderer.invoke('db:getDishIngredients', dishId),
+  deleteDish: (dishId) => ipcRenderer.invoke('db:deleteDish', dishId),
+  saveDishIngredient: (ingredient) => ipcRenderer.invoke('db:saveDishIngredient', ingredient),
+
+  // Meal dish options
+  linkDishToMeal: (link) => ipcRenderer.invoke('db:linkDishToMeal', link),
+  getDishesForMeal: (mealTemplateId) => ipcRenderer.invoke('db:getDishesForMeal', mealTemplateId),
+  unlinkDish: (id) => ipcRenderer.invoke('db:unlinkDish', id),
+
+  // Workout plans
+  getWorkoutPlans: () => ipcRenderer.invoke('db:getWorkoutPlans'),
+  getPlanDays: (planId) => ipcRenderer.invoke('db:getPlanDays', planId),
+  getExercisesByIds: (ids) => ipcRenderer.invoke('db:getExercisesByIds', ids),
+
+  // Apple Health
+  checkHealthsync: () => ipcRenderer.invoke('db:checkHealthsync'),
+  installHealthsync: () => ipcRenderer.invoke('db:installHealthsync'),
+  importAppleHealthXML: (xmlPath) => ipcRenderer.invoke('db:importAppleHealthXML', xmlPath),
 
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),

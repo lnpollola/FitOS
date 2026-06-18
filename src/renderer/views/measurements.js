@@ -1,14 +1,15 @@
 import Chart from 'chart.js/auto';
+import { strings } from '../locales/es.js';
 
 export function init() {
   const container = document.getElementById('view-measurements');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">Body Measurements</h2>
+    <h2 style="margin-bottom:20px">${strings.measurements.title}</h2>
     <div class="card">
-      <h2>Full Measurement Entry</h2>
+      <h2>${strings.measurements.fullEntry}</h2>
       <form id="measurement-form" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <div class="form-group" style="grid-column:span 3">
-          <label>Date</label>
+          <label>${strings.measurements.date}</label>
           <input type="date" name="date" required />
         </div>
         ${['chest','neck','shoulders','biceps_left','biceps_right','forearms_left','forearms_right','waist','hips','thighs_left','thighs_right','calves_left','calves_right'].map(m => `
@@ -18,70 +19,70 @@ export function init() {
           </div>
         `).join('')}
         <div class="form-group">
-          <label>Weight (kg)</label>
+          <label>${strings.measurements.weight}</label>
           <input type="number" name="weight_kg" min="20" max="300" step="0.1" />
         </div>
         <div style="grid-column:span 3">
-          <button type="submit" class="btn btn-primary">Save Measurement</button>
+          <button type="submit" class="btn btn-primary">${strings.measurements.saveMeasurement}</button>
         </div>
       </form>
     </div>
     <div class="card">
-      <h2>Quick Weight Entry</h2>
+      <h2>${strings.measurements.quickWeight}</h2>
       <form id="weight-form" style="display:flex;gap:12px;align-items:end">
         <div class="form-group">
-          <label>Date</label>
+          <label>${strings.measurements.date}</label>
           <input type="date" name="date" required />
         </div>
         <div class="form-group">
-          <label>Weight (kg)</label>
+          <label>${strings.measurements.weight}</label>
           <input type="number" name="weight_kg" min="20" max="300" step="0.1" required />
         </div>
-        <button type="submit" class="btn btn-primary">Save Weight</button>
+        <button type="submit" class="btn btn-primary">${strings.measurements.saveWeight}</button>
       </form>
     </div>
     <div class="card">
-      <h2>Body Fat Estimate (Navy Method)</h2>
-      <div id="body-fat-estimate"><div class="empty-state"><p>Enter neck, waist, and hip measurements to estimate body fat</p></div></div>
+      <h2>${strings.measurements.bodyFatEstimate}</h2>
+      <div id="body-fat-estimate"><div class="empty-state"><p>${strings.measurements.bodyFatEmpty}</p></div></div>
     </div>
     <div class="card">
-      <h2>Measurement History</h2>
-      <div id="measurement-history"><div class="empty-state"><p>No measurements recorded yet</p></div></div>
+      <h2>${strings.measurements.measurementHistory}</h2>
+      <div id="measurement-history"><div class="empty-state"><p>${strings.measurements.noMeasurements}</p></div></div>
     </div>
     <div class="card">
-      <h2>Weight Trend (7-day Moving Average)</h2>
+      <h2>${strings.measurements.weightTrend}</h2>
       <canvas id="weight-chart" height="250"></canvas>
     </div>
     <div class="card">
-      <h2>Measurement Trends</h2>
+      <h2>${strings.measurements.measurementTrends}</h2>
       <canvas id="measurement-chart" height="250"></canvas>
       <div style="margin-top:12px">
-        <label style="font-size:13px;color:var(--text-secondary);margin-right:8px">Metric:</label>
+        <label style="font-size:13px;color:var(--text-secondary);margin-right:8px">${strings.measurements.metric}:</label>
         <select id="trend-metric" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)">
-          <option value="waist_cm">Waist</option>
-          <option value="chest_cm">Chest</option>
-          <option value="neck_cm">Neck</option>
-          <option value="shoulders_cm">Shoulders</option>
-          <option value="hips_cm">Hips</option>
+          <option value="waist_cm">Cintura</option>
+          <option value="chest_cm">Pecho</option>
+          <option value="neck_cm">Cuello</option>
+          <option value="shoulders_cm">Hombros</option>
+          <option value="hips_cm">Cadera</option>
         </select>
       </div>
     </div>
     <div class="card">
-      <h2>Body Fat Trend</h2>
+      <h2>${strings.measurements.bodyFatTrend}</h2>
       <canvas id="bodyfat-chart" height="250"></canvas>
     </div>
     <div class="card">
-      <h2>Before / After Comparison</h2>
+      <h2>${strings.measurements.beforeAfter}</h2>
       <div style="display:flex;gap:12px;align-items:end;margin-bottom:16px">
         <div class="form-group">
-          <label>Before Date</label>
+          <label>${strings.measurements.beforeDate}</label>
           <input type="date" id="before-date" />
         </div>
         <div class="form-group">
-          <label>After Date</label>
+          <label>${strings.measurements.afterDate}</label>
           <input type="date" id="after-date" />
         </div>
-        <button class="btn btn-primary" id="btn-compare">Compare</button>
+        <button class="btn btn-primary" id="btn-compare">${strings.measurements.compare}</button>
       </div>
       <div id="comparison-result"></div>
     </div>
@@ -138,19 +139,19 @@ export function init() {
     const sets = await api.getMeasurementSets();
     const el = document.getElementById('body-fat-estimate');
     if (!sets || sets.length === 0 || !profile) {
-      el.innerHTML = `<div class="empty-state"><p>Enter neck, waist, and hip measurements with your profile to estimate body fat</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>${strings.measurements.bodyFatEmpty}</p></div>`;
       return;
     }
     const latest = sets[0];
     if (!latest.neck_cm || !latest.waist_cm || !latest.hips_cm) {
-      el.innerHTML = `<div class="empty-state"><p>Neck, waist, and hip measurements required for Navy method estimate</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>${strings.measurements.bodyFatEmptyDetail}</p></div>`;
       return;
     }
     const bf = calculateBodyFat(latest.neck_cm, latest.waist_cm, latest.hips_cm, profile.sex, profile.height_cm);
     if (bf !== null) {
       el.innerHTML = `
-        <p>Estimated Body Fat: <strong>${bf.toFixed(1)}%</strong></p>
-        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">Using Navy circumference method (neck, waist, hips)</p>
+        <p>${strings.measurements.estimatedBodyFat}: <strong>${bf.toFixed(1)}%</strong></p>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">${strings.measurements.navyMethod}</p>
       `;
     }
   }
@@ -159,10 +160,10 @@ export function init() {
     const sets = await api.getMeasurementSets();
     const el = document.getElementById('measurement-history');
     if (!sets || sets.length === 0) {
-      el.innerHTML = `<div class="empty-state"><p>No measurements recorded yet</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>${strings.measurements.noMeasurements}</p></div>`;
       return;
     }
-    let html = '<table><thead><tr><th>Date</th><th>Weight</th><th>Chest</th><th>Waist</th><th>Neck</th><th>Hips</th><th>BF%</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Fecha</th><th>Peso</th><th>Pecho</th><th>Cintura</th><th>Cuello</th><th>Cadera</th><th>%GC</th></tr></thead><tbody>';
     const profile = await api.getProfile();
     for (const s of sets) {
       let bf = '--';
@@ -207,7 +208,7 @@ export function init() {
         labels,
         datasets: [
           {
-            label: 'Weight',
+            label: strings.measurements.weight,
             data,
             borderColor: '#e94560',
             backgroundColor: 'transparent',
@@ -215,7 +216,7 @@ export function init() {
             tension: 0.3,
           },
           {
-            label: '7-day MA',
+            label: strings.measurements.sevenDayMa,
             data: movingAvg,
             borderColor: '#4ecdc4',
             backgroundColor: 'transparent',
@@ -316,7 +317,7 @@ export function init() {
       data: {
         labels,
         datasets: [{
-          label: 'Body Fat %',
+          label: strings.measurements.bodyFatPercent,
           data: bfData,
           borderColor: '#ffd166',
           backgroundColor: 'rgba(255, 209, 102, 0.1)',
@@ -347,13 +348,13 @@ export function init() {
     const el = document.getElementById('comparison-result');
 
     if (!before || !after) {
-      el.innerHTML = `<div class="empty-state"><p>No measurements found for one or both dates</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>${strings.measurements.noMeasurementsFound}</p></div>`;
       return;
     }
 
     const metrics = ['weight_kg', 'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
       'waist_cm', 'hips_cm', 'thighs_left_cm', 'thighs_right_cm', 'calves_left_cm', 'calves_right_cm'];
-    let html = '<table><thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Delta</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Métrica</th><th>Antes</th><th>Después</th><th>Delta</th></tr></thead><tbody>';
     for (const m of metrics) {
       const bVal = before[m];
       const aVal = after[m];

@@ -1,54 +1,56 @@
+import { strings } from '../locales/es.js';
+
 export function init() {
   const container = document.getElementById('view-profile');
   const api = window.electronAPI;
 
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">Profile &amp; Settings</h2>
+    <h2 style="margin-bottom:20px">${strings.profile.title}</h2>
     <div class="card">
-      <h2>User Profile</h2>
+      <h2>${strings.profile.userProfile}</h2>
       <form id="profile-form">
         <div class="form-group">
-          <label>Age</label>
+          <label>${strings.profile.age}</label>
           <input type="number" name="age" min="10" max="120" required />
         </div>
         <div class="form-group">
-          <label>Sex</label>
+          <label>${strings.profile.sex}</label>
           <select name="sex" required>
-            <option value="">Select...</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
+            <option value="">${strings.profile.select}</option>
+            <option value="male">${strings.profile.male}</option>
+            <option value="female">${strings.profile.female}</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Height (cm)</label>
+          <label>${strings.profile.height}</label>
           <input type="number" name="height_cm" min="100" max="250" step="0.1" required />
         </div>
         <div class="form-group">
-          <label>Weight (kg)</label>
+          <label>${strings.profile.weight}</label>
           <input type="number" name="weight_kg" min="20" max="300" step="0.1" required />
         </div>
         <div class="form-group">
-          <label>Activity Baseline</label>
+          <label>${strings.profile.activityBaseline}</label>
           <select name="activity_baseline" required>
-            <option value="">Select...</option>
-            <option value="sedentary">Sedentary</option>
-            <option value="light">Light</option>
-            <option value="moderate">Moderate</option>
-            <option value="active">Active</option>
-            <option value="very_active">Very Active</option>
+            <option value="">${strings.profile.select}</option>
+            <option value="sedentary">${strings.profile.sedentary}</option>
+            <option value="light">${strings.profile.light}</option>
+            <option value="moderate">${strings.profile.moderate}</option>
+            <option value="active">${strings.profile.active}</option>
+            <option value="very_active">${strings.profile.veryActive}</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Save Profile</button>
+        <button type="submit" class="btn btn-primary">${strings.profile.saveProfile}</button>
       </form>
     </div>
     <div class="card">
-      <h2>Data Management</h2>
-      <p style="margin-bottom:12px">Export all data as JSON for backup, or import from a previous backup.</p>
-      <button class="btn btn-secondary" id="btn-export" style="margin-right:8px">Export Data</button>
-      <button class="btn btn-secondary" id="btn-import">Import Data</button>
+      <h2>${strings.profile.dataManagement}</h2>
+      <p style="margin-bottom:12px">${strings.profile.dataManagementDesc}</p>
+      <button class="btn btn-secondary" id="btn-export" style="margin-right:8px">${strings.profile.exportData}</button>
+      <button class="btn btn-secondary" id="btn-import">${strings.profile.importData}</button>
     </div>
     <div class="card" id="profile-display" style="display:none">
-      <h2>Current Profile</h2>
+      <h2>${strings.profile.currentProfile}</h2>
       <div id="profile-info"></div>
     </div>
   `;
@@ -76,11 +78,11 @@ export function init() {
     if (profile) {
       display.style.display = 'block';
       info.innerHTML = `
-        <p>Age: ${profile.age}</p>
-        <p>Sex: ${profile.sex}</p>
-        <p>Height: ${profile.height_cm} cm</p>
-        <p>Weight: ${profile.weight_kg} kg</p>
-        <p>Activity: ${profile.activity_baseline}</p>
+        <p>${strings.profile.age}: ${profile.age}</p>
+        <p>${strings.profile.sex}: ${profile.sex === 'male' ? strings.profile.male : strings.profile.female}</p>
+        <p>${strings.profile.height}: ${profile.height_cm} cm</p>
+        <p>${strings.profile.weight}: ${profile.weight_kg} kg</p>
+        <p>${strings.profile.activityBaseline}: ${profile.activity_baseline}</p>
       `;
     }
   }
