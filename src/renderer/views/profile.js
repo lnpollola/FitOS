@@ -5,7 +5,7 @@ export function init() {
   const api = window.electronAPI;
 
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.profile.title}</h2>
+    <h2 class="view-title">${strings.profile.title}</h2>
     <div class="card">
       <h2>${strings.profile.userProfile}</h2>
       <form id="profile-form">

@@ -3,7 +3,7 @@ import { strings } from '../locales/es.js';
 export function init() {
   const container = document.getElementById('view-energy');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.energy.title}</h2>
+    <h2 class="view-title">${strings.energy.title}</h2>
     <div class="card">
       <h2>${strings.energy.tdeeBreakdown}</h2>
       <div id="tdee-breakdown"><div class="empty-state"><p>${strings.energy.tdeeEmpty}</p></div></div>
@@ -59,7 +59,7 @@ export function init() {
       weeklyEl.innerHTML = `
         <p>${strings.energy.netBalance}: <strong>${weekly.net_balance > 0 ? '+' : ''}${weekly.net_balance.toFixed(0)} kcal</strong></p>
         <p>${strings.energy.daysLogged}: ${weekly.days_logged} / 7</p>
-        <p>${weekly.days_logged < 5 ? `<span style="color:#e94560">${strings.energy.warningFewDays}</span>` : ''}</p>
+        <p>${weekly.days_logged < 5 ? `<span style="color:var(--danger)">${strings.energy.warningFewDays}</span>` : ''}</p>
       `;
     }
   }

@@ -3,7 +3,7 @@ import { strings } from '../locales/es.js';
 export function init() {
   const container = document.getElementById('view-energy');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.adaptive.title}</h2>
+    <h2 class="view-title">${strings.adaptive.title}</h2>
     <div class="card">
       <h2>${strings.adaptive.targetPace}</h2>
       <div class="form-group">
@@ -85,13 +85,13 @@ export function init() {
       <p>${strings.adaptive.targetDailyDeficit}: <strong>${targetDeficit.toFixed(0)} kcal</strong></p>
       <p>${strings.adaptive.targetDailyIntake}: <strong>${targetIntake.toFixed(0)} kcal</strong></p>
       <p>${strings.adaptive.safeMinimum}: <strong>${safeMin} kcal</strong></p>
-      <p>${strings.adaptive.status}: <strong style="color:${isSafe ? '#4ecdc4' : '#e94560'}">${isSafe ? strings.adaptive.statusSafe : strings.adaptive.statusBelowMin}</strong></p>
+      <p>${strings.adaptive.status}: <strong style="color:${isSafe ? 'var(--success)' : 'var(--danger)'}">${isSafe ? strings.adaptive.statusSafe : strings.adaptive.statusBelowMin}</strong></p>
     `;
 
     if (targetIntake < safeMin) {
       const maxDeficit = maintenance - safeMin;
       const maxPace = (maxDeficit * 7) / deficitPerKg;
-      html += `<p style="color:#e94560;margin-top:8px">${strings.adaptive.suggestedMaxPace}: ${Math.max(0, maxPace).toFixed(2)} ${strings.adaptive.kgPerWeek}</p>`;
+      html += `<p style="color:var(--danger);margin-top:8px">${strings.adaptive.suggestedMaxPace}: ${Math.max(0, maxPace).toFixed(2)} ${strings.adaptive.kgPerWeek}</p>`;
     }
 
     el.innerHTML = html;
@@ -121,7 +121,7 @@ export function init() {
       <p>${strings.adaptive.trendWeight}: <strong>${trendWeight.toFixed(1)} kg</strong></p>
       <p>${strings.adaptive.actualLossRate}: <strong>${Math.abs(actualRate).toFixed(2)} ${strings.adaptive.kgPerWeek}</strong></p>
       <p>${strings.adaptive.target}: <strong>${pace} ${strings.adaptive.kgPerWeek}</strong></p>
-      <p>${strings.adaptive.adherence}: <strong style="color:${onTrack ? '#4ecdc4' : '#e94560'}">${onTrack ? strings.adaptive.onTrack : strings.adaptive.needsAdjustment}</strong></p>
+      <p>${strings.adaptive.adherence}: <strong style="color:${onTrack ? 'var(--success)' : 'var(--danger)'}">${onTrack ? strings.adaptive.onTrack : strings.adaptive.needsAdjustment}</strong></p>
     `;
   }
 
@@ -159,7 +159,7 @@ export function init() {
     if (bfFirst !== null && bfLast !== null) {
       html += `<p>${strings.adaptive.bodyFat}: ${bfFirst.toFixed(1)}% → ${bfLast.toFixed(1)}%</p>`;
     }
-    html += `<p>${strings.adaptive.status}: <strong style="color:${isRecomp ? '#4ecdc4' : '#a0a0b0'}">${isRecomp ? strings.adaptive.recompDetected : strings.adaptive.noRecomp}</strong></p>`;
+    html += `<p>${strings.adaptive.status}: <strong style="color:${isRecomp ? 'var(--success)' : 'var(--text-secondary)'}">${isRecomp ? strings.adaptive.recompDetected : strings.adaptive.noRecomp}</strong></p>`;
 
     el.innerHTML = html;
   }
@@ -216,7 +216,7 @@ export function init() {
         </div>
       `;
     } else {
-      html += `<p style="color:#4ecdc4;margin-top:8px">${strings.adaptive.adjustmentApplied}</p>`;
+      html += `<p style="color:var(--success);margin-top:8px">${strings.adaptive.adjustmentApplied}</p>`;
     }
 
     el.innerHTML = html;
@@ -234,7 +234,7 @@ export function init() {
           deficitGap,
         }));
         loadHistory();
-        el.innerHTML = `<p style="color:#4ecdc4">${strings.adaptive.adjustmentApplied}</p>`;
+        el.innerHTML = `<p style="color:var(--success)">${strings.adaptive.adjustmentApplied}</p>`;
       });
     }
 

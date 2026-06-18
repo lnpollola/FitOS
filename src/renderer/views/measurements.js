@@ -4,11 +4,11 @@ import { strings } from '../locales/es.js';
 export function init() {
   const container = document.getElementById('view-measurements');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.measurements.title}</h2>
+    <h2 class="view-title">${strings.measurements.title}</h2>
     <div class="card">
       <h2>${strings.measurements.fullEntry}</h2>
-      <form id="measurement-form" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-        <div class="form-group" style="grid-column:span 3">
+      <form id="measurement-form" class="form-row-3">
+        <div class="form-group form-row-full">
           <label>${strings.measurements.date}</label>
           <input type="date" name="date" required />
         </div>
@@ -22,14 +22,14 @@ export function init() {
           <label>${strings.measurements.weight}</label>
           <input type="number" name="weight_kg" min="20" max="300" step="0.1" />
         </div>
-        <div style="grid-column:span 3">
+        <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.measurements.saveMeasurement}</button>
         </div>
       </form>
     </div>
     <div class="card">
       <h2>${strings.measurements.quickWeight}</h2>
-      <form id="weight-form" style="display:flex;gap:12px;align-items:end">
+      <form id="weight-form" class="flex-row" style="align-items:end">
         <div class="form-group">
           <label>${strings.measurements.date}</label>
           <input type="date" name="date" required />
@@ -58,7 +58,7 @@ export function init() {
       <canvas id="measurement-chart" height="250"></canvas>
       <div style="margin-top:12px">
         <label style="font-size:13px;color:var(--text-secondary);margin-right:8px">${strings.measurements.metric}:</label>
-        <select id="trend-metric" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)">
+        <select id="trend-metric" style="padding:6px 10px">
           <option value="waist_cm">Cintura</option>
           <option value="chest_cm">Pecho</option>
           <option value="neck_cm">Cuello</option>
@@ -210,16 +210,17 @@ export function init() {
           {
             label: strings.measurements.weight,
             data,
-            borderColor: '#e94560',
+            borderColor: '#0D9488',
             backgroundColor: 'transparent',
             pointRadius: 3,
+            pointBackgroundColor: '#0D9488',
             tension: 0.3,
           },
           {
             label: strings.measurements.sevenDayMa,
             data: movingAvg,
-            borderColor: '#4ecdc4',
-            backgroundColor: 'transparent',
+            borderColor: '#14B8A6',
+            backgroundColor: 'rgba(20, 184, 166, 0.05)',
             borderDash: [5, 5],
             pointRadius: 0,
             tension: 0.3,
@@ -229,10 +230,10 @@ export function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a0a0b0' } } },
+        plugins: { legend: { labels: { color: '#64748B' } } },
         scales: {
-          y: { ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
-          x: { ticks: { color: '#a0a0b0', maxTicksLimit: 10 } },
+          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
         },
       },
     });
@@ -262,8 +263,8 @@ export function init() {
         datasets: [{
           label: metric.replace(/_/g, ' '),
           data,
-          borderColor: '#e94560',
-          backgroundColor: 'rgba(233, 69, 96, 0.1)',
+          borderColor: '#0D9488',
+          backgroundColor: 'rgba(13, 148, 136, 0.08)',
           fill: true,
           tension: 0.3,
         }],
@@ -271,10 +272,10 @@ export function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a0a0b0' } } },
+        plugins: { legend: { labels: { color: '#64748B' } } },
         scales: {
-          y: { ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
-          x: { ticks: { color: '#a0a0b0', maxTicksLimit: 10 } },
+          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
         },
       },
     });
@@ -319,8 +320,8 @@ export function init() {
         datasets: [{
           label: strings.measurements.bodyFatPercent,
           data: bfData,
-          borderColor: '#ffd166',
-          backgroundColor: 'rgba(255, 209, 102, 0.1)',
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.08)',
           fill: true,
           tension: 0.3,
         }],
@@ -328,10 +329,10 @@ export function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a0a0b0' } } },
+        plugins: { legend: { labels: { color: '#64748B' } } },
         scales: {
-          y: { ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
-          x: { ticks: { color: '#a0a0b0', maxTicksLimit: 10 } },
+          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
         },
       },
     });
@@ -361,7 +362,7 @@ export function init() {
       if (bVal != null && aVal != null) {
         const delta = aVal - bVal;
         const sign = delta > 0 ? '+' : '';
-        const cls = m.includes('waist') || m.includes('weight') ? (delta > 0 ? 'style="color:#e94560"' : 'style="color:#4ecdc4"') : '';
+        const cls = m.includes('waist') || m.includes('weight') ? (delta > 0 ? 'style="color:var(--danger)"' : 'style="color:var(--success)"') : '';
         html += `<tr><td>${m.replace(/_/g, ' ')}</td><td>${bVal}</td><td>${aVal}</td><td ${cls}>${sign}${delta.toFixed(1)}</td></tr>`;
       }
     }
