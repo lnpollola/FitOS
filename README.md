@@ -1,56 +1,99 @@
-# 📱 PersonalPollo
+# FitOS: adaptive nutrition and training companion
 
-Aplicación móvil para seguimiento de salud, nutrición y entrenamiento físico.
+## Intent
 
-## 🎯 Objetivos
+Build a mobile-first application that unifies wearable activity data, nutrition intake, and strength training plans into a single adaptive system for fat-loss and body recomposition.
 
-Esta aplicación está diseñada para ayudarte a:
+The product should help a user understand:
 
-### 🍽️ **Nutrición y Dietas**
-- Ingresar dietas en formato PDF con cálculo automático de calorías, grasas y métricas nutricionales importantes
-- Análisis de composición nutricional detallado
+- how much energy they expend each day
+- how much energy they ingest from meals and diet plans
+- whether they are actually maintaining a calorie deficit
+- how their training load, recovery, and nutrition interact over time
 
-### ⏱️ **Seguimiento Diario**
-- Integración con el reloj para tomar datos del dashboard
-- Registro de actividad física y calorías quemadas vs. ingestadas
-- Dashboard interactivo con visualización de progreso
+The application should not be just a calorie tracker. It should act as a guided decision layer that converts raw health data into weekly plan adjustments.
 
-### 🎯 **Control de Peso**
-- Adaptación de planes nutricionales con déficit calórico personalizado
-- Herramientas para pérdida de peso efectiva y saludable
+## Problem
 
-### 💪 **Entrenamiento Físico**
-- Planes de fuerza con máquinas, pesos y rutinas personalizadas
-- Seguimiento de progreso en entrenamientos
-- Rutinas estructuradas para diferentes objetivos
+Users typically have fragmented health data:
 
-## 🌐 **Características Técnicas**
+- wearable data lives in the apple watch data vendor app
+- nutrition plans live in PDF files or chats
+- gym routines live in notes, spreadsheets, or coaches' messages
+- weight-loss decisions are made manually without a reliable energy balance model
 
-- Aplicación móvil optimizada para dispositivos celulares
-- Base de datos en la nube para integración entre dispositivos
-- Sincronización automática de datos
-- Interfaz intuitiva y fácil de usar
+This fragmentation makes it hard to answer simple questions:
 
-## 📋 **Estado del Proyecto**
+- Am I really in a deficit?
+- Am I eating according to my plan?
+- Is my training aligned with my recovery and goal?
+- Should calories, macros, or training load change this week?
 
-Este es el repositorio inicial del proyecto. Se están desarrollando las siguientes funcionalidades:
+## Vision
 
-1. ✅ Estructura básica del proyecto
-2. ⏳ Desarrollo de módulo de integración con reloj
-3. ⏳ Implementación de análisis de PDFs dietéticos
-4. ⏳ Sistema de cálculo calórico y nutricional
-5. ⏳ Adaptador de planes para déficit calórico
-6. ⏳ Módulo de seguimiento de actividad física
-7. ⏳ Planes de fuerza personalizados
+Create a cloud-connected mobile app that:
 
-## 🛠️ **Tecnologías**
+1. syncs wearable and dashboard data
+2. parses diet PDFs into meals, calories, fats, protein, carbs, and other important nutrition metrics
+3. estimates calories burned from daily activity and exercise
+4. compares burned vs ingested calories over time
+5. adapts the plan toward sustainable weight loss with a controlled deficit
+6. stores strength plans, machines, loads, routines, and progress history
+7. supports coach-guided plans and future collaborative editing
 
-- [Especificar tecnologías a utilizar]
+## MVP scope
 
-## 👤 **Autor(es)**
+### 1. Activity ingestion
+- Import daily metrics from apple watch/dashboard integrations
+- Normalize steps, heart rate, active calories, training sessions, sleep, and weight where available
+- Store historical daily aggregates
 
-- PersonalPollo Team
+### 2. Nutrition ingestion
+- Upload PDF diet plans
+- Extract meals, portions, kcal, protein, carbs, fats, and fiber when present
+- Detect missing nutrition fields and flag low-confidence parsing
+- Allow manual correction after extraction
 
----
+### 3. Energy balance
+- Compute estimated total expenditure
+- Compute intake from planned meals and logged meals
+- Show daily and weekly burned vs ingested balance
+- Explain whether the user is in surplus, maintenance, or deficit
 
-*Desarrollado con ❤️ para mejorar tu salud y bienestar*
+### 4. Adaptive fat-loss planning
+- Define target weight-loss pace
+- Recommend an initial calorie deficit
+- Adjust target intake weekly using trend weight, adherence, and activity
+- Prevent aggressive reductions when recovery or training load worsens
+
+### 5. Strength training
+- Store routines by day
+- Track machines, exercises, sets, reps, load, and progression
+- Associate routines with a broader objective such as fat loss with strength retention
+
+### 6. Mobile + cloud
+- Mobile app as the main experience
+- Cloud database for cross-device sync and long-term follow-up
+- User timeline with nutrition, activity, weight, and training history
+
+## Non-goals for v1
+- Full medical diagnosis
+- Real-time coaching chatbot as the main interface
+- Computer vision meal recognition
+- Advanced hormone or blood-marker interpretation
+- Full marketplace for coaches
+
+## Product principles
+- Behavior-first recommendations, not just dashboards
+- Human-correctable data extraction
+- Explainable calorie and adaptation logic
+- Weekly plan review over noisy day-to-day fluctuations
+- Safe defaults for deficit and load progression
+
+## Key risks to explore
+- Wearable integration quality and vendor fragmentation
+- Accuracy of PDF nutrition extraction
+- Differences between estimated and actual calorie expenditure
+- Adherence vs prescribed meal plan
+- Privacy and health-data compliance requirements
+- How to model coach-authored training plans cleanly
