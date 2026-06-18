@@ -15,7 +15,7 @@
   },
   "build": {
     "appId": "com.personalpollo.app",
-    "productName": "Personal Pollo",
+    "productName": "FitOS",
     "directories": {
       "output": "release"
     },

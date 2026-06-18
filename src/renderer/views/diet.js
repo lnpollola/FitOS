@@ -3,7 +3,7 @@ import { strings } from '../locales/es.js';
 export function init() {
   const container = document.getElementById('view-diet');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.diet.title}</h2>
+    <h2 class="view-title">${strings.diet.title}</h2>
     <div class="card">
       <h2>${strings.diet.mealTemplates}</h2>
       <div id="meal-templates"><div class="empty-state"><p>${strings.diet.noMealTemplates}</p><div class="sub">${strings.diet.noMealTemplatesSub}</div></div></div>
@@ -19,8 +19,8 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.diet.foodItemManager}</h2>
-      <form id="food-form" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="form-group" style="grid-column:span 2">
+      <form id="food-form" class="form-row" style="margin-bottom:16px">
+         <div class="form-group form-row-full">
           <label>${strings.diet.foodName}</label>
           <input type="text" name="name" required />
         </div>
@@ -40,14 +40,14 @@ export function init() {
           <label>${strings.diet.fatPer100g}</label>
           <input type="number" name="fat_per_100g" min="0" step="0.1" required />
         </div>
-        <div style="grid-column:span 2">
+        <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.diet.addFoodItem}</button>
         </div>
       </form>
       <h3>${strings.diet.learnNewFood}</h3>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${strings.diet.learnNewFoodDesc}</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" id="learn-food-name" placeholder="e.g. Quinoa Burger" style="flex:1;padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)" />
+        <input type="text" id="learn-food-name" placeholder="e.g. Quinoa Burger" class="form-group" style="flex:1;margin-bottom:0" />
         <button class="btn btn-secondary" id="btn-suggest">${strings.diet.suggest}</button>
       </div>
       <div id="learn-suggestion" style="display:none">
@@ -61,7 +61,7 @@ export function init() {
       </div>
       <h3>${strings.diet.foodDatabase}</h3>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <select id="food-category-filter" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)">
+        <select id="food-category-filter" style="padding:6px 10px">
           <option value="">${strings.diet.categoryFilter || 'Todas las categorías'}</option>
           <option value="breads">Pan/Cereales</option>
           <option value="proteins">Proteínas</option>
@@ -70,7 +70,7 @@ export function init() {
           <option value="vegetables">Verduras</option>
           <option value="drinks">Bebidas</option>
         </select>
-        <input type="text" id="food-search" placeholder="${strings.diet.search || 'Buscar...'}" style="flex:1;padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)" />
+        <input type="text" id="food-search" placeholder="${strings.diet.search || 'Buscar...'}" style="flex:1;padding:6px 10px" />
       </div>
       <div id="food-list"><div class="empty-state"><p>${strings.diet.noFoodItems}</p></div></div>
     </div>
@@ -86,10 +86,10 @@ export function init() {
       </div>
       <button class="btn btn-secondary" id="btn-auto-create-plan" style="margin-bottom:12px">Auto-crear desde plantillas</button>
       <div id="daily-plan-meals"><div class="empty-state"><p>${strings.diet.selectDate}</p></div></div>
-      <div id="daily-plan-totals" style="display:none;margin-top:12px;padding:12px;background:var(--bg-secondary);border-radius:8px">
+      <div id="daily-plan-totals" style="display:none;margin-top:12px;padding:14px 16px;background:var(--bg-tertiary);border-radius:var(--radius)">
         <strong>${strings.diet.total}:</strong>
-        <span id="plan-total-kcal" style="color:#e94560">0 kcal</span> |
-        <span id="plan-total-protein" style="color:#4ecdc4">P: 0g</span> |
+        <span id="plan-total-kcal" style="color:var(--danger)">0 kcal</span> |
+        <span id="plan-total-protein" style="color:var(--accent)">P: 0g</span> |
         <span id="plan-total-carbs">C: 0g</span> |
         <span id="plan-total-fat">G: 0g</span>
       </div>
@@ -168,12 +168,12 @@ export function init() {
     dishFormContainer.style.display = 'block';
     dishFormContainer.innerHTML = `
       <h3>${editDish ? strings.diet.editDish : strings.diet.createDish}</h3>
-      <form id="dish-form" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-group" style="grid-column:span 2">
+      <form id="dish-form" class="form-row">
+         <div class="form-group form-row-full">
           <label>${strings.diet.name}</label>
           <input type="text" id="dish-name" value="${editDish ? editDish.name : ''}" required />
         </div>
-        <div class="form-group" style="grid-column:span 2">
+         <div class="form-group form-row-full">
           <label>${strings.diet.description}</label>
           <input type="text" id="dish-desc" value="${editDish ? (editDish.description || '') : ''}" />
         </div>
@@ -181,7 +181,7 @@ export function init() {
           <label>${strings.diet.servings}</label>
           <input type="number" id="dish-servings" value="${editDish ? editDish.servings : 1}" min="1" step="0.5" />
         </div>
-        <div style="grid-column:span 2;display:flex;gap:8px">
+        <div class="form-row-full" style="display:flex;gap:8px">
           <button type="submit" class="btn btn-primary">${editDish ? strings.general.save : strings.diet.confirmSave}</button>
           <button type="button" class="btn btn-secondary" id="btn-cancel-dish">${strings.general.cancel}</button>
         </div>
@@ -190,8 +190,8 @@ export function init() {
         <h4>${strings.diet.ingredients}</h4>
         <div id="dish-ingredients-list"></div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <select id="ingredient-food-select" style="flex:1;padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)"></select>
-          <input type="number" id="ingredient-grams" placeholder="Gramos" style="width:80px;padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)" />
+          <select id="ingredient-food-select" style="flex:1;padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)"></select>
+          <input type="number" id="ingredient-grams" placeholder="Gramos" style="width:80px;padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" />
           <button class="btn btn-secondary" id="btn-add-ingredient">Añadir</button>
         </div>
       </div>
@@ -301,15 +301,15 @@ export function init() {
       const ingredients = await api.getDishIngredients(d.id);
       const ingList = ingredients.map(i => `${i.food_name} (${i.grams}g)`).join(', ');
       html += `
-        <div class="dish-card" style="border:1px solid var(--border-color);border-radius:8px;padding:12px;background:var(--bg-secondary)">
+        <div class="dish-card" style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg-secondary)">
           <div style="display:flex;justify-content:space-between;align-items:start">
             <strong>${d.name}</strong>
             <button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-dish="${d.id}">✕</button>
           </div>
           ${d.description ? `<div style="font-size:12px;color:var(--text-secondary);margin:4px 0">${d.description}</div>` : ''}
           <div style="font-size:13px;margin-top:6px">
-            <span style="color:#e94560">${(d.total_kcal || 0).toFixed(0)} kcal</span> |
-            <span style="color:#4ecdc4">P: ${(d.total_protein || 0).toFixed(1)}g</span> |
+            <span class="data-value">${(d.total_kcal || 0).toFixed(0)} kcal</span> |
+            <span style="color:var(--success)">P: ${(d.total_protein || 0).toFixed(1)}g</span> |
             <span>C: ${(d.total_carbs || 0).toFixed(1)}g</span> |
             <span>G: ${(d.total_fat || 0).toFixed(1)}g</span>
           </div>
@@ -444,7 +444,7 @@ export function init() {
       hasEntries = hasEntries || entries.length > 0;
 
       html += `
-        <div class="meal-card" style="border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg-secondary)">
+        <div class="meal-card" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg-secondary)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:14px">${tmpl.name}</strong>
             ${entries.length > 0 ? `<span id="meal-total-${tmpl.id}" style="font-size:12px;color:var(--text-secondary)"></span>` : ''}
@@ -461,8 +461,8 @@ export function init() {
               return `
                 <div class="meal-entry" style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
                   <span style="flex:1;font-size:13px">${entry.food_name}</span>
-                  <input type="number" value="${entry.grams}" step="5" min="0" data-entry-id="${entry.id}" class="gram-input meal-gram-input" style="width:60px;padding:2px 6px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-size:12px" />
-                  <span style="font-size:12px;width:50px;text-align:right;color:#e94560">${kcal.toFixed(0)}</span>
+                  <input type="number" value="${entry.grams}" step="5" min="0" data-entry-id="${entry.id}" class="gram-input meal-gram-input" style="width:60px;padding:2px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px" />
+                   <span class="data-value" style="font-size:12px;width:50px;text-align:right">${kcal.toFixed(0)}</span>
                   <span style="font-size:11px;color:var(--text-secondary);width:80px;text-align:right">P:${protein.toFixed(1)} C:${carbs.toFixed(1)} G:${fat.toFixed(1)}</span>
                   <button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-hide-food-id="${entry.food_item_id}">${strings.diet.hide}</button>
                 </div>
@@ -470,10 +470,10 @@ export function init() {
             }).join('')}
           </div>
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-            <select class="swap-food-select" data-meal-template-id="${tmpl.id}" data-meal-component-id="" style="font-size:12px;padding:3px 6px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);max-width:150px">
+            <select class="swap-food-select" data-meal-template-id="${tmpl.id}" data-meal-component-id="" style="font-size:12px;padding:3px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);max-width:150px">
               <option value="">${strings.diet.suggest || 'Cambiar alimento...'}</option>
             </select>
-            <select class="dish-option-select" data-meal-template-id="${tmpl.id}" style="font-size:12px;padding:3px 6px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);max-width:150px">
+            <select class="dish-option-select" data-meal-template-id="${tmpl.id}" style="font-size:12px;padding:3px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);max-width:150px">
               <option value="">${strings.diet.linkToMeal || 'Añadir plato...'}</option>
             </select>
           </div>
@@ -662,10 +662,10 @@ export function init() {
     let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
     for (const f of filtered) {
       html += `
-        <div style="border:1px solid var(--border-color);border-radius:8px;padding:10px;background:var(--bg-secondary)">
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg-secondary)">
           <div style="font-weight:500;margin-bottom:4px">${f.name}</div>
           <div style="font-size:12px;color:var(--text-secondary)">
-            <span style="color:#e94560">${f.kcal_per_100g} kcal</span>
+            <span class="data-value">${f.kcal_per_100g} kcal</span>
           </div>
           <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">
             P: ${f.protein_per_100g}g | C: ${f.carbs_per_100g}g | G: ${f.fat_per_100g}g

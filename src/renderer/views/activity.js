@@ -18,7 +18,7 @@ const SESSION_TEMPLATES = {
 export function init() {
   const container = document.getElementById('view-activity');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.activity.title}</h2>
+    <h2 class="view-title">${strings.activity.title}</h2>
     <div class="card">
       <h2>${strings.activity.importAppleHealth}</h2>
       <p style="margin-bottom:12px">${strings.activity.importCsvDesc}</p>
@@ -28,8 +28,8 @@ export function init() {
         <span id="healthsync-status" style="font-size:13px;color:var(--text-secondary)"></span>
       </div>
       <div id="health-import-progress" style="display:none;margin-top:12px">
-        <div style="background:var(--bg-primary);border-radius:4px;height:20px;overflow:hidden">
-          <div id="health-progress-bar" style="width:0%;height:100%;background:#4ecdc4;transition:width 0.3s"></div>
+        <div style="background:var(--bg-tertiary);border-radius:4px;height:20px;overflow:hidden">
+          <div id="health-progress-bar" style="width:0%;height:100%;background:var(--accent);transition:width 0.3s"></div>
         </div>
         <p id="health-progress-text" style="font-size:13px;color:var(--text-secondary);margin-top:4px"></p>
       </div>
@@ -50,7 +50,7 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.activity.manualEntry}</h2>
-      <form id="activity-form" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <form id="activity-form" class="form-row">
         <div class="form-group">
           <label>${strings.activity.date}</label>
           <input type="date" name="date" required />
@@ -75,14 +75,14 @@ export function init() {
           <label>${strings.activity.sleepHours}</label>
           <input type="number" name="sleep_hours" min="0" max="24" step="0.1" />
         </div>
-        <div style="grid-column:span 2">
+        <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.activity.saveActivity}</button>
         </div>
       </form>
     </div>
     <div class="card">
       <h2>${strings.activity.sportActivity}</h2>
-      <form id="sport-form" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <form id="sport-form" class="form-row">
         <div class="form-group">
           <label>${strings.activity.date}</label>
           <input type="date" name="date" required />
@@ -112,7 +112,7 @@ export function init() {
           <label>${strings.activity.durationMin}</label>
           <input type="number" name="duration_minutes" min="0" step="1" />
         </div>
-        <div style="grid-column:span 2">
+        <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.activity.saveSportActivity}</button>
         </div>
       </form>
@@ -138,9 +138,9 @@ export function init() {
 
   function renderSessionCards() {
     cardsContainer.innerHTML = Object.entries(SESSION_TEMPLATES).map(([type, tpl]) => `
-      <div class="session-card" data-sport-type="${type}" style="cursor:pointer;border:2px solid ${selectedTypes.has(type) ? '#4ecdc4' : 'var(--border-color)'};border-radius:8px;padding:12px;background:var(--bg-secondary);transition:border-color 0.2s">
+      <div class="session-card" data-sport-type="${type}" style="cursor:pointer;border:2px solid ${selectedTypes.has(type) ? 'var(--accent)' : 'var(--border)'};border-radius:8px;padding:12px;background:var(--bg-secondary);transition:border-color 0.2s">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <input type="checkbox" ${selectedTypes.has(type) ? 'checked' : ''} style="width:18px;height:18px;accent-color:#4ecdc4" />
+          <input type="checkbox" ${selectedTypes.has(type) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--accent)" />
           <strong>${tpl.name}</strong>
         </div>
         <div style="font-size:12px;color:var(--text-secondary)">
@@ -164,7 +164,7 @@ export function init() {
         } else {
           selectedTypes.delete(type);
         }
-        card.style.borderColor = e.target.checked ? '#4ecdc4' : 'var(--border-color)';
+        card.style.borderColor = e.target.checked ? 'var(--accent)' : 'var(--border)';
         batchActions.style.display = selectedTypes.size > 0 ? 'block' : 'none';
       });
     });
@@ -230,7 +230,7 @@ export function init() {
     const hasHealthsync = await api.checkHealthsync();
     if (!hasHealthsync) {
       resultEl.style.display = 'block';
-      resultEl.innerHTML = `<p style="color:#e94560">HealthSync no encontrado. Instálalo primero.</p>`;
+      resultEl.innerHTML = `<p style="color:var(--danger)">HealthSync no encontrado. Instálalo primero.</p>`;
       return;
     }
 
@@ -246,10 +246,10 @@ export function init() {
 
     resultEl.style.display = 'block';
     if (result.errors && result.errors.length > 0) {
-      resultEl.innerHTML = `<p style="color:#e94560">${result.errors.join(', ')}</p>`;
+      resultEl.innerHTML = `<p style="color:var(--danger)">${result.errors.join(', ')}</p>`;
     } else {
       resultEl.innerHTML = `
-        <p style="color:#4ecdc4">${strings.activity.importComplete}</p>
+        <p style="color:var(--success)">${strings.activity.importComplete}</p>
         <p style="font-size:13px">${strings.activity.recordsCreated}: ${result.created} | ${strings.activity.recordsSkipped}: ${result.skipped}</p>
       `;
     }
@@ -327,8 +327,8 @@ export function init() {
         datasets: [{
           label: strings.activity.calories,
           data: summary.map(s => s.total_calories),
-          backgroundColor: '#e94560',
-          borderRadius: 4,
+          backgroundColor: '#0D9488',
+          borderRadius: 6,
         }],
       },
       options: {
@@ -336,8 +336,8 @@ export function init() {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
-          x: { ticks: { color: '#a0a0b0' } },
+          y: { beginAtZero: true, ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+          x: { ticks: { color: '#64748B' } },
         },
       },
     });

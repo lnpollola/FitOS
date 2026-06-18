@@ -42,11 +42,11 @@ function validateField(input) {
   else if (error) {
     const el = document.createElement('div');
     el.className = 'field-error';
-    el.style.cssText = 'color:#e94560;font-size:12px;margin-top:2px';
+    el.style.cssText = 'color:var(--danger);font-size:12px;margin-top:2px';
     el.textContent = error;
     input.parentElement.appendChild(el);
   }
 
-  input.style.borderColor = error ? '#e94560' : '';
+  input.style.borderColor = error ? 'var(--danger)' : '';
   return !error;
 }

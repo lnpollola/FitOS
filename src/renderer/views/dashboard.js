@@ -4,7 +4,7 @@ export function init() {
   const container = document.getElementById('view-dashboard');
   const api = window.electronAPI;
 
-  container.innerHTML = `<h2 style="margin-bottom:20px">${strings.dashboard.title}</h2><div class="dashboard-grid" id="dashboard-grid"></div>`;
+  container.innerHTML = `<h2 class="view-title">${strings.dashboard.title}</h2><div class="dashboard-grid" id="dashboard-grid"></div>`;
 
   async function render() {
     const grid = document.getElementById('dashboard-grid');

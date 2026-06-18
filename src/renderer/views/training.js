@@ -4,13 +4,13 @@ import { strings } from '../locales/es.js';
 export function init() {
   const container = document.getElementById('view-training');
   container.innerHTML = `
-    <h2 style="margin-bottom:20px">${strings.training.title}</h2>
+    <h2 class="view-title">${strings.training.title}</h2>
     <div class="card">
       <h2>${strings.training.frequency || 'Planes de Entrenamiento'}</h2>
       <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:12px">
         <div class="form-group">
           <label>${strings.training.frequency || 'Frecuencia'}</label>
-          <select id="frequency-select" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)">
+          <select id="frequency-select" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
             <option value="">${strings.training.daysPerWeek || 'Seleccionar días/semana'}</option>
             <option value="2">2 ${strings.training.daysPerWeek || 'días/semana'}</option>
             <option value="3">3 ${strings.training.daysPerWeek || 'días/semana'}</option>
@@ -26,7 +26,7 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.training.exerciseLibrary}</h2>
-      <form id="exercise-form" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <form id="exercise-form" class="form-row-3" style="margin-bottom:16px">
         <div class="form-group">
           <label>${strings.training.exerciseName}</label>
           <input type="text" name="name" required />
@@ -39,11 +39,11 @@ export function init() {
           <label>${strings.training.equipment}</label>
           <input type="text" name="equipment" />
         </div>
-        <div class="form-group" style="grid-column:span 3">
+        <div class="form-group form-row-full">
           <label>${strings.training.movementPattern}</label>
           <input type="text" name="movement_pattern" />
         </div>
-        <div style="grid-column:span 3">
+        <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.training.addExercise}</button>
         </div>
       </form>
@@ -51,7 +51,7 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.training.trainingRoutines}</h2>
-      <form id="routine-form" style="display:flex;gap:12px;align-items:end;margin-bottom:16px">
+      <form id="routine-form" class="flex-row" style="align-items:end;margin-bottom:16px">
         <div class="form-group">
           <label>${strings.training.routineName}</label>
           <input type="text" name="name" required />
@@ -62,7 +62,7 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.training.sessionLogging}</h2>
-      <form id="session-form" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <form id="session-form" class="form-row" style="margin-bottom:16px">
         <div class="form-group">
           <label>${strings.measurements?.date || 'Fecha'}</label>
           <input type="date" name="date" required />
@@ -152,7 +152,7 @@ export function init() {
 
     let html = '<p style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">Planes disponibles:</p>';
     for (const plan of matching) {
-      html += `<div style="padding:8px;border:1px solid var(--border-color);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      html += `<div style="padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
         <span><strong>${plan.name}</strong> (${plan.min_sessions}-${plan.max_sessions} días/semana)</span>
         <button class="btn btn-primary" style="padding:4px 12px;font-size:12px" data-activate-plan="${plan.id}">${strings.training.useThisPlan || 'Usar este Plan'}</button>
       </div>`;
@@ -170,17 +170,17 @@ export function init() {
           const exIds = day.exercise_ids ? day.exercise_ids.split(',').map(Number) : [];
           const dayExercises = exIds.map(id => exMap[id]).filter(Boolean);
           cardsHtml += `
-            <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;background:var(--bg-secondary)">
+            <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg-secondary)">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                 <strong>Día ${day.day_number}</strong>
-                <span style="font-size:12px;color:#e94560;padding:2px 8px;background:rgba(233,69,96,0.1);border-radius:4px">${day.focus_area}</span>
+                <span class="tag">${day.focus_area}</span>
               </div>
               <div style="font-size:12px;color:var(--text-secondary)">
                 ${dayExercises.map(ex => `
                   <div style="padding:2px 0">
                     <span>${ex.name}</span>
-                    ${ex.practical_examples ? `<span style="color:#ffd166;font-size:11px"> — ${ex.practical_examples}</span>` : ''}
-                    <span style="color:#a0a0b0;font-size:11px"> (${ex.muscle_group || ''}${ex.equipment ? `, ${ex.equipment}` : ''})</span>
+                    ${ex.practical_examples ? `<span style="font-size:11px"> — ${ex.practical_examples}</span>` : ''}
+                    <span class="text-muted" style="font-size:11px"> (${ex.muscle_group || ''}${ex.equipment ? `, ${ex.equipment}` : ''})</span>
                   </div>
                 `).join('')}
               </div>
@@ -248,8 +248,8 @@ export function init() {
                 <div style="background:var(--bg-primary);border-radius:12px;padding:20px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
                   <h3 style="margin-bottom:12px">${strings.training.addExercise_ || 'Añadir ejercicio'} — Día ${dayNum}</h3>
                   <div style="display:flex;gap:8px;margin-bottom:12px">
-                    <input type="text" id="picker-search" placeholder="Buscar..." style="flex:1;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)" />
-                    <select id="picker-muscle-filter" style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary)">
+                    <input type="text" id="picker-search" placeholder="Buscar..." style="flex:1;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" />
+                    <select id="picker-muscle-filter" style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
                       <option value="">${strings.training.muscleGroup}</option>
                       ${[...new Set(allExercises.map(e => e.muscle_group).filter(Boolean))].map(m => `<option value="${m}">${m}</option>`).join('')}
                     </select>
@@ -333,13 +333,13 @@ export function init() {
           const allExIds = [...exIds, ...complement];
           const dayExercises = allExIds.map(id => exMap[id]).filter(Boolean);
           cardsHtml += `
-            <div style="border:1px solid var(--border-color);border-radius:8px;padding:12px;background:var(--bg-secondary)">
+            <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg-secondary)">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                 <strong>Día ${day.day_number}</strong>
-                <span style="font-size:12px;color:#e94560;padding:2px 8px;background:rgba(233,69,96,0.1);border-radius:4px">${day.focus_area}</span>
+                <span class="tag">${day.focus_area}</span>
               </div>
               <div style="font-size:12px;color:var(--text-secondary)">
-                ${dayExercises.map(ex => `<div style="padding:2px 0"><span>${ex.name}</span>${ex.practical_examples ? `<span style="color:#ffd166;font-size:11px"> — ${ex.practical_examples}</span>` : ''}<span style="color:#a0a0b0;font-size:11px"> (${ex.muscle_group || ''}${ex.equipment ? `, ${ex.equipment}` : ''})</span></div>`).join('')}
+                ${dayExercises.map(ex => `<div style="padding:2px 0"><span>${ex.name}</span>${ex.practical_examples ? `<span class="text-warning" style="font-size:11px"> — ${ex.practical_examples}</span>` : ''}<span class="text-muted" style="font-size:11px"> (${ex.muscle_group || ''}${ex.equipment ? `, ${ex.equipment}` : ''})</span></div>`).join('')}
               </div>
               <div style="margin-top:8px;display:flex;gap:6px">
                 <button class="btn btn-primary" style="padding:3px 8px;font-size:11px" data-use-plan-day="${plan.id}" data-day-number="${day.day_number}">${strings.training.useThisPlan || 'Usar'}</button>
@@ -431,8 +431,8 @@ export function init() {
         datasets: [{
           label: strings.training.volumeLoad,
           data: volumes,
-          borderColor: '#e94560',
-          backgroundColor: 'rgba(233, 69, 96, 0.1)',
+          borderColor: '#0D9488',
+          backgroundColor: 'rgba(13, 148, 136, 0.08)',
           fill: true,
           tension: 0.3,
         }],
@@ -440,10 +440,10 @@ export function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a0a0b0' } } },
+        plugins: { legend: { labels: { color: '#64748B' } } },
         scales: {
-          y: { ticks: { color: '#a0a0b0' }, grid: { color: '#2a2a4e' } },
-          x: { ticks: { color: '#a0a0b0', maxTicksLimit: 10 } },
+          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
         },
       },
     });
@@ -473,7 +473,7 @@ export function init() {
     const volDelta = lastVolume - prevVolume;
     const volArrow = volDelta > 0 ? '▲' : volDelta < 0 ? '▼' : '―';
 
-    html += `<tr><td>Volumen</td><td>${prevVolume.toFixed(0)} kg</td><td>${lastVolume.toFixed(0)} kg</td><td style="color:${volDelta > 0 ? '#4ecdc4' : volDelta < 0 ? '#e94560' : '#a0a0b0'}">${volArrow} ${volDelta > 0 ? '+' : ''}${volDelta.toFixed(0)} kg</td></tr>`;
+    html += `<tr><td>Volumen</td><td>${prevVolume.toFixed(0)} kg</td><td>${lastVolume.toFixed(0)} kg</td><td style="color:${volDelta > 0 ? 'var(--success)' : volDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${volArrow} ${volDelta > 0 ? '+' : ''}${volDelta.toFixed(0)} kg</td></tr>`;
     html += '</tbody></table>';
     el.innerHTML = html;
   }
@@ -500,10 +500,10 @@ export function init() {
 
     let html = `
       <p>${strings.training.latestSession}: ${last.date} (${last.routine_name || strings.training.none})</p>
-      <p>${strings.training.volumeChange}: <strong style="color:${volumeChange > 0 ? '#4ecdc4' : volumeChange < 0 ? '#e94560' : '#a0a0b0'}">
+      <p>${strings.training.volumeChange}: <strong style="color:${volumeChange > 0 ? 'var(--success)' : volumeChange < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">
         ${volumeChange > 0 ? '+' : ''}${volumeChange.toFixed(1)}%
       </strong></p>
-      <p>${strings.training.status}: <strong style="color:${maintaining ? '#4ecdc4' : '#e94560'}">
+      <p>${strings.training.status}: <strong style="color:${maintaining ? 'var(--success)' : 'var(--danger)'}">
         ${maintaining ? strings.training.strengthMaintained : strings.training.strengthDecreasing}
       </strong></p>
     `;

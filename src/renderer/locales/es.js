@@ -9,7 +9,7 @@ export const strings = {
     training: 'Entrenamiento de Fuerza',
     profile: 'Perfil y Ajustes',
   },
-  appTitle: 'Personal Pollo',
+  appTitle: 'FitOS - Salud y Rendimiento',
 
   // Dashboard
   dashboard: {
