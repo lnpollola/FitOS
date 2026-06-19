@@ -22,20 +22,7 @@ App de escritorio local-first (**Electron + SQLite**) para unificar datos de **A
 
 ## Capturas de Pantalla
 
-> Para agregar capturas, coloca los archivos `.png` en `screenshots/` (ej: `screenshots/dashboard.png`) y haz commit.
-> Las rutas relativas funcionan automáticamente en GitHub cuando los archivos existen en el repo.
-
-| Vista | Archivo esperado | Descripción |
-|---|---|---|
-| Dashboard | `screenshots/dashboard.png` | Panel con balance, pasos, FC reposo, cards actividad |
-| Timeline | `screenshots/activity-timeline.png` | Línea de tiempo con sparklines y paginación |
-| Deporte KPIs | `screenshots/activity-sport-kpis.png` | KPIs deportivos y tabla ordenable |
-| Dieta | `screenshots/diet.png` | Plantillas de comidas y gestor de alimentos |
-| Balance | `screenshots/energy.png` | Desglose GET y balance diario/semanal |
-| Mediciones | `screenshots/measurements.png` | 13 gráficos de tendencia y formulario |
-| Tendencias | `screenshots/analytics.png` | 6 gráficos de salud y ranking |
-| Entrenamiento | `screenshots/training.png` | Biblioteca, sesiones y progresión |
-| Perfil | `screenshots/profile.png` | Perfil y métricas disponibles |
+*Próximamente — coloca archivos `screenshots/*.png` y haz commit para que aparezcan aquí.*
 
 ---
 
