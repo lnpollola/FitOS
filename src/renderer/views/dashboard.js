@@ -13,13 +13,26 @@ export function init() {
       return;
     }
 
-    const data = await api.getDashboardData();
+    const [appData, healthStats, hrDaily] = await Promise.all([
+      api.getDashboardData(),
+      api.getHealthStats().catch(() => null),
+      api.getHealthHeartRateDaily(1).catch(() => null),
+    ]);
+
+    const today = new Date().toISOString().split('T')[0];
+    const healthSummary = api.getHealthDailySummary ? await api.getHealthDailySummary(today, today).catch(() => null) : null;
+    const todaySteps = healthSummary?.ok && healthSummary.data?.length > 0 ? healthSummary.data[0].steps : null;
+    const todayKcal = healthSummary?.ok && healthSummary.data?.length > 0 ? healthSummary.data[0].kcal_activas : null;
+
+    const lastHR = hrDaily?.ok && hrDaily.data?.length > 0 ? hrDaily.data[0] : null;
+    const rhr = lastHR?.avg_bpm || healthStats?.data?.tables?.resting_heart_rate;
+
     const cards = [
-      { title: strings.dashboard.todayCalories, value: data?.todayCalories != null ? `${data.todayCalories} kcal` : '--', subtitle: strings.dashboard.plannedIntake },
-      { title: strings.dashboard.weekBalance, value: data?.weekBalance != null ? `${data.weekBalance > 0 ? '+' : ''}${data.weekBalance} kcal` : '--', subtitle: strings.dashboard.thisWeek },
-      { title: strings.dashboard.latestWeight, value: data?.latestWeight != null ? `${data.latestWeight} kg` : '--', subtitle: strings.dashboard.mostRecentEntry },
-      { title: strings.dashboard.measurementDelta, value: data?.measurementDelta != null ? `${data.measurementDelta > 0 ? '+' : ''}${data.measurementDelta} cm` : '--', subtitle: strings.dashboard.sinceLastMeasurement },
-      { title: strings.dashboard.nextWorkout, value: data?.nextWorkout || '--', subtitle: strings.dashboard.plannedTraining },
+      { title: strings.dashboard.todayCalories, value: appData?.todayCalories != null ? `${Math.round(appData.todayCalories)} kcal` : '--', subtitle: strings.dashboard.plannedIntake },
+      { title: strings.dashboard.weekBalance, value: appData?.weekBalance != null ? `${appData.weekBalance > 0 ? '+' : ''}${Math.round(appData.weekBalance)} kcal` : '--', subtitle: strings.dashboard.thisWeek },
+      { title: strings.dashboard.latestWeight, value: appData?.latestWeight != null ? `${appData.latestWeight} kg` : '--', subtitle: strings.dashboard.mostRecentEntry },
+      { title: strings.dashboard.dailySteps, value: todaySteps != null ? `${Math.round(todaySteps).toLocaleString()}` : '--', subtitle: strings.dashboard.healthLastUpdate },
+      { title: strings.dashboard.hrResting, value: rhr ? `${typeof rhr === 'number' ? rhr : '--'} bpm` : '--', subtitle: 'FC media hoy' },
     ];
 
     grid.innerHTML = cards.map(c => `

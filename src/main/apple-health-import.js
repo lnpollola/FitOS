@@ -93,121 +93,73 @@ function migrateHealthData(mainWindow) {
   };
 
   try {
-    // Steps → activity_days
     sendProgress('Importando pasos...');
-    const stepsTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='steps'").get();
-    if (stepsTable) {
-      const steps = healthDb.prepare('SELECT date, value FROM steps').all();
-      const insertDay = db.prepare(`
-        INSERT INTO activity_days (date, steps) VALUES (?, ?)
-        ON CONFLICT(date) DO UPDATE SET steps = excluded.steps
-      `);
-      for (const s of steps) {
-        try {
-          insertDay.run(s.date, parseInt(s.value) || 0);
-          results.created++;
-        } catch { results.skipped++; }
-      }
+    const hasSteps = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='steps'").get();
+    if (hasSteps) {
+      const steps = healthDb.prepare("SELECT date(start_date) as dia, SUM(value) as total FROM steps GROUP BY dia").all();
+      const upsert = db.prepare("INSERT INTO activity_days (date, steps) VALUES (@dia, @total) ON CONFLICT(date) DO UPDATE SET steps = excluded.steps");
+      const txn = db.transaction(() => { for (const s of steps) { upsert.run(s); results.created++; } });
+      txn();
     }
 
-    // Active energy → activity_days.active_calories
     sendProgress('Importando calorías activas...');
-    const activeTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='active_energy'").get();
-    if (activeTable) {
-      const active = healthDb.prepare('SELECT date, value FROM active_energy').all();
-      const updateActive = db.prepare(`
-        INSERT INTO activity_days (date, active_calories) VALUES (?, ?)
-        ON CONFLICT(date) DO UPDATE SET active_calories = excluded.active_calories
-      `);
-      for (const a of active) {
-        try {
-          updateActive.run(a.date, parseFloat(a.value) || 0);
-          results.created++;
-        } catch { results.skipped++; }
-      }
+    const hasActive = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='active_energy'").get();
+    if (hasActive) {
+      const active = healthDb.prepare("SELECT date(start_date) as dia, SUM(value) as total FROM active_energy GROUP BY dia").all();
+      const upsert = db.prepare("INSERT INTO activity_days (date, active_calories) VALUES (@dia, @total) ON CONFLICT(date) DO UPDATE SET active_calories = excluded.active_calories");
+      const txn = db.transaction(() => { for (const a of active) { upsert.run(a); results.created++; } });
+      txn();
     }
 
-    // Basal energy → activity_days.resting_calories
     sendProgress('Importando calorías basales...');
-    const basalTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='basal_energy'").get();
-    if (basalTable) {
-      const basal = healthDb.prepare('SELECT date, value FROM basal_energy').all();
-      const updateBasal = db.prepare(`
-        INSERT INTO activity_days (date, resting_calories) VALUES (?, ?)
-        ON CONFLICT(date) DO UPDATE SET resting_calories = excluded.resting_calories
-      `);
-      for (const b of basal) {
-        try {
-          updateBasal.run(b.date, parseFloat(b.value) || 0);
-          results.created++;
-        } catch { results.skipped++; }
-      }
+    const hasBasal = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='basal_energy'").get();
+    if (hasBasal) {
+      const basal = healthDb.prepare("SELECT date(start_date) as dia, SUM(value) as total FROM basal_energy GROUP BY dia").all();
+      const upsert = db.prepare("INSERT INTO activity_days (date, resting_calories) VALUES (@dia, @total) ON CONFLICT(date) DO UPDATE SET resting_calories = excluded.resting_calories");
+      const txn = db.transaction(() => { for (const b of basal) { upsert.run(b); results.created++; } });
+      txn();
     }
 
-    // Heart rate → activity_days.heart_rate_avg
-    sendProgress('Importando frecuencia cardíaca...');
-    const hrTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='resting_heart_rate'").get();
-    if (hrTable) {
-      const hr = healthDb.prepare('SELECT date, value FROM resting_heart_rate').all();
-      const updateHr = db.prepare(`
-        INSERT INTO activity_days (date, heart_rate_avg) VALUES (?, ?)
-        ON CONFLICT(date) DO UPDATE SET heart_rate_avg = excluded.heart_rate_avg
-      `);
-      for (const h of hr) {
-        try {
-          updateHr.run(h.date, parseFloat(h.value) || 0);
-          results.created++;
-        } catch { results.skipped++; }
-      }
+    sendProgress('Importando frecuencia cardíaca (media diaria)...');
+    const hasHR = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='heart_rate'").get();
+    if (hasHR) {
+      const hr = healthDb.prepare("SELECT date(start_date) as dia, ROUND(AVG(value), 1) as media FROM heart_rate GROUP BY dia").all();
+      const upsert = db.prepare("INSERT INTO activity_days (date, heart_rate_avg) VALUES (@dia, @media) ON CONFLICT(date) DO UPDATE SET heart_rate_avg = excluded.heart_rate_avg");
+      const txn = db.transaction(() => { for (const h of hr) { upsert.run(h); results.created++; } });
+      txn();
     }
 
-    // Sleep → activity_days.sleep_hours
     sendProgress('Importando sueño...');
-    const sleepTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sleep'").get();
-    if (sleepTable) {
-      const sleep = healthDb.prepare('SELECT date, value FROM sleep').all();
-      const updateSleep = db.prepare(`
-        INSERT INTO activity_days (date, sleep_hours) VALUES (?, ?)
-        ON CONFLICT(date) DO UPDATE SET sleep_hours = excluded.sleep_hours
-      `);
-      for (const s of sleep) {
-        try {
-          updateSleep.run(s.date, parseFloat(s.value) || 0);
-          results.created++;
-        } catch { results.skipped++; }
-      }
+    const hasSleep = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sleep'").get();
+    if (hasSleep) {
+      const sleep = healthDb.prepare("SELECT date(start_date, '-6 hours') as noche, ROUND(SUM((julianday(end_date)-julianday(start_date))*24), 2) as horas FROM sleep WHERE value LIKE '%Asleep%' GROUP BY noche").all();
+      const upsert = db.prepare("INSERT INTO activity_days (date, sleep_hours) VALUES (@noche, @horas) ON CONFLICT(date) DO UPDATE SET sleep_hours = excluded.sleep_hours");
+      const txn = db.transaction(() => { for (const s of sleep) { if (s.horas > 0) { upsert.run(s); results.created++; } } });
+      txn();
     }
 
-    // Body mass → weight_entries
     sendProgress('Importando peso corporal...');
-    const bodyMassTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='body_mass'").get();
-    if (bodyMassTable) {
-      const masses = healthDb.prepare('SELECT date, value FROM body_mass').all();
-      const insertWeight = db.prepare('INSERT OR IGNORE INTO weight_entries (date, weight_kg) VALUES (?, ?)');
-      for (const m of masses) {
-        try {
-          insertWeight.run(m.date, parseFloat(m.value) || 0);
-          results.created++;
-        } catch { results.skipped++; }
-      }
+    const hasWeight = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='body_mass'").get();
+    if (hasWeight) {
+      const masses = healthDb.prepare("SELECT date(start_date) as dia, value, unit FROM body_mass ORDER BY start_date DESC").all();
+      const insertWeight = db.prepare("INSERT OR IGNORE INTO weight_entries (date, weight_kg) VALUES (@dia, @value)");
+      const txn = db.transaction(() => { for (const m of masses) { if (m.unit === 'kg') { insertWeight.run(m); results.created++; } } });
+      txn();
     }
 
-    // Workouts → sport_activities
     sendProgress('Importando entrenamientos...');
-    const workoutTable = healthDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='workouts'").get();
-    if (workoutTable) {
-      const workouts = healthDb.prepare('SELECT date, activity_type, calories, duration FROM workouts').all();
-      const insertSport = db.prepare(`
-        INSERT INTO sport_activities (date, sport_type, calories, duration_minutes)
-        VALUES (?, ?, ?, ?)
-      `);
-      for (const w of workouts) {
-        try {
+    const hasWorkouts = healthDb.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='workouts'").get();
+    if (hasWorkouts) {
+      const workouts = healthDb.prepare("SELECT date(start_date) as dia, activity_type, total_energy_burned as kcal, duration FROM workouts ORDER BY start_date DESC").all();
+      const insertSport = db.prepare("INSERT INTO sport_activities (date, sport_type, calories, duration_minutes) VALUES (@dia, @sport_type, @kcal, @duration)");
+      const txn = db.transaction(() => {
+        for (const w of workouts) {
           const sportType = ACTIVITY_TYPE_MAP[w.activity_type] || 'other';
-          insertSport.run(w.date, sportType, parseFloat(w.calories) || 0, parseFloat(w.duration) || 0);
+          insertSport.run({ dia: w.dia, sport_type: sportType, kcal: Math.round(w.kcal || 0), duration: Math.round(w.duration || 0) });
           results.created++;
-        } catch { results.skipped++; }
-      }
+        }
+      });
+      txn();
     }
 
   } catch (e) {

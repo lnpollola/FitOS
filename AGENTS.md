@@ -15,6 +15,7 @@ App desktop de salud y fitness local-first construida con Electron + SQLite. Ras
 - `npm run dev` — Vite + Electron concurrently
 - `npm run build` — Vite build + electron-builder
 - `npm run dev:web` — Solo frontend en navegador (sin Electron)
+- `npx @electron/rebuild -o better-sqlite3` — Recompilar better-sqlite3 para la versión de Node de Electron (necesario si el módulo nativo da error de NODE_MODULE_VERSION)
 
 ## Arquitectura (Capas)
 

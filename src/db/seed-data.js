@@ -227,4 +227,20 @@ function seedIfEmpty(db) {
   }
 }
 
-module.exports = { seedIfEmpty };
+function seedStats() {
+  const db = require('./database').getHealthsyncDb();
+  const tables = ['heart_rate','steps','body_mass','workouts','sleep','hrv'];
+  const stats = {};
+  for (const table of tables) {
+    try {
+      const row = db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get();
+      stats[table] = row.count;
+    } catch {
+      stats[table] = 0;
+    }
+  }
+  console.table(stats);
+  return stats;
+}
+
+module.exports = { seedIfEmpty, seedStats };

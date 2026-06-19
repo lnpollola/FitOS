@@ -5,6 +5,7 @@ import { init as initAdaptive } from './views/adaptive.js';
 import { init as initMeasurements } from './views/measurements.js';
 import { init as initTraining } from './views/training.js';
 import { init as initProfile } from './views/profile.js';
+import { init as initAnalytics } from './views/analytics.js';
 
 const views = {
   dashboard: initDashboard,
@@ -13,6 +14,7 @@ const views = {
   energy: initAdaptive,
   measurements: initMeasurements,
   training: initTraining,
+  analytics: initAnalytics,
   profile: initProfile,
 };
 
