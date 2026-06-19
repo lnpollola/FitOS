@@ -1,8 +1,30 @@
 import Chart from 'chart.js/auto';
-import { strings } from '../locales/es.js';
+import { strings, getMeasurementLabel } from '../locales/es.js';
 
-export function init() {
+const METRIC_COLUMNS = [
+  'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
+  'forearms_left_cm', 'forearms_right_cm', 'waist_cm', 'hips_cm',
+  'thighs_left_cm', 'thighs_right_cm', 'calves_left_cm', 'calves_right_cm',
+];
+
+const CHART_COLORS = [
+  '#0D9488', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6',
+  '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#84CC16',
+  '#F43F5E', '#A855F7', '#0EA5E9',
+];
+
+export async function init() {
+  if (window._loadingMeasurements) return;
+  window._loadingMeasurements = true;
   const container = document.getElementById('view-measurements');
+
+  const formFields = METRIC_COLUMNS.map(m => `
+    <div class="form-group">
+      <label>${getMeasurementLabel(m)} (cm)</label>
+      <input type="number" name="${m}" min="0" max="200" step="0.1" />
+    </div>
+  `).join('');
+
   container.innerHTML = `
     <h2 class="view-title">${strings.measurements.title}</h2>
     <div class="card">
@@ -12,12 +34,7 @@ export function init() {
           <label>${strings.measurements.date}</label>
           <input type="date" name="date" required />
         </div>
-        ${['chest','neck','shoulders','biceps_left','biceps_right','forearms_left','forearms_right','waist','hips','thighs_left','thighs_right','calves_left','calves_right'].map(m => `
-          <div class="form-group">
-            <label>${m.replace(/_/g,' ')} (cm)</label>
-            <input type="number" name="${m}_cm" min="0" max="200" step="0.1" />
-          </div>
-        `).join('')}
+        ${formFields}
         <div class="form-group">
           <label>${strings.measurements.weight}</label>
           <input type="number" name="weight_kg" min="20" max="300" step="0.1" />
@@ -51,25 +68,12 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.measurements.weightTrend}</h2>
-      <canvas id="weight-chart" height="250"></canvas>
+      <div class="chart-container"><canvas id="weight-chart"></canvas></div>
     </div>
-    <div class="card">
-      <h2>${strings.measurements.measurementTrends}</h2>
-      <canvas id="measurement-chart" height="250"></canvas>
-      <div style="margin-top:12px">
-        <label style="font-size:13px;color:var(--text-secondary);margin-right:8px">${strings.measurements.metric}:</label>
-        <select id="trend-metric" style="padding:6px 10px">
-          <option value="waist_cm">Cintura</option>
-          <option value="chest_cm">Pecho</option>
-          <option value="neck_cm">Cuello</option>
-          <option value="shoulders_cm">Hombros</option>
-          <option value="hips_cm">Cadera</option>
-        </select>
-      </div>
-    </div>
+    <div id="measurement-charts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     <div class="card">
       <h2>${strings.measurements.bodyFatTrend}</h2>
-      <canvas id="bodyfat-chart" height="250"></canvas>
+      <div class="chart-container"><canvas id="bodyfat-chart"></canvas></div>
     </div>
     <div class="card">
       <h2>${strings.measurements.beforeAfter}</h2>
@@ -89,7 +93,21 @@ export function init() {
   `;
 
   const api = window.electronAPI;
-  if (!api) return;
+  if (!api) { window._loadingMeasurements = false; return; }
+
+  // Pre-fill form with latest measurement set
+  async function prefillForm() {
+    const latest = await api.getLatestMeasurementSet();
+    if (latest) {
+      document.querySelector('#measurement-form input[name="date"]').value = new Date().toISOString().split('T')[0];
+      for (const col of METRIC_COLUMNS) {
+        const input = document.querySelector(`#measurement-form input[name="${col}"]`);
+        if (input && latest[col] != null) input.value = latest[col];
+      }
+      const weightInput = document.querySelector('#measurement-form input[name="weight_kg"]');
+      if (weightInput && latest.weight_kg != null) weightInput.value = latest.weight_kg;
+    }
+  }
 
   document.getElementById('measurement-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -110,15 +128,16 @@ export function init() {
     loadAll();
   });
 
-  document.getElementById('trend-metric').addEventListener('change', loadMeasurementChart);
   document.getElementById('btn-compare').addEventListener('click', loadComparison);
 
   async function loadAll() {
-    loadHistory();
-    loadWeightChart();
-    loadMeasurementChart();
-    loadBodyFatChart();
-    loadBodyFatEstimate();
+    await Promise.all([
+      loadHistory(),
+      loadWeightChart(),
+      loadMeasurementCharts(),
+      loadBodyFatChart(),
+      loadBodyFatEstimate(),
+    ]);
   }
 
   function calculateBodyFat(neck, waist, hips, sex, height) {
@@ -163,15 +182,19 @@ export function init() {
       el.innerHTML = `<div class="empty-state"><p>${strings.measurements.noMeasurements}</p></div>`;
       return;
     }
-    let html = '<table><thead><tr><th>Fecha</th><th>Peso</th><th>Pecho</th><th>Cintura</th><th>Cuello</th><th>Cadera</th><th>%GC</th></tr></thead><tbody>';
+    const allCols = [...METRIC_COLUMNS, 'weight_kg'];
+    const headers = ['Fecha', ...allCols.map(c => getMeasurementLabel(c))];
+    let html = '<table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
     const profile = await api.getProfile();
-    for (const s of sets) {
-      let bf = '--';
-      if (s.neck_cm && s.waist_cm && s.hips_cm && profile) {
-        const bfVal = calculateBodyFat(s.neck_cm, s.waist_cm, s.hips_cm, profile.sex, profile.height_cm);
-        if (bfVal !== null) bf = bfVal.toFixed(1) + '%';
+    for (let i = 0; i < sets.length; i++) {
+      const s = sets[i];
+      const rowClass = i % 2 === 1 ? ' style="background:var(--bg-tertiary)"' : '';
+      html += `<tr${rowClass}><td>${s.date}</td>`;
+      for (const col of allCols) {
+        const val = s[col];
+        html += `<td>${val != null ? val.toFixed(1) : '--'}</td>`;
       }
-      html += `<tr><td>${s.date}</td><td>${s.weight_kg ?? '--'}</td><td>${s.chest_cm ?? '--'}</td><td>${s.waist_cm ?? '--'}</td><td>${s.neck_cm ?? '--'}</td><td>${s.hips_cm ?? '--'}</td><td>${bf}</td></tr>`;
+      html += '</tr>';
     }
     html += '</tbody></table>';
     el.innerHTML = html;
@@ -180,6 +203,7 @@ export function init() {
   async function loadWeightChart() {
     const weights = await api.getWeightEntries();
     const canvas = document.getElementById('weight-chart');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (window._weightChart) window._weightChart.destroy();
 
@@ -239,52 +263,70 @@ export function init() {
     });
   }
 
-  async function loadMeasurementChart() {
+  async function loadMeasurementCharts() {
     const sets = await api.getMeasurementSets();
-    const canvas = document.getElementById('measurement-chart');
-    const ctx = canvas.getContext('2d');
-    if (window._measChart) window._measChart.destroy();
-
+    const grid = document.getElementById('measurement-charts-grid');
     if (!sets || sets.length < 2) {
-      canvas.style.display = 'none';
+      grid.innerHTML = '';
       return;
     }
-    canvas.style.display = 'block';
 
-    const metric = document.getElementById('trend-metric').value;
     const sorted = [...sets].reverse();
-    const labels = sorted.map(s => s.date);
-    const data = sorted.map(s => s[metric]).filter(v => v != null);
 
-    window._measChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels.slice(0, data.length),
-        datasets: [{
-          label: metric.replace(/_/g, ' '),
-          data,
-          borderColor: '#0D9488',
-          backgroundColor: 'rgba(13, 148, 136, 0.08)',
-          fill: true,
-          tension: 0.3,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#64748B' } } },
-        scales: {
-          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
+    grid.innerHTML = METRIC_COLUMNS.map((col, idx) => `
+      <div class="card" style="padding:14px">
+        <h3 style="font-size:13px;margin-bottom:8px">${getMeasurementLabel(col)}</h3>
+        <div class="chart-container" style="height:200px"><canvas id="chart-${col}"></canvas></div>
+      </div>
+    `).join('');
+
+    for (let i = 0; i < METRIC_COLUMNS.length; i++) {
+      const col = METRIC_COLUMNS[i];
+      const canvas = document.getElementById(`chart-${col}`);
+      if (!canvas) continue;
+      const ctx = canvas.getContext('2d');
+      const chartKey = `_meas${col.replace(/_/g, '')}Chart`;
+      if (window[chartKey]) window[chartKey].destroy();
+
+      const labels = sorted.map(s => s.date);
+      const data = sorted.map(s => s[col]).filter(v => v != null);
+
+      if (data.length < 2) {
+        canvas.parentElement.innerHTML = `<div class="chart-empty" style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">${strings.measurements.noMeasurements}</div>`;
+        continue;
+      }
+
+      window[chartKey] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.slice(0, data.length),
+          datasets: [{
+            label: getMeasurementLabel(col),
+            data,
+            borderColor: CHART_COLORS[i % CHART_COLORS.length],
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointRadius: 3,
+          }],
         },
-      },
-    });
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+            x: { ticks: { color: '#64748B', maxTicksLimit: 8 } },
+          },
+        },
+      });
+    }
   }
 
   async function loadBodyFatChart() {
     const sets = await api.getMeasurementSets();
     const profile = await api.getProfile();
     const canvas = document.getElementById('bodyfat-chart');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (window._bfChart) window._bfChart.destroy();
 
@@ -353,22 +395,24 @@ export function init() {
       return;
     }
 
-    const metrics = ['weight_kg', 'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
-      'waist_cm', 'hips_cm', 'thighs_left_cm', 'thighs_right_cm', 'calves_left_cm', 'calves_right_cm'];
+    const allCols = ['weight_kg', ...METRIC_COLUMNS];
     let html = '<table><thead><tr><th>Métrica</th><th>Antes</th><th>Después</th><th>Delta</th></tr></thead><tbody>';
-    for (const m of metrics) {
+    for (const m of allCols) {
       const bVal = before[m];
       const aVal = after[m];
       if (bVal != null && aVal != null) {
         const delta = aVal - bVal;
         const sign = delta > 0 ? '+' : '';
-        const cls = m.includes('waist') || m.includes('weight') ? (delta > 0 ? 'style="color:var(--danger)"' : 'style="color:var(--success)"') : '';
-        html += `<tr><td>${m.replace(/_/g, ' ')}</td><td>${bVal}</td><td>${aVal}</td><td ${cls}>${sign}${delta.toFixed(1)}</td></tr>`;
+        const isNeg = m.includes('waist') || m.includes('weight');
+        const cls = isNeg ? (delta > 0 ? 'style="color:var(--danger)"' : 'style="color:var(--success)"') : '';
+        html += `<tr><td>${getMeasurementLabel(m)}</td><td>${bVal.toFixed(1)}</td><td>${aVal.toFixed(1)}</td><td ${cls}>${sign}${delta.toFixed(1)}</td></tr>`;
       }
     }
     html += '</tbody></table>';
     el.innerHTML = html;
   }
 
-  loadAll();
+  await prefillForm();
+  await loadAll();
+  window._loadingMeasurements = false;
 }

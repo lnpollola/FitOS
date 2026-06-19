@@ -1,10 +1,21 @@
-# Activity Ingestion
+## REMOVED Requirements
 
-## Purpose
+### Requirement: Import daily activity metrics from Apple Watch CSV export
 
-Import Apple Health XML exports via HealthSync, normalize into canonical activity-day records and structured sport-activity records. Display activity history as a formatted timeline with trend indicators, sport activity rankings, and unified Spanish sport type names.
+**Reason**: Replaced entirely by Apple Health XML import. CSV import is no longer used.
+**Migration**: Existing data imported via CSV remains in the database. The CSV import button and handler will be removed from the UI.
 
-## Requirements
+### Requirement: Manual entry of daily metrics
+
+**Reason**: Data will be loaded exclusively from Apple Health import. Manual entry of daily metrics is no longer needed.
+**Migration**: Existing manually-entered records remain in the database. The manual entry form and edit UI will be removed from the Activity view.
+
+### Requirement: Card-based activity view with pre-defined sessions
+
+**Reason**: Sport activity data will be loaded exclusively from Apple Health import. Pre-defined session cards and multi-select sport logging are no longer needed.
+**Migration**: Sport_activities data in the database remains. The card-based session UI and multi-select checkbox functionality will be removed from the Activity view.
+
+## MODIFIED Requirements
 
 ### Requirement: Import Apple Health XML export
 
@@ -38,10 +49,6 @@ The system SHALL display a scrollable daily timeline of activity metrics with fo
 - **THEN** heart rate SHALL be prefixed with ❤️ and shown as integer bpm
 - **THEN** sleep SHALL be displayed as hours and minutes (e.g., "7h 32m")
 
-#### Scenario: Timeline highlights missing days
-- **WHEN** a date in the timeline range has no activity-day record
-- **THEN** the system SHALL display that date with a dashed outline or placeholder indicating no data
-
 ### Requirement: View sport activity breakdown
 
 The system SHALL display a ranking table of sport activities with Spanish names, session counts, and average calories per session. The table SHALL support sorting by any column and SHALL show a maximum of 20 rows with scroll for the rest.
@@ -58,18 +65,6 @@ The system SHALL display a ranking table of sport activities with Spanish names,
 #### Scenario: Limited to 20 rows
 - **WHEN** there are more than 20 days of data
 - **THEN** the timeline table SHALL display only 20 rows by default with the rest accessible via scroll
-
-### Requirement: Expanded sport types for HealthSync workouts
-
-The system SHALL expand the sport type mapping to accommodate all HKWorkoutActivityType values from HealthSync, beyond the current set (cycling, boxing, HIIT, walking, football, paddle).
-
-#### Scenario: New sport types created from HealthSync
-- **WHEN** a Workout record with HKWorkoutActivityTypeRunning is imported
-- **THEN** the system SHALL insert a sport_activity with sport_type "running"
-
-#### Scenario: Unknown activity_type fallback
-- **WHEN** a Workout record has an unrecognized activity_type
-- **THEN** the system SHALL insert it with sport_type "other" and log the original type
 
 ### Requirement: Unified sport type display name registry
 
@@ -99,8 +94,3 @@ The system SHALL display trend indicators (red/green arrows) for activity metric
 #### Scenario: Flat trend shows gray dash
 - **WHEN** the change is within 5% of the first half average
 - **THEN** the system SHALL display a gray ― next to the value
-
-## TBD
-
-- Monthly and custom date range aggregation
-- Export activity data as CSV

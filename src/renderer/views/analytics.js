@@ -1,5 +1,11 @@
 import Chart from 'chart.js/auto';
-import { strings } from '../locales/es.js';
+import { strings, getSportDisplayName } from '../locales/es.js';
+
+const SPORT_ICONS = {
+  running: '🏃', cycling: '🚴', walking: '🚶', swimming: '🏊',
+  yoga: '🧘', HIIT: '💪', strength: '🏋️', football: '⚽',
+  paddle: '🏓', boxing: '🥊', other: '🏅',
+};
 
 const RANGES = {
   '7d': { label: 'last7d', days: 7 },
@@ -33,6 +39,18 @@ function getRangeDates(range) {
   return { from, to };
 }
 
+function getPrevRangeDates(from, to) {
+  const rangeDays = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
+  const prevTo = new Date(from);
+  prevTo.setDate(prevTo.getDate() - 1);
+  const prevFrom = new Date(prevTo);
+  prevFrom.setDate(prevFrom.getDate() - rangeDays + 1);
+  return {
+    from: prevFrom.toISOString().split('T')[0],
+    to: prevTo.toISOString().split('T')[0],
+  };
+}
+
 function movingAverage(data, window) {
   return data.map((_, i) => {
     const start = Math.max(0, i - window + 1);
@@ -41,7 +59,9 @@ function movingAverage(data, window) {
   });
 }
 
-export function init() {
+export async function init() {
+  if (window._loadingAnalytics) return;
+  window._loadingAnalytics = true;
   const container = document.getElementById('view-analytics');
   const api = window.electronAPI;
   const s = strings.analytics;
@@ -76,7 +96,7 @@ export function init() {
     </div>
   `;
 
-  if (!api) return;
+  if (!api) { window._loadingAnalytics = false; return; }
 
   function applyRange(range) {
     _state.range = range;
@@ -127,32 +147,25 @@ export function init() {
     arrow.classList.toggle('open');
   });
 
-  function destroyAll() {
-    const charts = ['_stepsChart', '_hrChart', '_energyChart', '_hrvChart', '_sleepChart', '_activityChart',
-                    '_rhrChart', '_vo2Chart', '_exerciseChart', '_speedChart', '_flightsChart', '_walkDistChart', '_cycleDistChart'];
-    charts.forEach(k => {
-      if (window[k]) { window[k].destroy(); window[k] = null; }
-    });
+  function getTrend(currentData, prevData) {
+    if (!prevData || !prevData.length) return { arrow: '―', cls: 'text-muted' };
+    const curTotal = currentData.reduce((a, d) => a + (d.total_kcal || 0), 0);
+    const prevTotal = prevData.reduce((a, d) => a + (d.total_kcal || 0), 0);
+    if (curTotal > prevTotal) return { arrow: '▲', cls: 'text-success' };
+    if (curTotal < prevTotal) return { arrow: '▼', cls: 'text-danger' };
+    return { arrow: '―', cls: 'text-muted' };
   }
 
   async function loadAll() {
-    destroyAll();
     const { from, to } = _state;
     if (!api) return;
 
+    const prevRange = getPrevRangeDates(from, to);
+
     const [
-      dailyRes,
-      hrRes,
-      hrvRes,
-      sleepRes,
-      workoutRes,
-      rankingRes,
-      rhrRes,
-      vo2Res,
-      exerciseRes,
-      distanceRes,
-      speedRes,
-      flightsRes,
+      dailyRes, hrRes, hrvRes, sleepRes,
+      workoutRes, rankingRes, prevRankingRes,
+      rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes,
     ] = await Promise.all([
       api.getHealthDailySummary?.(from, to).catch(() => null),
       api.getHealthHeartRateRange?.(from, to).catch(() => null),
@@ -160,6 +173,7 @@ export function init() {
       api.getHealthSleepRange?.(from, to).catch(() => null),
       api.getHealthWorkoutRange?.(from, to).catch(() => null),
       api.getHealthWorkoutRanking?.(from, to).catch(() => null),
+      api.getHealthWorkoutRanking?.(prevRange.from, prevRange.to).catch(() => null),
       api.getHealthRestingHeartRateRange?.(from, to).catch(() => null),
       api.getHealthVO2MaxRange?.(from, to).catch(() => null),
       api.getHealthExerciseTimeRange?.(from, to).catch(() => null),
@@ -168,9 +182,11 @@ export function init() {
       api.getHealthFlightsClimbedRange?.(from, to).catch(() => null),
     ]);
 
+    const prevRankingData = prevRankingRes?.ok ? prevRankingRes.data : [];
+
     renderKPIs(dailyRes, hrvRes, sleepRes);
     renderChartGrid(dailyRes, hrRes, hrvRes, sleepRes, rankingRes);
-    renderRanking(rankingRes, workoutRes);
+    renderRanking(rankingRes, workoutRes, prevRankingData);
     renderSecondaryMetrics(rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes);
   }
 
@@ -410,7 +426,7 @@ export function init() {
       data: {
         labels: days,
         datasets: [{
-          label: 'HRV',
+          label: strings.analytics.hrv,
           data: values,
           borderColor: '#8B5CF6',
           backgroundColor: 'rgba(139, 92, 246, 0.08)',
@@ -499,7 +515,7 @@ export function init() {
       return;
     }
 
-    const labels = data.map(d => d.activity_type);
+    const labels = data.map(d => `${SPORT_ICONS[d.activity_type] || ''} ${getSportDisplayName(d.activity_type)}`);
     const kcal = data.map(d => d.total_kcal);
     const colors = labels.map((_, i) => ACTIVITY_COLORS[i % ACTIVITY_COLORS.length]);
 
@@ -529,7 +545,7 @@ export function init() {
     });
   }
 
-  function renderRanking(rankingRes, workoutRes) {
+  function renderRanking(rankingRes, workoutRes, prevRankingData) {
     const el = document.getElementById('ranking-content');
     const s = strings.analytics;
     const ranking = rankingRes?.ok ? rankingRes.data : [];
@@ -537,6 +553,16 @@ export function init() {
     if (!ranking.length) {
       el.innerHTML = `<div class="empty-state"><p>${s.noActivities}</p></div>`;
       return;
+    }
+
+    function getTypeTrend(type) {
+      const prev = prevRankingData.find(r => r.activity_type === type);
+      if (!prev) return { arrow: '―', cls: 'text-muted' };
+      const cur = ranking.find(r => r.activity_type === type);
+      if (!cur) return { arrow: '―', cls: 'text-muted' };
+      if (cur.total_kcal > prev.total_kcal) return { arrow: '▲', cls: 'text-success' };
+      if (cur.total_kcal < prev.total_kcal) return { arrow: '▼', cls: 'text-danger' };
+      return { arrow: '―', cls: 'text-muted' };
     }
 
     el.innerHTML = `
@@ -547,18 +573,23 @@ export function init() {
             <th>${s.count}</th>
             <th>${s.hoursLabel}</th>
             <th>${s.kcal}</th>
-            <th>${s.distance}</th>
+            <th>${s.kcalPerSession}</th>
+            <th>${s.trend}</th>
           </tr></thead>
           <tbody>
-            ${ranking.map(r => `
-              <tr>
-                <td><strong>${r.activity_type}</strong></td>
-                <td>${r.count}</td>
-                <td>${r.total_hours}</td>
-                <td>${r.total_kcal.toLocaleString()}</td>
-                <td>${r.total_km ? r.total_km + ' km' : '--'}</td>
-              </tr>
-            `).join('')}
+            ${ranking.map(r => {
+              const trend = getTypeTrend(r.activity_type);
+              return `
+                <tr>
+                  <td><strong>${SPORT_ICONS[r.activity_type] || ''} ${getSportDisplayName(r.activity_type)}</strong></td>
+                  <td>${r.count}</td>
+                  <td>${r.total_hours}</td>
+                  <td>${r.total_kcal.toLocaleString()}</td>
+                  <td>${r.count ? Math.round(r.total_kcal / r.count) : 0}</td>
+                  <td class="${trend.cls}">${trend.arrow}</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -568,6 +599,18 @@ export function init() {
   function renderSecondaryMetrics(rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes) {
     const grid = document.getElementById('secondary-metrics-grid');
     const s = strings.analytics;
+
+    function computeKPI(data, valueKey) {
+      if (!data || !data.length) return null;
+      const values = data.map(d => d[valueKey]).filter(v => v != null);
+      if (!values.length) return null;
+      return {
+        current: values[values.length - 1],
+        avg: values.reduce((a, b) => a + b, 0) / values.length,
+        min: Math.min(...values),
+        max: Math.max(...values),
+      };
+    }
 
     const metrics = [
       { key: 'rhr', title: s.rhr, data: rhrRes?.ok ? rhrRes.data : [], valueKey: 'rhr_bpm', emptyMsg: s.noRhr, color: '#EF4444', unit: ' bpm' },
@@ -579,12 +622,23 @@ export function init() {
 
     const dist = distanceRes?.ok ? distanceRes.data : null;
 
-    grid.innerHTML = metrics.map(m => `
-      <div class="mini-chart-card">
-        <h4>${m.title}</h4>
-        <div class="chart-container"><canvas id="mini-${m.key}"></canvas></div>
-      </div>
-    `).join('') + `
+    grid.innerHTML = metrics.map(m => {
+      const kpi = computeKPI(m.data, m.valueKey);
+      return `
+        <div class="mini-chart-card">
+          <h4>${m.title}</h4>
+          ${kpi ? `
+            <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px">
+              <span><strong>${s.current}:</strong> ${kpi.current != null ? kpi.current.toFixed(1) + m.unit : '--'}</span>
+              <span><strong>${s.avg}:</strong> ${kpi.avg.toFixed(1) + m.unit}</span>
+              <span><strong>${s.min}:</strong> ${kpi.min.toFixed(1) + m.unit}</span>
+              <span><strong>${s.max}:</strong> ${kpi.max.toFixed(1) + m.unit}</span>
+            </div>
+          ` : ''}
+          <div class="chart-container"><canvas id="mini-${m.key}"></canvas></div>
+        </div>
+      `;
+    }).join('') + `
       <div class="mini-chart-card">
         <h4>${s.walkingDistance}</h4>
         <div class="chart-container"><canvas id="mini-walk-dist"></canvas></div>
@@ -632,7 +686,7 @@ export function init() {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { display: false },
+          x: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 6 } },
           y: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: '#F1F5F9' } },
         },
       },
@@ -671,7 +725,7 @@ export function init() {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { display: false },
+          x: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 6 } },
           y: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: '#F1F5F9' } },
         },
       },
@@ -679,4 +733,5 @@ export function init() {
   }
 
   applyRange('7d');
+  window._loadingAnalytics = false;
 }

@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveSportActivity: (activity) => ipcRenderer.invoke('db:saveSportActivity', activity),
   importActivityCSV: (csvPath) => ipcRenderer.invoke('db:importActivityCSV', csvPath),
   getWeeklySportSummary: () => ipcRenderer.invoke('db:getWeeklySportSummary'),
+  getActivityKcalByType: (from, to) => ipcRenderer.invoke('db:getActivityKcalByType', from, to),
 
   // Diet
   getFoodItems: (includeHidden) => ipcRenderer.invoke('db:getFoodItems', includeHidden),
@@ -29,6 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Body measurements
   getMeasurementSets: () => ipcRenderer.invoke('db:getMeasurementSets'),
+  getLatestMeasurementSet: () => ipcRenderer.invoke('db:getLatestMeasurementSet'),
   saveMeasurementSet: (set) => ipcRenderer.invoke('db:saveMeasurementSet', set),
   getWeightEntries: () => ipcRenderer.invoke('db:getWeightEntries'),
   saveWeightEntry: (entry) => ipcRenderer.invoke('db:saveWeightEntry', entry),
@@ -52,6 +54,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setSetting: (key, value) => ipcRenderer.invoke('db:setSetting', key, value),
   getTrendWeight: () => ipcRenderer.invoke('db:getTrendWeight'),
   getRecompData: () => ipcRenderer.invoke('db:getRecompData'),
+  getLastImportTimestamp: () => ipcRenderer.invoke('db:getLastImportTimestamp'),
+  setLastImportTimestamp: (timestamp) => ipcRenderer.invoke('db:setLastImportTimestamp', timestamp),
 
   // Dashboard
   getDashboardData: () => ipcRenderer.invoke('db:getDashboardData'),
