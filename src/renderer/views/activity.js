@@ -1,31 +1,26 @@
 import Chart from 'chart.js/auto';
-import { strings } from '../locales/es.js';
+import { strings, getSportDisplayName } from '../locales/es.js';
 
-const SESSION_TEMPLATES = {
-  cycling: { name: 'Ciclismo', defaultCal: 400, defaultDur: 60 },
-  boxing: { name: 'Boxeo', defaultCal: 500, defaultDur: 45 },
-  HIIT: { name: 'HIIT', defaultCal: 350, defaultDur: 30 },
-  walking: { name: 'Caminata', defaultCal: 200, defaultDur: 45 },
-  football: { name: 'Fútbol', defaultCal: 450, defaultDur: 60 },
-  paddle: { name: 'Pádel', defaultCal: 350, defaultDur: 50 },
-  running: { name: 'Running', defaultCal: 350, defaultDur: 30 },
-  swimming: { name: 'Natación', defaultCal: 300, defaultDur: 40 },
-  yoga: { name: 'Yoga', defaultCal: 150, defaultDur: 45 },
-  strength: { name: 'Fuerza', defaultCal: 250, defaultDur: 50 },
-  other: { name: 'Otro', defaultCal: 200, defaultDur: 30 },
-};
-
-export function init() {
+export async function init() {
+  if (window._loadingActivity) return;
+  window._loadingActivity = true;
   const container = document.getElementById('view-activity');
   container.innerHTML = `
     <h2 class="view-title">${strings.activity.title}</h2>
     <div class="card">
       <h2>${strings.activity.importAppleHealth}</h2>
-      <p style="margin-bottom:12px">${strings.activity.importCsvDesc}</p>
+      <p style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">${strings.activity.importReference}</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="btn-import-health">${strings.activity.importAppleHealth}</button>
         <button class="btn btn-secondary" id="btn-install-healthsync" style="display:none">Instalar HealthSync</button>
         <span id="healthsync-status" style="font-size:13px;color:var(--text-secondary)"></span>
+      </div>
+      <div id="last-import-info" style="margin-top:8px;font-size:13px;color:var(--text-secondary)"></div>
+      <div style="margin-top:8px;display:none" id="reimport-section">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="reimport-checkbox" />
+          ${strings.activity.reImportCheckbox}
+        </label>
       </div>
       <div id="health-import-progress" style="display:none;margin-top:12px">
         <div style="background:var(--bg-tertiary);border-radius:4px;height:20px;overflow:hidden">
@@ -36,159 +31,21 @@ export function init() {
       <div id="health-import-result" style="display:none;margin-top:8px"></div>
     </div>
     <div class="card">
-      <h2>Sesiones Rápidas</h2>
-      <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary)">Selecciona una o varias sesiones para crearlas hoy:</p>
-      <div id="session-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px"></div>
-      <div id="batch-actions" style="display:none;margin-top:8px">
-        <button class="btn btn-primary" id="btn-create-selected">Crear sesiones seleccionadas</button>
-      </div>
-    </div>
-    <div class="card">
-      <h2>${strings.activity.importCsv}</h2>
-      <p style="margin-bottom:12px">${strings.activity.importCsvDesc}</p>
-      <button class="btn btn-primary" id="btn-import-csv">${strings.activity.importCsvBtn}</button>
-    </div>
-    <div class="card">
-      <h2>${strings.activity.manualEntry}</h2>
-      <form id="activity-form" class="form-row">
-        <div class="form-group">
-          <label>${strings.activity.date}</label>
-          <input type="date" name="date" required />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.steps}</label>
-          <input type="number" name="steps" min="0" />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.activeCalories}</label>
-          <input type="number" name="active_calories" min="0" step="1" />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.restingCalories}</label>
-          <input type="number" name="resting_calories" min="0" step="1" />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.avgHeartRate}</label>
-          <input type="number" name="heart_rate_avg" min="30" max="250" />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.sleepHours}</label>
-          <input type="number" name="sleep_hours" min="0" max="24" step="0.1" />
-        </div>
-        <div class="form-row-full">
-          <button type="submit" class="btn btn-primary">${strings.activity.saveActivity}</button>
-        </div>
-      </form>
-    </div>
-    <div class="card">
-      <h2>${strings.activity.sportActivity}</h2>
-      <form id="sport-form" class="form-row">
-        <div class="form-group">
-          <label>${strings.activity.date}</label>
-          <input type="date" name="date" required />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.sportType}</label>
-          <select name="sport_type" required>
-            <option value="">${strings.activity.selectSport}</option>
-            <option value="running">${strings.activity.running}</option>
-            <option value="cycling">${strings.activity.cycling}</option>
-            <option value="walking">${strings.activity.walking}</option>
-            <option value="swimming">${strings.activity.swimming}</option>
-            <option value="yoga">${strings.activity.yoga}</option>
-            <option value="HIIT">${strings.activity.hiit}</option>
-            <option value="strength">${strings.activity.strength}</option>
-            <option value="football">${strings.activity.football}</option>
-            <option value="paddle">${strings.activity.paddle}</option>
-            <option value="boxing">${strings.activity.boxing}</option>
-            <option value="other">${strings.activity.other}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.calories}</label>
-          <input type="number" name="calories" min="0" step="1" />
-        </div>
-        <div class="form-group">
-          <label>${strings.activity.durationMin}</label>
-          <input type="number" name="duration_minutes" min="0" step="1" />
-        </div>
-        <div class="form-row-full">
-          <button type="submit" class="btn btn-primary">${strings.activity.saveSportActivity}</button>
-        </div>
-      </form>
-    </div>
-    <div class="card">
       <h2>${strings.activity.activityTimeline}</h2>
       <div id="activity-timeline"><div class="empty-state"><p>${strings.activity.noActivities}</p><div class="sub">${strings.activity.noActivitiesSub}</div></div></div>
     </div>
-    <div class="card" id="weekly-chart-container">
+    <div class="card">
       <h2>${strings.activity.weeklySportSummary}</h2>
-      <canvas id="weekly-chart" height="250"></canvas>
+      <div class="chart-container"><canvas id="weekly-chart"></canvas></div>
+    </div>
+    <div class="card" id="recognition-table-card" style="display:none">
+      <h2>${strings.activity.sport} — ${strings.activity.rankingType}</h2>
+      <div id="recognition-table"></div>
     </div>
   `;
 
   const api = window.electronAPI;
-  if (!api) return;
-
-  // Session cards
-  const cardsContainer = document.getElementById('session-cards');
-  const batchActions = document.getElementById('batch-actions');
-  const createSelectedBtn = document.getElementById('btn-create-selected');
-  const selectedTypes = new Set();
-
-  function renderSessionCards() {
-    cardsContainer.innerHTML = Object.entries(SESSION_TEMPLATES).map(([type, tpl]) => `
-      <div class="session-card" data-sport-type="${type}" style="cursor:pointer;border:2px solid ${selectedTypes.has(type) ? 'var(--accent)' : 'var(--border)'};border-radius:8px;padding:12px;background:var(--bg-secondary);transition:border-color 0.2s">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <input type="checkbox" ${selectedTypes.has(type) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--accent)" />
-          <strong>${tpl.name}</strong>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary)">
-          <div>🔥 ~${tpl.defaultCal} kcal</div>
-          <div>⏱ ${tpl.defaultDur} min</div>
-        </div>
-      </div>
-    `).join('');
-
-    cardsContainer.querySelectorAll('.session-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        const cb = card.querySelector('input[type="checkbox"]');
-        cb.checked = !cb.checked;
-        cb.dispatchEvent(new Event('change'));
-      });
-      card.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
-        const type = card.dataset.sportType;
-        if (e.target.checked) {
-          selectedTypes.add(type);
-        } else {
-          selectedTypes.delete(type);
-        }
-        card.style.borderColor = e.target.checked ? 'var(--accent)' : 'var(--border)';
-        batchActions.style.display = selectedTypes.size > 0 ? 'block' : 'none';
-      });
-    });
-  }
-
-  createSelectedBtn.addEventListener('click', async () => {
-    const today = new Date().toISOString().split('T')[0];
-    for (const type of selectedTypes) {
-      const tpl = SESSION_TEMPLATES[type];
-      await api.saveSportActivity({
-        date: today,
-        sport_type: type,
-        calories: tpl.defaultCal,
-        duration_minutes: tpl.defaultDur,
-      });
-    }
-    selectedTypes.clear();
-    renderSessionCards();
-    batchActions.style.display = 'none';
-    loadTimeline();
-    loadChart();
-  });
-
-  renderSessionCards();
+  if (!api) { window._loadingActivity = false; return; }
 
   // Apple Health import
   const healthImportBtn = document.getElementById('btn-import-health');
@@ -198,6 +55,29 @@ export function init() {
   const progressBar = document.getElementById('health-progress-bar');
   const progressText = document.getElementById('health-progress-text');
   const resultEl = document.getElementById('health-import-result');
+  const lastImportInfo = document.getElementById('last-import-info');
+  const reimportSection = document.getElementById('reimport-section');
+  const reimportCheckbox = document.getElementById('reimport-checkbox');
+
+  async function loadLastImport() {
+    const ts = await api.getLastImportTimestamp();
+    if (ts) {
+      const d = new Date(ts);
+      lastImportInfo.textContent = `${strings.activity.lastImport}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      reimportSection.style.display = 'block';
+      healthImportBtn.disabled = true;
+      healthImportBtn.style.opacity = '0.5';
+      reimportCheckbox.addEventListener('change', () => {
+        healthImportBtn.disabled = !reimportCheckbox.checked;
+        healthImportBtn.style.opacity = reimportCheckbox.checked ? '1' : '0.5';
+      });
+    } else {
+      lastImportInfo.textContent = '';
+      reimportSection.style.display = 'none';
+      healthImportBtn.disabled = false;
+      healthImportBtn.style.opacity = '1';
+    }
+  }
 
   async function checkHealthsync() {
     const hasHealthsync = await api.checkHealthsync();
@@ -242,7 +122,15 @@ export function init() {
 
     const result = await api.importAppleHealthXML(xmlPath);
     progressBar.style.width = '100%';
-    healthImportBtn.disabled = false;
+
+    // Store import timestamp
+    const now = new Date().toISOString();
+    await api.setLastImportTimestamp(now);
+
+    // Reset reimport UI
+    reimportCheckbox.checked = false;
+    healthImportBtn.disabled = true;
+    healthImportBtn.style.opacity = '0.5';
 
     resultEl.style.display = 'block';
     if (result.errors && result.errors.length > 0) {
@@ -254,60 +142,294 @@ export function init() {
       `;
     }
 
-    loadTimeline();
-    loadChart();
+    await Promise.all([loadTimeline(), loadChart(), loadLastImport()]);
   });
 
   checkHealthsync();
+  await loadLastImport();
 
-  document.getElementById('btn-import-csv').addEventListener('click', async () => {
-    try {
-      await api.importActivityCSV();
-      loadTimeline();
-    } catch (e) {
-      console.error('CSV import error:', e);
-    }
-  });
+  function formatSleep(hours) {
+    if (hours == null) return '--';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  }
 
-  document.getElementById('activity-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target));
-    data.steps = data.steps ? parseInt(data.steps) : null;
-    data.active_calories = data.active_calories ? parseFloat(data.active_calories) : null;
-    data.resting_calories = data.resting_calories ? parseFloat(data.resting_calories) : null;
-    data.heart_rate_avg = data.heart_rate_avg ? parseFloat(data.heart_rate_avg) : null;
-    data.sleep_hours = data.sleep_hours ? parseFloat(data.sleep_hours) : null;
-    await api.saveActivityDay(data);
-    loadTimeline();
-  });
+  function dayArrow(current, previous) {
+    if (current == null || previous == null) return { arrow: '―', cls: 'text-muted' };
+    if (current > previous) return { arrow: '▲', cls: 'text-success' };
+    if (current < previous) return { arrow: '▼', cls: 'text-danger' };
+    return { arrow: '―', cls: 'text-muted' };
+  }
 
-  document.getElementById('sport-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target));
-    data.calories = data.calories ? parseFloat(data.calories) : null;
-    data.duration_minutes = data.duration_minutes ? parseFloat(data.duration_minutes) : null;
-    await api.saveSportActivity(data);
-    loadTimeline();
-  });
+  function drawSparkline(canvas, values, color) {
+    if (!canvas || !values.length) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const max = Math.max(...values), min = Math.min(...values);
+    const range = max - min || 1;
+    const padding = 2;
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    values.forEach((v, i) => {
+      const x = padding + (i / (values.length - 1 || 1)) * (w - 2 * padding);
+      const y = h - padding - ((v - min) / range) * (h - 2 * padding);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
 
   async function loadTimeline() {
-    const days = await api.getActivityDays();
+    const allDays = await api.getActivityDays();
     const timeline = document.getElementById('activity-timeline');
-    if (!days || days.length === 0) {
-      timeline.innerHTML = `<div class="empty-state"><p>${strings.activity.noActivities}</p><div class="sub">${strings.activity.noActivitiesSub}</div></div>`;
+
+    // Filter by current month with pagination
+    let monthOffset = 0;
+    function getMonthRange(offset) {
+      const now = new Date();
+      now.setMonth(now.getMonth() + offset);
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      return { year: y, month: m, prefix: `${y}-${m}` };
+    }
+
+    async function renderMonth() {
+      const { year, month, prefix } = getMonthRange(monthOffset);
+      const days = allDays.filter(d => d.date.startsWith(prefix)).sort((a, b) => b.date.localeCompare(a.date));
+
+      if (!days.length) {
+        timeline.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">‹ Mes ant.</button>
+            <span style="font-size:14px;font-weight:600">${monthNames[parseInt(month) - 1]} ${year}</span>
+            <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>Mes sig. ›</button>
+          </div>
+          <div class="empty-state"><p>${strings.activity.noActivities}</p></div>`;
+        wirePagination();
+        return;
+      }
+
+      // Build sport type stats from visible days
+      const sportTypeMap = {};
+      for (const d of days) {
+        const sports = await api.getSportActivities(d.date);
+        if (sports) {
+          for (const s of sports) {
+            if (!sportTypeMap[s.sport_type]) sportTypeMap[s.sport_type] = { count: 0, totalKcal: 0, totalMin: 0 };
+            sportTypeMap[s.sport_type].count++;
+            sportTypeMap[s.sport_type].totalKcal += (s.calories || 0);
+            sportTypeMap[s.sport_type].totalMin += (s.duration_min || 0);
+          }
+        }
+      }
+
+      const sparklineColor = '#0D9488';
+      const header = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">‹ Mes ant.</button>
+          <span style="font-size:14px;font-weight:600">${monthNames[parseInt(month) - 1]} ${year}</span>
+          <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>Mes sig. ›</button>
+        </div>`;
+
+      let html = '<table><thead><tr><th>Fecha</th><th>Pasos</th><th>kcal Activas</th><th>kcal Reposo</th><th>FC media</th><th>Sueño</th></tr></thead><tbody>';
+
+      // Build last-7-days data per metric for sparklines
+      const allSteps = allDays.filter(d => d.steps != null).map(d => d.steps);
+      const allActive = allDays.filter(d => d.active_calories != null).map(d => d.active_calories);
+      const allResting = allDays.filter(d => d.resting_calories != null).map(d => d.resting_calories);
+      const allHr = allDays.filter(d => d.heart_rate_avg != null).map(d => d.heart_rate_avg);
+      const allSleep = allDays.filter(d => d.sleep_hours != null).map(d => d.sleep_hours);
+
+      for (let i = 0; i < days.length; i++) {
+        const d = days[i];
+        const prev = days[i + 1]; // next in sorted-desc = previous day
+
+        const arrowSteps = dayArrow(d.steps, prev?.steps);
+        const arrowActive = dayArrow(d.active_calories, prev?.active_calories);
+        const arrowResting = dayArrow(d.resting_calories, prev?.resting_calories);
+        const arrowHr = dayArrow(d.heart_rate_avg, prev?.heart_rate_avg);
+        const arrowSleep = dayArrow(d.sleep_hours, prev?.sleep_hours);
+
+        // Last 7 values for sparklines (including current)
+        const recentSteps = allSteps.slice(-7);
+        const recentActive = allActive.slice(-7);
+        const recentResting = allResting.slice(-7);
+        const recentHr = allHr.slice(-7);
+        const recentSleep = allSleep.slice(-7);
+
+        const id = d.date.replace(/-/g, '');
+
+        html += `<tr>
+          <td>${d.date}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span>${d.steps != null ? d.steps.toLocaleString() : '--'}</span>
+              <span class="${arrowSteps.cls}" style="font-size:10px">${arrowSteps.arrow}</span>
+            </div>
+            <canvas id="spk-steps-${id}" width="60" height="18" style="display:${d.steps != null ? 'block' : 'none'};margin-top:2px"></canvas>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span>${d.active_calories != null ? `${Math.round(d.active_calories)} ${strings.activity.kcalActiv}` : '--'}</span>
+              <span class="${arrowActive.cls}" style="font-size:10px">${arrowActive.arrow}</span>
+            </div>
+            <canvas id="spk-active-${id}" width="60" height="18" style="display:${d.active_calories != null ? 'block' : 'none'};margin-top:2px"></canvas>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span>${d.resting_calories != null ? `${Math.round(d.resting_calories)} ${strings.activity.kcalRepo}` : '--'}</span>
+              <span class="${arrowResting.cls}" style="font-size:10px">${arrowResting.arrow}</span>
+            </div>
+            <canvas id="spk-resting-${id}" width="60" height="18" style="display:${d.resting_calories != null ? 'block' : 'none'};margin-top:2px"></canvas>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span>${d.heart_rate_avg != null ? `❤️ ${Math.round(d.heart_rate_avg)}` : '--'}</span>
+              <span class="${arrowHr.cls}" style="font-size:10px">${arrowHr.arrow}</span>
+            </div>
+            <canvas id="spk-hr-${id}" width="60" height="18" style="display:${d.heart_rate_avg != null ? 'block' : 'none'};margin-top:2px"></canvas>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span>${formatSleep(d.sleep_hours)}</span>
+              <span class="${arrowSleep.cls}" style="font-size:10px">${arrowSleep.arrow}</span>
+            </div>
+            <canvas id="spk-sleep-${id}" width="60" height="18" style="display:${d.sleep_hours != null ? 'block' : 'none'};margin-top:2px"></canvas>
+          </td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      timeline.innerHTML = header + html;
+      wirePagination();
+
+      // Draw sparklines after DOM is ready
+      requestAnimationFrame(() => {
+        for (const d of days) {
+          const id = d.date.replace(/-/g, '');
+          const todayAll = allDays.filter(x => x.date <= d.date);
+          const last7Steps = todayAll.filter(x => x.steps != null).map(x => x.steps).slice(-7);
+          const last7Active = todayAll.filter(x => x.active_calories != null).map(x => x.active_calories).slice(-7);
+          const last7Resting = todayAll.filter(x => x.resting_calories != null).map(x => x.resting_calories).slice(-7);
+          const last7Hr = todayAll.filter(x => x.heart_rate_avg != null).map(x => x.heart_rate_avg).slice(-7);
+          const last7Sleep = todayAll.filter(x => x.sleep_hours != null).map(x => x.sleep_hours).slice(-7);
+          drawSparkline(document.getElementById(`spk-steps-${id}`), last7Steps, sparklineColor);
+          drawSparkline(document.getElementById(`spk-active-${id}`), last7Active, sparklineColor);
+          drawSparkline(document.getElementById(`spk-resting-${id}`), last7Resting, sparklineColor);
+          drawSparkline(document.getElementById(`spk-hr-${id}`), last7Hr, sparklineColor);
+          drawSparkline(document.getElementById(`spk-sleep-${id}`), last7Sleep, sparklineColor);
+        }
+      });
+
+      // Sport KPIs section
+      renderSportKPIs(sportTypeMap);
+    }
+
+    function wirePagination() {
+      const prevBtn = document.getElementById('timeline-prev');
+      const nextBtn = document.getElementById('timeline-next');
+      if (prevBtn) prevBtn.addEventListener('click', () => { monthOffset--; renderMonth(); });
+      if (nextBtn) nextBtn.addEventListener('click', () => { monthOffset++; renderMonth(); });
+    }
+
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    renderMonth();
+  }
+
+  function renderSportKPIs(sportTypeMap) {
+    const recCard = document.getElementById('recognition-table-card');
+    const recTable = document.getElementById('recognition-table');
+    const types = Object.entries(sportTypeMap);
+
+    if (types.length === 0) {
+      recCard.style.display = 'none';
       return;
     }
-    let html = '<table><thead><tr><th>Fecha</th><th>Pasos</th><th>kcal Activas</th><th>kcal Reposo</th><th>FC media</th><th>Sueño</th></tr></thead><tbody>';
-    for (const d of days) {
-      const sports = await api.getSportActivities(d.date);
-      const sportStr = sports?.length ? sports.map(s => `${s.sport_type} (${s.calories || 0} kcal)`).join(', ') : '';
-      html += `<tr><td>${d.date}</td><td>${d.steps ?? '--'}</td><td>${d.active_calories ?? '--'}</td><td>${d.resting_calories ?? '--'}</td><td>${d.heart_rate_avg ?? '--'}</td><td>${d.sleep_hours ?? '--'}</td></tr>`;
-      if (sportStr) {
-        html += `<tr style="font-size:12px;color:var(--text-secondary)"><td colspan="6">${strings.activity.sport}: ${sportStr}</td></tr>`;
-      }
+    recCard.style.display = 'block';
+
+    const totalSessions = types.reduce((s, [, data]) => s + data.count, 0);
+    const totalKcal = types.reduce((s, [, data]) => s + data.totalKcal, 0);
+    const totalMin = types.reduce((s, [, data]) => s + data.totalMin, 0);
+    const uniqueTypes = types.length;
+
+    const SPORT_ICONS = {
+      running: '🏃', cycling: '🚴', walking: '🚶', swimming: '🏊',
+      yoga: '🧘', HIIT: '💪', strength: '🏋️', football: '⚽',
+      paddle: '🏓', boxing: '🥊', other: '🏅',
+    };
+
+    // KPI cards
+    const kpiHtml = `
+      <div class="analytics-kpis" style="margin-bottom:12px">
+        <div class="analytics-kpi-card">
+          <div class="kpi-label">${strings.dashboard.sessions}</div>
+          <div class="kpi-value">${totalSessions}</div>
+          <div class="kpi-sub">${strings.dashboard.sessions}</div>
+        </div>
+        <div class="analytics-kpi-card">
+          <div class="kpi-label">${strings.activity.calories}</div>
+          <div class="kpi-value">${totalKcal.toLocaleString()}</div>
+          <div class="kpi-sub">${strings.dashboard.kcalTotal}</div>
+        </div>
+        <div class="analytics-kpi-card">
+          <div class="kpi-label">${strings.activity.durationMin}</div>
+          <div class="kpi-value">${totalMin}</div>
+          <div class="kpi-sub">min</div>
+        </div>
+        <div class="analytics-kpi-card">
+          <div class="kpi-label">${strings.activity.types || 'Tipos'}</div>
+          <div class="kpi-value">${uniqueTypes}</div>
+          <div class="kpi-sub">${strings.activity.differentTypes || 'diferentes'}</div>
+        </div>
+      </div>`;
+
+    // Sortable table
+    let sortCol = 'totalKcal';
+    let sortAsc = false;
+    function renderTable() {
+      const sorted = [...types].sort((a, b) => {
+        let va, vb;
+        if (sortCol === 'name') { va = a[0]; vb = b[0]; }
+        else if (sortCol === 'count') { va = a[1].count; vb = b[1].count; }
+        else if (sortCol === 'avgKcal') { va = a[1].count ? a[1].totalKcal / a[1].count : 0; vb = b[1].count ? b[1].totalKcal / b[1].count : 0; }
+        else if (sortCol === 'avgMin') { va = a[1].count ? a[1].totalMin / a[1].count : 0; vb = b[1].count ? b[1].totalMin / b[1].count : 0; }
+        else { va = a[1].totalKcal; vb = b[1].totalKcal; }
+        return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+      });
+      const maxRows = sorted.slice(0, 30);
+      recTable.innerHTML = kpiHtml + `
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
+          <table>
+            <thead><tr>
+              <th style="cursor:pointer" data-sort="name">${strings.activity.rankingType} ${sortCol === 'name' ? (sortAsc ? '▲' : '▼') : ''}</th>
+              <th style="cursor:pointer" data-sort="count">${strings.activity.rankingCount} ${sortCol === 'count' ? (sortAsc ? '▲' : '▼') : ''}</th>
+              <th style="cursor:pointer" data-sort="avgMin">${strings.activity.durationMin} ${sortCol === 'avgMin' ? (sortAsc ? '▲' : '▼') : ''}</th>
+              <th style="cursor:pointer" data-sort="avgKcal">${strings.activity.rankingAvgKcal} ${sortCol === 'avgKcal' ? (sortAsc ? '▲' : '▼') : ''}</th>
+              <th style="cursor:pointer" data-sort="totalKcal">${strings.activity.rankingTotalKcal} ${sortCol === 'totalKcal' ? (sortAsc ? '▲' : '▼') : ''}</th>
+            </tr></thead>
+            <tbody>
+              ${maxRows.map(([type, data]) => `
+                <tr>
+                  <td><strong>${SPORT_ICONS[type] || '🏅'} ${getSportDisplayName(type)}</strong></td>
+                  <td>${data.count}</td>
+                  <td>${data.count ? Math.round(data.totalMin / data.count) : 0} min</td>
+                  <td>${data.count ? Math.round(data.totalKcal / data.count) : 0}</td>
+                  <td>${data.totalKcal.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      recTable.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+          if (sortCol === th.dataset.sort) sortAsc = !sortAsc;
+          else { sortCol = th.dataset.sort; sortAsc = false; }
+          renderTable();
+        });
+      });
     }
-    html += '</tbody></table>';
-    timeline.innerHTML = html;
+    renderTable();
   }
 
   async function loadChart() {
@@ -323,7 +445,7 @@ export function init() {
     window._weeklyChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: summary.map(s => s.sport_type),
+        labels: summary.map(s => getSportDisplayName(s.sport_type)),
         datasets: [{
           label: strings.activity.calories,
           data: summary.map(s => s.total_calories),
@@ -343,6 +465,6 @@ export function init() {
     });
   }
 
-  loadTimeline();
-  loadChart();
+  await Promise.all([loadTimeline(), loadChart()]);
+  window._loadingActivity = false;
 }

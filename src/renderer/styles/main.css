@@ -544,6 +544,11 @@ details summary:hover {
 
 .pb-2 { padding-bottom: 8px; }
 
+.chart-container {
+  position: relative;
+  height: 250px;
+}
+
 /* Analytics View */
 .analytics-filters {
   display: flex;

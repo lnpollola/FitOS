@@ -18,7 +18,19 @@ const views = {
   profile: initProfile,
 };
 
+function destroyAllCharts() {
+  const chartKeys = Object.keys(window).filter(k => k.startsWith('_') && k.endsWith('Chart'));
+  chartKeys.forEach(k => {
+    if (window[k]) { window[k].destroy(); window[k] = null; }
+  });
+}
+
+let _navigateTimeout;
+
 function showView(viewName) {
+  if (_navigateTimeout) clearTimeout(_navigateTimeout);
+
+  destroyAllCharts();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
   document.querySelectorAll('.nav-list li').forEach(v => v.classList.remove('active'));
 
@@ -35,9 +47,16 @@ document.querySelectorAll('.nav-list li').forEach(item => {
   item.addEventListener('click', () => showView(item.dataset.view));
 });
 
+let _dataChangedTimeout;
+
 if (window.electronAPI) {
   window.electronAPI.onNavigate((view) => showView(view));
-  window.electronAPI.onDataChanged(() => showView(document.querySelector('.nav-list li.active')?.dataset?.view || 'dashboard'));
+  window.electronAPI.onDataChanged(() => {
+    if (_dataChangedTimeout) clearTimeout(_dataChangedTimeout);
+    _dataChangedTimeout = setTimeout(() => {
+      showView(document.querySelector('.nav-list li.active')?.dataset?.view || 'dashboard');
+    }, 300);
+  });
 }
 
 showView('dashboard');

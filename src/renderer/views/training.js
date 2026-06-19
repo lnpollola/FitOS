@@ -1,7 +1,9 @@
 import Chart from 'chart.js/auto';
 import { strings } from '../locales/es.js';
 
-export function init() {
+export async function init() {
+  if (window._loadingTraining) return;
+  window._loadingTraining = true;
   const container = document.getElementById('view-training');
   container.innerHTML = `
     <h2 class="view-title">${strings.training.title}</h2>
@@ -85,7 +87,7 @@ export function init() {
     </div>
     <div class="card">
       <h2>${strings.training.progressionChart}</h2>
-      <canvas id="progression-chart" height="250"></canvas>
+      <div class="chart-container"><canvas id="progression-chart"></canvas></div>
     </div>
     <div class="card">
       <h2>${strings.training.sessionDeltas}</h2>
@@ -353,19 +355,128 @@ export function init() {
     }
   })();
 
+  const MUSCLE_ICONS = {
+    pecho: '🏋️', pectoral: '🏋️', chest: '🏋️',
+    espalda: '🔙', back: '🔙',
+    hombro: '🏔️', shoulder: '🏔️',
+    brazo: '💪', arm: '💪', biceps: '💪', triceps: '💪',
+    pierna: '🦵', leg: '🦵', quad: '🦵', cuadriceps: '🦵',
+    femoral: '🦵', hamstring: '🦵',
+    gluteo: '🍑', glute: '🍑', glúteo: '🍑',
+    abdominal: '🧠', abs: '🧠', core: '🧠',
+    pantorrilla: '🦶', calf: '🦶',
+    antebrazo: '🤌', forearm: '🤌',
+    trapecio: '🔺', trap: '🔺', trapezius: '🔺',
+    dorsal: '🦅', lat: '🦅',
+  };
+
+  function getMuscleIcon(group) {
+    if (!group) return '🏋️';
+    const g = group.toLowerCase();
+    for (const [key, icon] of Object.entries(MUSCLE_ICONS)) {
+      if (g.includes(key)) return icon;
+    }
+    return '🏋️';
+  }
+
   async function loadExercises() {
-    const exercises = await api.getExerciseLibrary();
+    const allExercises = await api.getExerciseLibrary();
     const el = document.getElementById('exercise-list');
-    if (!exercises || exercises.length === 0) {
+    if (!allExercises || allExercises.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noExercises}</p></div>`;
       return;
     }
-    let html = '<table><thead><tr><th>Nombre</th><th>Grupo Muscular</th><th>Equipo</th><th>Patrón</th></tr></thead><tbody>';
-    for (const e of exercises) {
-      html += `<tr><td>${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td></tr>`;
+
+    let _page = 0;
+    const _perPage = 20;
+    let _filterMuscle = '';
+    let _filterEquipment = '';
+    let _sortBy = 'name';
+    let _sortAsc = true;
+
+    const muscleGroups = [...new Set(allExercises.map(e => e.muscle_group).filter(Boolean))].sort();
+    const equipment = [...new Set(allExercises.map(e => e.equipment).filter(Boolean))].sort();
+
+    function getFiltered() {
+      let list = [...allExercises];
+      if (_filterMuscle) list = list.filter(e => e.muscle_group === _filterMuscle);
+      if (_filterEquipment) list = list.filter(e => e.equipment === _filterEquipment);
+      list.sort((a, b) => {
+        let va = a[_sortBy] || '', vb = b[_sortBy] || '';
+        if (typeof va === 'string') {
+          va = va.toLowerCase(); vb = vb.toLowerCase();
+          return _sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        }
+        return _sortAsc ? va - vb : vb - va;
+      });
+      return list;
     }
-    html += '</tbody></table>';
-    el.innerHTML = html;
+
+    function renderPage() {
+      const filtered = getFiltered();
+      const totalPages = Math.ceil(filtered.length / _perPage);
+      if (_page >= totalPages) _page = totalPages - 1;
+      if (_page < 0) _page = 0;
+      const page = filtered.slice(_page * _perPage, (_page + 1) * _perPage);
+
+      let html = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:end">
+          <div class="form-group" style="margin-bottom:0">
+            <label style="font-size:11px">${strings.training.muscleGroup}</label>
+            <select id="ex-filter-muscle" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+              <option value="">${strings.training.all || 'Todos'}</option>
+              ${muscleGroups.map(m => `<option value="${m}" ${_filterMuscle === m ? 'selected' : ''}>${m}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label style="font-size:11px">${strings.training.equipment}</label>
+            <select id="ex-filter-equipment" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+              <option value="">${strings.training.all || 'Todos'}</option>
+              ${equipment.map(e => `<option value="${e}" ${_filterEquipment === e ? 'selected' : ''}>${e}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label style="font-size:11px">${strings.general.sort || 'Ordenar'}</label>
+            <select id="ex-sort-by" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+              <option value="name" ${_sortBy === 'name' ? 'selected' : ''}>${strings.training.exerciseName}</option>
+              <option value="muscle_group" ${_sortBy === 'muscle_group' ? 'selected' : ''}>${strings.training.muscleGroup}</option>
+              <option value="equipment" ${_sortBy === 'equipment' ? 'selected' : ''}>${strings.training.equipment}</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" id="ex-sort-dir" style="padding:4px 10px;font-size:12px">${_sortAsc ? '▲' : '▼'}</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">${filtered.length} ${strings.training.exercises || 'ejercicios'}</span>
+          <div style="display:flex;gap:4px;align-items:center">
+            <button class="btn btn-secondary" id="ex-prev" style="padding:2px 8px;font-size:12px" ${_page === 0 ? 'disabled' : ''}>‹</button>
+            <span style="font-size:12px;color:var(--text-secondary)">${_page + 1}/${totalPages}</span>
+            <button class="btn btn-secondary" id="ex-next" style="padding:2px 8px;font-size:12px" ${_page >= totalPages - 1 ? 'disabled' : ''}>›</button>
+          </div>
+        </div>
+        <table><thead><tr><th>${strings.training.exerciseName}</th><th>${strings.training.muscleGroup}</th><th>${strings.training.equipment}</th><th>${strings.training.movementPattern}</th></tr></thead><tbody>`;
+      for (const e of page) {
+        html += `<tr><td>${getMuscleIcon(e.muscle_group)} ${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      el.innerHTML = html;
+
+      // Wire filters
+      const muscleSelect = document.getElementById('ex-filter-muscle');
+      const equipSelect = document.getElementById('ex-filter-equipment');
+      const sortSelect = document.getElementById('ex-sort-by');
+      const sortDirBtn = document.getElementById('ex-sort-dir');
+      if (muscleSelect) muscleSelect.addEventListener('change', () => { _filterMuscle = muscleSelect.value; _page = 0; renderPage(); });
+      if (equipSelect) equipSelect.addEventListener('change', () => { _filterEquipment = equipSelect.value; _page = 0; renderPage(); });
+      if (sortSelect) sortSelect.addEventListener('change', () => { _sortBy = sortSelect.value; renderPage(); });
+      if (sortDirBtn) sortDirBtn.addEventListener('click', () => { _sortAsc = !_sortAsc; renderPage(); });
+
+      const prevBtn = document.getElementById('ex-prev');
+      const nextBtn = document.getElementById('ex-next');
+      if (prevBtn) prevBtn.addEventListener('click', () => { _page--; renderPage(); });
+      if (nextBtn) nextBtn.addEventListener('click', () => { _page++; renderPage(); });
+    }
+
+    renderPage();
   }
 
   async function loadRoutines() {
@@ -514,10 +625,6 @@ export function init() {
     el.innerHTML = html;
   }
 
-  loadExercises();
-  loadRoutines();
-  loadSessions();
-  loadProgression();
-  loadDeltas();
-  loadStrengthStatus();
+  await Promise.all([loadExercises(), loadRoutines(), loadSessions(), loadProgression(), loadDeltas(), loadStrengthStatus()]);
+  window._loadingTraining = false;
 }

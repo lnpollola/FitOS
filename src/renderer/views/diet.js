@@ -1,6 +1,8 @@
 import { strings } from '../locales/es.js';
 
-export function init() {
+export async function init() {
+  if (window._loadingDiet) return;
+  window._loadingDiet = true;
   const container = document.getElementById('view-diet');
   container.innerHTML = `
     <h2 class="view-title">${strings.diet.title}</h2>
@@ -47,7 +49,7 @@ export function init() {
       <h3>${strings.diet.learnNewFood}</h3>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${strings.diet.learnNewFoodDesc}</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" id="learn-food-name" placeholder="e.g. Quinoa Burger" class="form-group" style="flex:1;margin-bottom:0" />
+        <input type="text" id="learn-food-name" placeholder="${strings.diet.foodPlaceholder}" class="form-group" style="flex:1;margin-bottom:0" />
         <button class="btn btn-secondary" id="btn-suggest">${strings.diet.suggest}</button>
       </div>
       <div id="learn-suggestion" style="display:none">
@@ -340,6 +342,13 @@ export function init() {
 
   document.getElementById('plan-date').valueAsDate = new Date();
   const todayStr = new Date().toISOString().split('T')[0];
+
+  await Promise.all([
+    loadFoods(),
+    loadHiddenFoods(),
+    document.getElementById('plan-date').value ? loadDailyPlan(document.getElementById('plan-date').value) : Promise.resolve(),
+  ]);
+  window._loadingDiet = false;
 
   // Auto-create daily plan from templates
   document.getElementById('btn-auto-create-plan').addEventListener('click', async () => {

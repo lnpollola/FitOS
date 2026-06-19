@@ -1,6 +1,8 @@
 import { strings } from '../locales/es.js';
 
-export function init() {
+export async function init() {
+  if (window._loadingEnergy) return;
+  window._loadingEnergy = true;
   const container = document.getElementById('view-energy');
   container.innerHTML = `
     <h2 class="view-title">${strings.energy.title}</h2>
@@ -11,7 +13,7 @@ export function init() {
     <div class="card">
       <h2>${strings.energy.dailyBalance}</h2>
       <div class="form-group">
-        <label>${strings.energy.date || 'Fecha'}</label>
+        <label>${strings.energy.date}</label>
         <input type="date" id="balance-date" />
       </div>
       <div id="daily-balance"><div class="empty-state"><p>${strings.energy.selectDate}</p></div></div>
@@ -64,5 +66,6 @@ export function init() {
     }
   }
 
-  load();
+  await load();
+  window._loadingEnergy = false;
 }

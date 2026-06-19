@@ -82,6 +82,17 @@ function registerIpcHandlers(mainWindow) {
     `).all(startDate);
   });
 
+  ipcMain.handle('db:getActivityKcalByType', (_event, fromDate, toDate) => {
+    const db = getDb();
+    return db.prepare(`
+      SELECT sport_type, COUNT(*) as count, COALESCE(ROUND(AVG(calories), 0), 0) as avg_kcal, COALESCE(SUM(calories), 0) as total_kcal
+      FROM sport_activities
+      WHERE date >= ? AND date <= ?
+      GROUP BY sport_type
+      ORDER BY total_kcal DESC
+    `).all(fromDate, toDate);
+  });
+
   // Apple Health XML import
   ipcMain.handle('db:checkHealthsync', () => {
     return !!getHealthsyncPath();
@@ -260,6 +271,11 @@ function registerIpcHandlers(mainWindow) {
     return db.prepare('SELECT * FROM measurement_sets ORDER BY date DESC').all();
   });
 
+  ipcMain.handle('db:getLatestMeasurementSet', () => {
+    const db = getDb();
+    return db.prepare('SELECT * FROM measurement_sets ORDER BY date DESC LIMIT 1').get() || null;
+  });
+
   ipcMain.handle('db:saveMeasurementSet', (_event, set) => {
     const db = getDb();
     const columns = Object.keys(set).filter(k => k !== 'date');
@@ -436,6 +452,18 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('db:setSetting', (_event, key, value) => {
     const db = getDb();
     db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?').run(key, value, value);
+    return true;
+  });
+
+  ipcMain.handle('db:getLastImportTimestamp', () => {
+    const db = getDb();
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'health_last_import'").get();
+    return row?.value || null;
+  });
+
+  ipcMain.handle('db:setLastImportTimestamp', (_event, timestamp) => {
+    const db = getDb();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('health_last_import', ?) ON CONFLICT(key) DO UPDATE SET value = ?").run(timestamp, timestamp);
     return true;
   });
 
@@ -693,16 +721,34 @@ function registerIpcHandlers(mainWindow) {
     }
   });
 
+  const resolveSportType = (type) => ({
+    'HKWorkoutActivityTypeRunning': 'running',
+    'HKWorkoutActivityTypeCycling': 'cycling',
+    'HKWorkoutActivityTypeWalking': 'walking',
+    'HKWorkoutActivityTypeSwimming': 'swimming',
+    'HKWorkoutActivityTypeYoga': 'yoga',
+    'HKWorkoutActivityTypeHighIntensityIntervalTraining': 'HIIT',
+    'HKWorkoutActivityTypeTraditionalStrengthTraining': 'strength',
+    'HKWorkoutActivityTypeFunctionalStrengthTraining': 'strength',
+    'HKWorkoutActivityTypeSoccer': 'football',
+    'HKWorkoutActivityTypePaddleSports': 'paddle',
+    'HKWorkoutActivityTypeBoxing': 'boxing',
+    'HKWorkoutActivityTypeMixedCardio': 'other',
+    'HKWorkoutActivityTypeCoreTraining': 'other',
+    'HKWorkoutActivityTypeFlexibility': 'other',
+  })[type] || 'other';
+
   ipcMain.handle('health:getWorkouts', (_event, limit = 20) => {
     try {
       const hs = getHS();
-      return { ok: true, data: hs.prepare(`
+      const rows = hs.prepare(`
         SELECT date(start_date) as date, activity_type,
                ROUND(duration, 1) as minutes,
                ROUND(total_energy_burned, 0) as kcal,
                ROUND(total_distance, 2) as km
         FROM workouts ORDER BY start_date DESC LIMIT ?
-      `).all(limit) };
+      `).all(limit);
+      return { ok: true, data: rows.map(r => ({ ...r, activity_type: resolveSportType(r.activity_type) })) };
     } catch (e) {
       return { ok: false, error: e.message };
     }
@@ -864,7 +910,7 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('health:getWorkoutRanking', (_event, from, to) => {
     try {
       const hs = getHS();
-      return { ok: true, data: hs.prepare(`
+      const rows = hs.prepare(`
         SELECT activity_type,
                COUNT(*) as count,
                ROUND(SUM(duration), 1) as total_hours,
@@ -874,7 +920,8 @@ function registerIpcHandlers(mainWindow) {
         WHERE date(start_date) BETWEEN ? AND ?
         GROUP BY activity_type
         ORDER BY total_kcal DESC
-      `).all(from, to) };
+      `).all(from, to);
+      return { ok: true, data: rows.map(r => ({ ...r, activity_type: resolveSportType(r.activity_type) })) };
     } catch (e) {
       return { ok: false, error: e.message };
     }
