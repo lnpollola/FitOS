@@ -27,3 +27,6 @@ apple-healt-export/
 
 # Build artifacts (Electron AppImage, unpacked binaries)
 release/
+
+# Vite build cache
+.vite/

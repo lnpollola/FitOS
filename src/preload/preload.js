@@ -87,6 +87,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getHealthStats: () => ipcRenderer.invoke('health:getStats'),
   syncHealthToApp: () => ipcRenderer.invoke('health:syncToApp'),
 
+  // Health Analytics (date-range queries)
+  getHealthHeartRateRange: (from, to) => ipcRenderer.invoke('health:getHeartRateRange', from, to),
+  getHealthHRVRange: (from, to) => ipcRenderer.invoke('health:getHRVRange', from, to),
+  getHealthSleepRange: (from, to) => ipcRenderer.invoke('health:getSleepRange', from, to),
+  getHealthWorkoutRange: (from, to) => ipcRenderer.invoke('health:getWorkoutRange', from, to),
+  getHealthWorkoutRanking: (from, to) => ipcRenderer.invoke('health:getWorkoutRanking', from, to),
+  getHealthRestingHeartRateRange: (from, to) => ipcRenderer.invoke('health:getRestingHeartRateRange', from, to),
+  getHealthVO2MaxRange: (from, to) => ipcRenderer.invoke('health:getVO2MaxRange', from, to),
+  getHealthExerciseTimeRange: (from, to) => ipcRenderer.invoke('health:getExerciseTimeRange', from, to),
+  getHealthDistanceSummary: (from, to) => ipcRenderer.invoke('health:getDistanceSummary', from, to),
+  getHealthWalkingSpeedRange: (from, to) => ipcRenderer.invoke('health:getWalkingSpeedRange', from, to),
+  getHealthFlightsClimbedRange: (from, to) => ipcRenderer.invoke('health:getFlightsClimbedRange', from, to),
+
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),
   importData: () => ipcRenderer.invoke('import:data'),

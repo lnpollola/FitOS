@@ -795,6 +795,181 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('health:syncToApp', () => {
     return migrateHealthData(mainWindow);
   });
+
+  // ─── HealthSync analytics queries (date-range, read-only) ───
+
+  ipcMain.handle('health:getHeartRateRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date,
+               ROUND(AVG(value), 1) as avg_bpm,
+               ROUND(MIN(value), 0) as min_bpm,
+               ROUND(MAX(value), 0) as max_bpm
+        FROM heart_rate
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getHRVRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, ROUND(AVG(value), 1) as hrv_ms
+        FROM hrv
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getSleepRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date, '-6 hours') as night,
+               ROUND(SUM((julianday(end_date) - julianday(start_date)) * 24), 2) as hours
+        FROM sleep WHERE value LIKE '%Asleep%'
+          AND date(start_date, '-6 hours') BETWEEN ? AND ?
+        GROUP BY night ORDER BY night ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getWorkoutRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, activity_type,
+               ROUND(duration, 1) as minutes,
+               ROUND(total_energy_burned, 0) as kcal,
+               ROUND(total_distance, 2) as km
+        FROM workouts
+        WHERE date(start_date) BETWEEN ? AND ?
+        ORDER BY start_date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getWorkoutRanking', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT activity_type,
+               COUNT(*) as count,
+               ROUND(SUM(duration), 1) as total_hours,
+               ROUND(SUM(total_energy_burned), 0) as total_kcal,
+               ROUND(SUM(total_distance), 2) as total_km
+        FROM workouts
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY activity_type
+        ORDER BY total_kcal DESC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getRestingHeartRateRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, ROUND(AVG(value), 1) as rhr_bpm
+        FROM resting_heart_rate
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getVO2MaxRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, ROUND(AVG(value), 1) as vo2_max
+        FROM vo2_max
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getExerciseTimeRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 1) as minutes
+        FROM exercise_time
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getDistanceSummary', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const walking = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 3) as km
+        FROM distance_walking_running
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to);
+      const cycling = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 3) as km
+        FROM distance_cycling
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to);
+      return { ok: true, data: { walking, cycling } };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getWalkingSpeedRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, ROUND(AVG(value), 2) as speed_kmh
+        FROM walking_speed
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getFlightsClimbedRange', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      return { ok: true, data: hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 0) as count
+        FROM flights_climbed
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
 }
 
 module.exports = { registerIpcHandlers };
