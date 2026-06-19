@@ -1,128 +1,111 @@
-# FitOS: acompañante adaptativo de nutrición y entrenamiento
+# FitOS — Acompañante Adaptativo de Nutrición y Entrenamiento
+
+![FitOS](https://img.shields.io/badge/FitOS-v0.1.0-0D9488?style=flat-square)
+![Electron](https://img.shields.io/badge/Electron-28.1-47848F?style=flat-square)
+![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+
+App de escritorio local-first (**Electron + SQLite**) para unificar datos de **Apple Watch**, plan de dieta basado en slots, balance energético con GET real, mediciones corporales y entrenamiento de fuerza. Cero dependencias cloud, todo corre localmente.
+
+## Novedades v0.1.0
+
+| Novedad | Descripción |
+|---|---|
+| Importación Apple Health XML | Reemplazó el CSV como fuente principal de datos |
+| Timeline con sparklines | Cada métrica diaria muestra tendencia 7d + flecha vs día anterior |
+| Dashboard renovado | Selector de rango (7d/15d/1m), cards por actividad con iconos, resumen total |
+| KPIs deportivos | Tarjetas con total sesiones, kcal, minutos, tipos + tabla ordenable |
+| Biblioteca de ejercicios | Filtros por grupo muscular/equipo, paginación, iconos |
+| Tendencias de salud | 6 gráficos, ranking con nombres en español, métricas secundarias (VO2, RHR, etc.) |
+| Mediciones corporales | 13 métricas con gráficos individuales, pre-fill último valor, labels en español |
+| Perfil con métricas disponibles | Listado de 9 métricas de HealthSync aún no visualizadas |
+
+## Capturas de Pantalla
+
+> Agrega aquí las capturas. Coloca los archivos en `screenshots/`.
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png?raw=true)
+*Panel principal con resumen de balance, pasos, FC reposo y cards de actividad deportiva por tipo.*
+
+### Actividad
+![Actividad - Timeline](screenshots/activity-timeline.png?raw=true)
+*Línea de tiempo con sparklines de tendencia 7d, flechas de cambio diario y paginación por mes.*
+
+![Actividad - Deporte KPIs](screenshots/activity-sport-kpis.png?raw=true)
+*Resumen deportivo con KPIs (sesiones, kcal, minutos, tipos) y tabla ordenable con iconos.*
+
+### Plan de Dieta
+![Dieta](screenshots/diet.png?raw=true)
+*Plantillas de comidas por slots, gestor de alimentos y platos elaborados.*
+
+### Balance Energético
+![Balance](screenshots/energy.png?raw=true)
+*Desglose del GET (TMB + deporte + NEAT), balance diario y semanal.*
+
+### Mediciones Corporales
+![Mediciones](screenshots/measurements.png?raw=true)
+*Formulario con pre-fill del último valor, historial formateado y 13 gráficos de tendencia.*
+
+### Tendencias de Salud
+![Tendencias](screenshots/analytics.png?raw=true)
+*6 gráficos (pasos, FC, energía, HRV, sueño, actividades), ranking con iconos y métricas secundarias.*
+
+### Entrenamiento de Fuerza
+![Entrenamiento](screenshots/training.png?raw=true)
+*Planes de entrenamiento, biblioteca con filtros, registro de sesiones y gráfico de progresión.*
+
+### Perfil
+![Perfil](screenshots/profile.png?raw=true)
+*Perfil de usuario, export/import JSON y métricas disponibles no visualizadas.*
+
+---
+
+## Stack
+
+| Capa | Tecnología |
+|---|---|
+| Desktop | Electron 28.1 (contextIsolation: true, nodeIntegration: false) |
+| Frontend | Vanilla JS (ES modules), Vite 5, Chart.js 4.4 |
+| Base de datos | better-sqlite3 9.6 (SQLite WAL mode, foreign keys ON) |
+| Importación salud | HealthSync CLI (Go) para parseo de XML Apple Health |
+| Build | Vite + electron-builder (AppImage / NSIS / dmg) |
+
+## Vistas (8)
+
+| Vista | ID | Funcionalidad |
+|---|---|---|
+| Panel | `dashboard` | Balance semanal, pasos promedio, FC reposo, cards actividad por tipo con resumen total |
+| Actividad | `activity` | Importación Apple Health XML, timeline con sparklines + flechas, KPIs deportivos |
+| Plan de Dieta | `diet` | Plantillas de comidas por slots, alimentos, platos elaborados, plan diario |
+| Balance Energético | `energy` | Desglose GET (TMB + deporte + NEAT), balance diario y semanal |
+| Mediciones | `measurements` | 13 métricas + peso, método Navy body fat, 13 gráficos individuales |
+| Tendencias | `analytics` | 6 gráficos de salud, ranking actividades, métricas secundarias (VO2, RHR, HRV, etc.) |
+| Entrenamiento | `training` | Planes 2-6 días, biblioteca con filtros, sesiones, progresión |
+| Perfil | `profile` | Perfil usuario, export/import JSON, métricas disponibles |
+
+## Scripts
+
+```bash
+npm run dev          # Vite + Electron en concurrently
+npm run build        # Build producción + empaquetado
+npm run dev:web      # Solo frontend en navegador (sin Electron)
+```
 
 ## Propósito
 
-Construir una aplicación de escritorio que unifique datos de actividad de Apple Watch, un modelo de plan de dieta basado en slots, seguimiento del balance energético con GET real a partir de actividades deportivas, mediciones corporales con estimación de grasa corporal, y planes de entrenamiento de fuerza en un único sistema adaptativo para la pérdida de grasa y la recomposición corporal.
-
-El producto debe ayudar al usuario a entender:
-
-- cuánta energía gasta cada día (TMB + actividad deportiva real + NEAT por pasos)
-- cuánta energía aporta su plan de dieta (modelo de comidas por slots con opciones intercambiables)
-- si está manteniendo un déficit calórico, usando peso + mediciones corporales
-- cómo ajustar el plan de dieta a nivel de slot/gramo para aumentar o disminuir el déficit de forma segura
-- cómo interactúan su carga de entrenamiento, recuperación y nutrición a lo largo del tiempo
-
-La aplicación no es solo un contador de calorías. Actúa como una capa de decisión guiada que convierte datos reales de actividad y mediciones en ajustes semanales del plan de dieta.
-
-## Problema
-
-Los usuarios suelen tener datos de salud fragmentados:
-
-- los datos del wearable viven en Apple Watch / Health app
-- los planes de dieta personalizados viven en PDFs o chats (ya extraídos en datos estructurados)
-- las rutinas de gimnasio viven en notas, hojas de cálculo o mensajes de entrenadores
-- las decisiones sobre pérdida de peso se toman manualmente sin un modelo fiable de balance energético
-- las mediciones corporales se registran en notas o no se registran en absoluto
-
-Esta fragmentación dificulta responder preguntas simples:
+FitOS convierte datos reales de actividad y mediciones en decisiones semanales del plan de dieta, ayudando a responder:
 
 - ¿Estoy realmente en déficit?
-- ¿Estoy comiendo según mi plan?
 - ¿Mi entrenamiento está alineado con mi recuperación y objetivo?
-- ¿Debería ajustar calorías reduciendo porciones de carbohidratos o grasas?
+- ¿Debería ajustar calorías reduciendo carbohidratos o grasas?
 - ¿Estoy perdiendo grasa o músculo según las mediciones?
 
-## Visión
-
-Crear una aplicación de escritorio local (Electron + SQLite) que:
-
-1. importe exportaciones CSV de Apple Watch con métricas diarias y desglose por deporte
-2. modele la dieta como una plantilla basada en slots con opciones de alimentos intercambiables
-3. calcule el GET a partir de calorías de actividad deportiva real (ciclismo, boxeo, HIIT, caminata, fútbol, pádel) más TMB
-4. compare la ingesta planificada vs el GET a lo largo del tiempo
-5. adapte el plan de dieta a nivel de slot/gramo hacia una pérdida de peso sostenible
-6. registre 10 mediciones corporales más peso con gráficos de tendencia y grasa corporal estimada
-7. almacene planes de fuerza, máquinas, cargas, rutinas e historial de progresión
-8. aprenda nuevas opciones de alimentos y olvide las no utilizadas para mantener el plan relevante
-
-## Alcance MVP
-
-### 1. Ingesta de actividad
-- Importar exportaciones CSV de Apple Watch con métricas diarias
-- Normalizar pasos, frecuencia cardíaca, calorías activas, calorías en reposo, sesiones de entrenamiento, sueño y peso
-- Analizar datos de entrenamiento por deporte (ciclismo, boxeo, HIIT, caminata, fútbol, pádel)
-- Almacenar agregados históricos diarios con desglose por deporte
-
-### 2. Gestión del plan de dieta
-- Modelar la dieta como plantillas de comidas con slots (carbohidratos, proteína, grasa, verduras, fruta, extras)
-- Cada slot tiene opciones de alimentos intercambiables con kcal/macros conocidos por 100g
-- Calcular totales de comida y diarios a partir de opciones seleccionadas y cantidades en gramos
-- Añadir nuevas opciones de alimentos con entrada manual de macros
-- Ocultar/olvidar opciones de alimentos no utilizadas para reducir el desorden
-- Ajustar manualmente cantidades en gramos por slot con recálculo en tiempo real
-
-### 3. Balance energético
-- Calcular TMB usando la fórmula de Mifflin-St Jeor
-- Calcular GET como TMB + calorías de actividad deportiva + NEAT basado en pasos
-- Comparar ingesta planificada vs GET para balance diario y semanal
-- Mostrar clasificación de superávit, mantenimiento o déficit
-- Mostrar desglose del GET (TMB + deporte + componentes NEAT)
-
-### 4. Planificación adaptativa de pérdida de grasa
-- Definir ritmo objetivo de pérdida de peso (0.25–1.0 kg/semana)
-- Recomendar déficit calórico inicial
-- Ajustar el plan de dieta a nivel de slot/gramo semanalmente usando peso de tendencia, mediciones corporales, actividad y grasa corporal estimada
-- Detectar recomposición corporal (peso estable, mediciones mejorando)
-- Prevenir reducciones inseguras con suelos mínimos de calorías
-- Presentar ajustes como recomendaciones de aceptar/descartar/modificar
-
-### 5. Mediciones corporales
-- Registrar 10 métricas: pecho, cuello, hombros, bíceps (I/D), antebrazos (I/D), cintura, cadera, muslos (I/D), gemelos (I/D)
-- Registrar peso de forma independiente entre sesiones completas de medición
-- Mostrar gráficos de tendencia individuales por métrica
-- Calcular porcentaje de grasa corporal estimado usando el método de circunferencia Navy
-- Mostrar comparación antes/después con deltas
-- Tendencia de peso como media móvil de 7 días
-
-### 6. Entrenamiento de fuerza
-- Almacenar rutinas por día con mapeo ejercicio-a-día
-- Registrar máquinas, ejercicios, series, repeticiones, carga y progresión
-- Biblioteca de ejercicios con 25+ ejercicios categorizados por grupo muscular y equipo
-- Registro de sesiones con formulario de entrada de series
-- Gráficos de progresión (1RM estimado o carga de volumen a lo largo del tiempo)
-- Comparaciones delta entre sesiones
-
-### 7. Aplicación de escritorio
-- App de escritorio Electron con almacenamiento local SQLite
-- Panel de control de ventana única con navegación lateral
-- Exportación/importación de datos como JSON para copia de seguridad
-- Menús nativos e integración con el sistema
-- Cero dependencias en la nube
-
-## No objetivos para v1
-- Diagnóstico médico completo
-- Chatbot de coaching en tiempo real como interfaz principal
-- Reconocimiento de comidas por visión artificial
-- Interpretación avanzada de hormonas o marcadores sanguíneos
-- Mercado completo para entrenadores
-- Aplicación móvil o PWA
-- Sincronización en la nube o compartición de datos entre dispositivos
-- Integración nativa con HealthKit (solo importación CSV)
-- Escaneo de códigos de barras o API pública de bases de datos de alimentos
-
 ## Principios del producto
-- Recomendaciones basadas en comportamiento, no solo paneles
-- Modelo de dieta basado en estructura de planes real probada
-- Lógica de calorías y adaptación explicable
-- GET basado en actividades reales, no multiplicadores genéricos
-- Revisión semanal del plan sobre fluctuaciones diarias ruidosas
-- Valores predeterminados seguros para déficit y progresión de carga
-- Las mediciones cuentan la historia completa, no solo la báscula
 
-## Riesgos clave a explorar
-- Estabilidad del formato de exportación CSV de Apple Watch entre versiones de watchOS
-- Precisión de kcal/macros de la base de datos de alimentos
-- Aproximaciones de la fórmula de grasa corporal Navy vs variación individual
-- Adherencia vs plan de dieta prescrito (sin registro diario de alimentos)
-- Cobertura del modelo basado en slots para comidas no planificadas
-- Desarrollador único construyendo UI full-stack + datos + motor
+- GET basado en actividades reales (deportivas + NEAT), no multiplicadores genéricos
+- Modelo de dieta basado en estructura de planes real probada
+- Revisión semanal del plan sobre fluctuaciones diarias ruidosas
+- Las mediciones cuentan la historia completa, no solo la báscula
+- Valores predeterminados seguros para déficit y progresión de carga
+- Cero dependencias cloud, datos locales siempre
