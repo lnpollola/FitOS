@@ -22,42 +22,7 @@ App de escritorio local-first (**Electron + SQLite**) para unificar datos de **A
 
 ## Capturas de Pantalla
 
-> Agrega aquí las capturas. Coloca los archivos en `screenshots/`.
-
-### Dashboard
-![Dashboard](screenshots/dashboard.png?raw=true)
-*Panel principal con resumen de balance, pasos, FC reposo y cards de actividad deportiva por tipo.*
-
-### Actividad
-![Actividad - Timeline](screenshots/activity-timeline.png?raw=true)
-*Línea de tiempo con sparklines de tendencia 7d, flechas de cambio diario y paginación por mes.*
-
-![Actividad - Deporte KPIs](screenshots/activity-sport-kpis.png?raw=true)
-*Resumen deportivo con KPIs (sesiones, kcal, minutos, tipos) y tabla ordenable con iconos.*
-
-### Plan de Dieta
-![Dieta](screenshots/diet.png?raw=true)
-*Plantillas de comidas por slots, gestor de alimentos y platos elaborados.*
-
-### Balance Energético
-![Balance](screenshots/energy.png?raw=true)
-*Desglose del GET (TMB + deporte + NEAT), balance diario y semanal.*
-
-### Mediciones Corporales
-![Mediciones](screenshots/measurements.png?raw=true)
-*Formulario con pre-fill del último valor, historial formateado y 13 gráficos de tendencia.*
-
-### Tendencias de Salud
-![Tendencias](screenshots/analytics.png?raw=true)
-*6 gráficos (pasos, FC, energía, HRV, sueño, actividades), ranking con iconos y métricas secundarias.*
-
-### Entrenamiento de Fuerza
-![Entrenamiento](screenshots/training.png?raw=true)
-*Planes de entrenamiento, biblioteca con filtros, registro de sesiones y gráfico de progresión.*
-
-### Perfil
-![Perfil](screenshots/profile.png?raw=true)
-*Perfil de usuario, export/import JSON y métricas disponibles no visualizadas.*
+*Próximamente — coloca archivos `screenshots/*.png` y haz commit para que aparezcan aquí.*
 
 ---
 
