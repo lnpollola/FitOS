@@ -1,5 +1,6 @@
 import Chart from 'chart.js/auto';
 import { strings, getMeasurementLabel } from '../locales/es.js';
+import { calculateBodyFat } from '../utils/body-fat.js';
 
 const METRIC_COLUMNS = [
   'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
@@ -69,6 +70,7 @@ export async function init() {
     <div class="card">
       <h2>${strings.measurements.weightTrend}</h2>
       <div class="chart-container"><canvas id="weight-chart"></canvas></div>
+      <div id="weight-entries-list" style="margin-top:12px"></div>
     </div>
     <div id="measurement-charts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     <div class="card">
@@ -140,19 +142,6 @@ export async function init() {
     ]);
   }
 
-  function calculateBodyFat(neck, waist, hips, sex, height) {
-    if (!neck || !waist || !hips || !sex || !height) return null;
-    if (sex === 'male') {
-      const logVal = Math.log10(waist - neck);
-      const bf = 86.010 * logVal - 70.041 * Math.log10(height) + 36.76;
-      return Math.max(bf, 3);
-    } else {
-      const logVal = Math.log10(waist + hips - neck);
-      const bf = 163.205 * logVal - 97.684 * Math.log10(height) - 78.387;
-      return Math.max(bf, 10);
-    }
-  }
-
   async function loadBodyFatEstimate() {
     const profile = await api.getProfile();
     const sets = await api.getMeasurementSets();
@@ -183,7 +172,7 @@ export async function init() {
       return;
     }
     const allCols = [...METRIC_COLUMNS, 'weight_kg'];
-    const headers = ['Fecha', ...allCols.map(c => getMeasurementLabel(c))];
+    const headers = ['Fecha', ...allCols.map(c => getMeasurementLabel(c)), ''];
     let html = '<table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
     const profile = await api.getProfile();
     for (let i = 0; i < sets.length; i++) {
@@ -194,10 +183,20 @@ export async function init() {
         const val = s[col];
         html += `<td>${val != null ? val.toFixed(1) : '--'}</td>`;
       }
+      html += `<td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-measurement="${s.id}">${strings.general.delete}</button></td>`;
       html += '</tr>';
     }
     html += '</tbody></table>';
     el.innerHTML = html;
+
+    el.querySelectorAll('[data-delete-measurement]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm(strings.importExport?.confirmImport || '¿Eliminar esta medición?')) {
+          await api.deleteMeasurementSet(parseInt(btn.dataset.deleteMeasurement));
+          loadAll();
+        }
+      });
+    });
   }
 
   async function loadWeightChart() {
@@ -212,6 +211,19 @@ export async function init() {
       return;
     }
     canvas.style.display = 'block';
+
+    const listEl = document.getElementById('weight-entries-list');
+    listEl.innerHTML = '<table><thead><tr><th>Fecha</th><th>Peso (kg)</th><th></th></tr></thead><tbody>' +
+      [...weights].map(w => `<tr><td>${w.date}</td><td>${w.weight_kg.toFixed(1)}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-weight="${w.id}">${strings.general.delete}</button></td></tr>`).join('') +
+      '</tbody></table>';
+    listEl.querySelectorAll('[data-delete-weight]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm(strings.importExport?.confirmImport || '¿Eliminar esta entrada de peso?')) {
+          await api.deleteWeightEntry(parseInt(btn.dataset.deleteWeight));
+          loadAll();
+        }
+      });
+    });
 
     const sorted = [...weights].reverse();
     const labels = sorted.map(w => w.date);

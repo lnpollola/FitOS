@@ -1,10 +1,6 @@
 import { strings, getSportDisplayName } from '../locales/es.js';
-
-const SPORT_ICONS = {
-  running: '🏃', cycling: '🚴', walking: '🚶', swimming: '🏊',
-  yoga: '🧘', HIIT: '💪', strength: '🏋️', football: '⚽',
-  paddle: '🏓', boxing: '🥊', other: '🏅',
-};
+import { SPORT_ICONS } from '../utils/sport-icons.js';
+import { getRangeDates } from '../utils/date-range.js';
 
 export async function init() {
   if (window._loadingDashboard) return;
@@ -13,20 +9,6 @@ export async function init() {
   const api = window.electronAPI;
 
   let _range = '7d';
-
-  function getRangeDates(range) {
-    const now = new Date();
-    const to = now.toISOString().split('T')[0];
-    let from;
-    if (range === '7d') {
-      const d = new Date(now); d.setDate(d.getDate() - 7); from = d.toISOString().split('T')[0];
-    } else if (range === '15d') {
-      const d = new Date(now); d.setDate(d.getDate() - 15); from = d.toISOString().split('T')[0];
-    } else {
-      const d = new Date(now); d.setDate(d.getDate() - 30); from = d.toISOString().split('T')[0];
-    }
-    return { from, to };
-  }
 
   container.innerHTML = `
     <h2 class="view-title">${strings.dashboard.title}</h2>

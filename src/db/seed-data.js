@@ -225,6 +225,23 @@ function seedIfEmpty(db) {
     transaction();
     console.log(`Seeded ${WORKOUT_PLANS.length} workout plans`);
   }
+
+  const compCount = db.prepare('SELECT COUNT(*) as count FROM meal_components').get().count;
+  if (compCount === 0) {
+    const insertComp = db.prepare('INSERT INTO meal_components (meal_template_id, food_item_id, default_grams, restday_grams, sort_order) VALUES (?, ?, ?, ?, ?)');
+    const insertOption = db.prepare('INSERT INTO meal_options (meal_component_id, food_item_id) VALUES (?, ?)');
+    const transaction = db.transaction(() => {
+      for (const comp of MEAL_COMPONENTS) {
+        const result = insertComp.run(comp.meal_template_id, comp.food_item_id, comp.default_grams, comp.restday_grams, comp.sort_order);
+        const compId = result.lastInsertRowid;
+        for (const optId of comp.options) {
+          insertOption.run(compId, optId);
+        }
+      }
+    });
+    transaction();
+    console.log(`Seeded ${MEAL_COMPONENTS.length} meal components with options`);
+  }
 }
 
 function seedStats() {
@@ -242,5 +259,35 @@ function seedStats() {
   console.table(stats);
   return stats;
 }
+
+const MEAL_COMPONENTS = [
+  // Desayuno (meal_template_id=1)
+  { meal_template_id: 1, food_item_id: 1, default_grams: 100, restday_grams: 70, sort_order: 1, options: [2, 5, 3, 4] },
+  { meal_template_id: 1, food_item_id: 20, default_grams: 120, restday_grams: 50, sort_order: 2, options: [19, 21, 22, 28] },
+  { meal_template_id: 1, food_item_id: 30, default_grams: 10, restday_grams: 10, sort_order: 3, options: [31, 32, 33] },
+  { meal_template_id: 1, food_item_id: 43, default_grams: 0, restday_grams: 0, sort_order: 4, options: [44, 40] },
+  // Media Mañana (meal_template_id=2)
+  { meal_template_id: 2, food_item_id: 5, default_grams: 30, restday_grams: 30, sort_order: 1, options: [] },
+  { meal_template_id: 2, food_item_id: 29, default_grams: 10, restday_grams: 10, sort_order: 2, options: [] },
+  { meal_template_id: 2, food_item_id: 32, default_grams: 15, restday_grams: 15, sort_order: 3, options: [] },
+  { meal_template_id: 2, food_item_id: 40, default_grams: 300, restday_grams: 300, sort_order: 4, options: [] },
+  // Comida (meal_template_id=3)
+  { meal_template_id: 3, food_item_id: 6, default_grams: 60, restday_grams: 60, sort_order: 1, options: [7, 13, 9, 10, 14] },
+  { meal_template_id: 3, food_item_id: 17, default_grams: 150, restday_grams: 150, sort_order: 2, options: [18, 23, 24, 27, 26] },
+  { meal_template_id: 3, food_item_id: 39, default_grams: 0, restday_grams: 0, sort_order: 3, options: [] },
+  { meal_template_id: 3, food_item_id: 36, default_grams: 150, restday_grams: 150, sort_order: 4, options: [37, 38] },
+  { meal_template_id: 3, food_item_id: 30, default_grams: 10, restday_grams: 10, sort_order: 5, options: [31] },
+  // Merienda (meal_template_id=4)
+  { meal_template_id: 4, food_item_id: 16, default_grams: 50, restday_grams: 30, sort_order: 1, options: [5, 15] },
+  { meal_template_id: 4, food_item_id: 29, default_grams: 20, restday_grams: 20, sort_order: 2, options: [20, 19] },
+  { meal_template_id: 4, food_item_id: 32, default_grams: 15, restday_grams: 20, sort_order: 3, options: [31] },
+  { meal_template_id: 4, food_item_id: 36, default_grams: 120, restday_grams: 120, sort_order: 4, options: [37, 38] },
+  // Cena (meal_template_id=5)
+  { meal_template_id: 5, food_item_id: 9, default_grams: 200, restday_grams: 80, sort_order: 1, options: [10, 7, 1] },
+  { meal_template_id: 5, food_item_id: 17, default_grams: 150, restday_grams: 150, sort_order: 2, options: [18, 24, 27, 26] },
+  { meal_template_id: 5, food_item_id: 39, default_grams: 0, restday_grams: 0, sort_order: 3, options: [] },
+  { meal_template_id: 5, food_item_id: 30, default_grams: 10, restday_grams: 10, sort_order: 4, options: [31, 34] },
+  { meal_template_id: 5, food_item_id: 41, default_grams: 0, restday_grams: 0, sort_order: 5, options: [42] },
+];
 
 module.exports = { seedIfEmpty, seedStats };

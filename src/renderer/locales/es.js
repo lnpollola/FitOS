@@ -147,6 +147,14 @@ export const strings = {
     categoryFilter: 'Filtrar por Categoría',
     foodPlaceholder: 'p.ej. Hamburguesa de Quinoa',
     smartDefaults: 'Valores por defecto basados en categoría',
+    categories: {
+      breads: 'Pan/Cereales',
+      proteins: 'Proteínas',
+      fats: 'Grasas',
+      fruits: 'Frutas',
+      vegetables: 'Verduras',
+      drinks: 'Bebidas',
+    },
   },
 
   // Energy

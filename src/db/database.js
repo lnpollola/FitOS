@@ -262,6 +262,19 @@ function createTables() {
 
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '1')").run();
   }
+
+  if (!schemaVersion || parseInt(schemaVersion) < 2) {
+    // Migration 3: Drop orphaned training_routine_days table (no IPC handlers or UI)
+    db.exec("DROP TABLE IF EXISTS training_routine_days");
+
+    // Migration 4: Add restday_grams for diet plan
+    const hasRestday = db.prepare("SELECT COUNT(*) as cnt FROM pragma_table_info('meal_components') WHERE name='restday_grams'").get();
+    if (hasRestday.cnt === 0) {
+      db.exec("ALTER TABLE meal_components ADD COLUMN restday_grams REAL DEFAULT NULL");
+    }
+
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '2')").run();
+  }
 }
 
 function getDb() {

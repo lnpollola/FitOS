@@ -1,11 +1,7 @@
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
-
-const SPORT_ICONS = {
-  running: '🏃', cycling: '🚴', walking: '🚶', swimming: '🏊',
-  yoga: '🧘', HIIT: '💪', strength: '🏋️', football: '⚽',
-  paddle: '🏓', boxing: '🥊', other: '🏅',
-};
+import { SPORT_ICONS } from '../utils/sport-icons.js';
+import { getRangeDates } from '../utils/date-range.js';
 
 const RANGES = {
   '7d': { label: 'last7d', days: 7 },
@@ -24,20 +20,6 @@ let _state = {
   from: null,
   to: null,
 };
-
-function getRangeDates(range) {
-  const now = new Date();
-  const to = now.toISOString().split('T')[0];
-  let from;
-  if (range === 'year') {
-    from = `${now.getFullYear()}-01-01`;
-  } else {
-    const d = new Date(now);
-    d.setDate(d.getDate() - RANGES[range].days);
-    from = d.toISOString().split('T')[0];
-  }
-  return { from, to };
-}
 
 function getPrevRangeDates(from, to) {
   const rangeDays = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));

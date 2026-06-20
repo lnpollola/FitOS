@@ -1,5 +1,6 @@
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
+import { SPORT_ICONS } from '../utils/sport-icons.js';
 
 export async function init() {
   if (window._loadingActivity) return;
@@ -352,12 +353,6 @@ export async function init() {
     const totalKcal = types.reduce((s, [, data]) => s + data.totalKcal, 0);
     const totalMin = types.reduce((s, [, data]) => s + data.totalMin, 0);
     const uniqueTypes = types.length;
-
-    const SPORT_ICONS = {
-      running: '🏃', cycling: '🚴', walking: '🚶', swimming: '🏊',
-      yoga: '🧘', HIIT: '💪', strength: '🏋️', football: '⚽',
-      paddle: '🏓', boxing: '🥊', other: '🏅',
-    };
 
     // KPI cards
     const kpiHtml = `

@@ -1,4 +1,5 @@
 import { strings } from '../locales/es.js';
+import { calculateBodyFat } from '../utils/body-fat.js';
 
 export function init() {
   const container = document.getElementById('view-energy');
@@ -88,6 +89,18 @@ export function init() {
       <p>${strings.adaptive.status}: <strong style="color:${isSafe ? 'var(--success)' : 'var(--danger)'}">${isSafe ? strings.adaptive.statusSafe : strings.adaptive.statusBelowMin}</strong></p>
     `;
 
+    if (balance) {
+      html += `
+        <hr style="margin:12px 0;border-color:var(--border)">
+        <div style="padding-left:12px;font-size:13px">
+          <p style="margin:4px 0"><strong>${strings.energy.tdeeBreakdown}</strong></p>
+          <p style="margin:2px 0">${strings.energy.bmr}: ${balance.bmr?.toFixed(0) || '--'} kcal</p>
+          <p style="margin:2px 0">${strings.energy.sportCalories}: ${balance.sport_calories?.toFixed(0) || '--'} kcal</p>
+          <p style="margin:2px 0">${strings.energy.neat}: ${balance.neat?.toFixed(0) || '--'} kcal</p>
+          <p style="margin:2px 0">${strings.energy.totalTdee}: <strong>${balance.tdee?.toFixed(0) || '--'} kcal</strong></p>
+        </div>`;
+    }
+
     if (targetIntake < safeMin) {
       const maxDeficit = maintenance - safeMin;
       const maxPace = (maxDeficit * 7) / deficitPerKg;
@@ -162,15 +175,6 @@ export function init() {
     html += `<p>${strings.adaptive.status}: <strong style="color:${isRecomp ? 'var(--success)' : 'var(--text-secondary)'}">${isRecomp ? strings.adaptive.recompDetected : strings.adaptive.noRecomp}</strong></p>`;
 
     el.innerHTML = html;
-  }
-
-  function calculateBodyFat(neck, waist, hips, sex, height) {
-    if (!neck || !waist || !hips || !sex || !height) return null;
-    if (sex === 'male') {
-      return Math.max(86.010 * Math.log10(waist - neck) - 70.041 * Math.log10(height) + 36.76, 3);
-    } else {
-      return Math.max(163.205 * Math.log10(waist + hips - neck) - 97.684 * Math.log10(height) - 78.387, 10);
-    }
   }
 
   async function loadAdjustments() {

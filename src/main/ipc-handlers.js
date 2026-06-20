@@ -285,6 +285,12 @@ function registerIpcHandlers(mainWindow) {
     return true;
   });
 
+  ipcMain.handle('db:deleteMeasurementSet', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM measurement_sets WHERE id = ?').run(id);
+    return true;
+  });
+
   ipcMain.handle('db:getWeightEntries', () => {
     const db = getDb();
     return db.prepare('SELECT * FROM weight_entries ORDER BY date DESC').all();
@@ -293,6 +299,12 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('db:saveWeightEntry', (_event, entry) => {
     const db = getDb();
     db.prepare('INSERT INTO weight_entries (date, weight_kg) VALUES (@date, @weight_kg)').run(entry);
+    return true;
+  });
+
+  ipcMain.handle('db:deleteWeightEntry', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM weight_entries WHERE id = ?').run(id);
     return true;
   });
 
@@ -308,6 +320,12 @@ function registerIpcHandlers(mainWindow) {
       INSERT INTO exercise_library (name, muscle_group, equipment, movement_pattern)
       VALUES (@name, @muscle_group, @equipment, @movement_pattern)
     `).run(exercise);
+    return true;
+  });
+
+  ipcMain.handle('db:deleteExercise', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM exercise_library WHERE id = ?').run(id);
     return true;
   });
 
@@ -328,6 +346,13 @@ function registerIpcHandlers(mainWindow) {
     return true;
   });
 
+  ipcMain.handle('db:deleteTrainingSession', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM training_sets WHERE session_id = ?').run(id);
+    db.prepare('DELETE FROM training_sessions WHERE id = ?').run(id);
+    return true;
+  });
+
   ipcMain.handle('db:getTrainingSets', (_event, sessionId) => {
     const db = getDb();
     return db.prepare('SELECT * FROM training_sets WHERE session_id = ? ORDER BY set_number').all(sessionId);
@@ -339,6 +364,12 @@ function registerIpcHandlers(mainWindow) {
       INSERT INTO training_sets (session_id, exercise_id, set_number, load_kg, reps, rpe)
       VALUES (@session_id, @exercise_id, @set_number, @load_kg, @reps, @rpe)
     `).run(set);
+    return true;
+  });
+
+  ipcMain.handle('db:deleteTrainingSet', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM training_sets WHERE id = ?').run(id);
     return true;
   });
 
@@ -469,7 +500,7 @@ function registerIpcHandlers(mainWindow) {
 
   ipcMain.handle('db:getTrendWeight', () => {
     const db = getDb();
-    const weights = db.prepare('SELECT date, weight_kg FROM weight_entries ORDER BY date ASC LIMIT 14').all();
+    const weights = db.prepare('SELECT date, weight_kg FROM weight_entries ORDER BY date DESC LIMIT 14').all();
     if (weights.length === 0) return null;
     const avg = weights.reduce((sum, w) => sum + w.weight_kg, 0) / weights.length;
     return {
@@ -478,14 +509,6 @@ function registerIpcHandlers(mainWindow) {
       firstDate: weights[0].date,
       lastDate: weights[weights.length - 1].date,
     };
-  });
-
-  ipcMain.handle('db:getRecompData', () => {
-    const db = getDb();
-    const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
-    const sets = db.prepare('SELECT * FROM measurement_sets ORDER BY date DESC LIMIT 4').all();
-    if (sets.length < 2 || !profile) return null;
-    return { profile, measurements: sets.reverse() };
   });
 
   // Dashboard
