@@ -1,5 +1,6 @@
 import { strings } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
+import Chart from 'chart.js/auto';
 
 export function init() {
   const container = document.getElementById('view-energy');
@@ -31,6 +32,10 @@ export function init() {
       <div id="adjustment-recs"><div class="empty-state"><p>${strings.adaptive.slotEmpty}</p></div></div>
     </div>
     <div class="card">
+      <h2>${strings.adaptive.deficitImpact}</h2>
+      <div id="deficit-impact"><div class="empty-state"><p>${strings.adaptive.deficitImpactEmpty}</p></div></div>
+    </div>
+    <div class="card">
       <h2>${strings.adaptive.adjustmentHistory}</h2>
       <div id="adjustment-history"><div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div></div>
     </div>
@@ -50,6 +55,7 @@ export function init() {
     loadAdherence();
     loadRecomp();
     loadAdjustments();
+    loadDeficitImpact();
     loadHistory();
   }
 
@@ -114,11 +120,13 @@ export function init() {
     const profile = await api.getProfile();
     const pace = parseFloat(document.getElementById('target-pace').value);
     const el = document.getElementById('adherence-eval');
-
     if (!profile) return;
 
     const weights = await api.getWeightEntries();
-    if (!weights || weights.length < 2) return;
+    if (!weights || weights.length < 2) {
+      el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.adherenceEmpty}</p></div>`;
+      return;
+    }
 
     const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
     const recentWeights = sorted.slice(-14);
@@ -127,14 +135,53 @@ export function init() {
     const oldestWeight = sorted[0].weight_kg;
     const daysDiff = (new Date(sorted[sorted.length - 1].date) - new Date(sorted[0].date)) / (1000 * 60 * 60 * 24);
     const actualRate = daysDiff > 0 ? ((oldestWeight - trendWeight) / daysDiff) * 7 : 0;
-
     const onTrack = Math.abs(actualRate - pace) < 0.2;
 
+    // Consistency score: % of weekly intervals within 0.2kg of target
+    let consistentWeeks = 0;
+    let totalWeeks = 0;
+    for (let i = 1; i < sorted.length; i++) {
+      const dateDiff = (new Date(sorted[i].date) - new Date(sorted[i - 1].date)) / (1000 * 60 * 60 * 24);
+      if (dateDiff >= 5 && dateDiff <= 10) {
+        const weekRate = ((sorted[i - 1].weight_kg - sorted[i].weight_kg) / dateDiff) * 7;
+        if (Math.abs(weekRate - pace) < 0.2) consistentWeeks++;
+        totalWeeks++;
+      }
+    }
+    const consistencyPct = totalWeeks > 0 ? Math.round((consistentWeeks / totalWeeks) * 100) : 0;
+
+    // Gauge: % of target rate achieved
+    const pctOfTarget = pace > 0 ? Math.min(100, Math.round((Math.abs(actualRate) / pace) * 100)) : 0;
+    const gaugeColor = pctOfTarget < 50 ? 'var(--danger)' : pctOfTarget < 80 ? 'var(--warning)' : 'var(--success)';
+
     el.innerHTML = `
-      <p>${strings.adaptive.trendWeight}: <strong>${trendWeight.toFixed(1)} kg</strong></p>
-      <p>${strings.adaptive.actualLossRate}: <strong>${Math.abs(actualRate).toFixed(2)} ${strings.adaptive.kgPerWeek}</strong></p>
-      <p>${strings.adaptive.target}: <strong>${pace} ${strings.adaptive.kgPerWeek}</strong></p>
-      <p>${strings.adaptive.adherence}: <strong style="color:${onTrack ? 'var(--success)' : 'var(--danger)'}">${onTrack ? strings.adaptive.onTrack : strings.adaptive.needsAdjustment}</strong></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <p>${strings.adaptive.trendWeight}: <strong>${trendWeight.toFixed(1)} kg</strong></p>
+          <p>${strings.adaptive.actualLossRate}: <strong>${Math.abs(actualRate).toFixed(2)} ${strings.adaptive.kgPerWeek}</strong></p>
+          <p>${strings.adaptive.target}: <strong>${pace} ${strings.adaptive.kgPerWeek}</strong></p>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">${strings.adaptive.adherenceGauge}</div>
+          <div style="width:100%;height:24px;background:var(--bg-tertiary);border-radius:12px;overflow:hidden;position:relative">
+            <div style="width:${pctOfTarget}%;height:100%;background:${gaugeColor};border-radius:12px;transition:width 0.5s"></div>
+          </div>
+          <div style="font-size:24px;font-weight:700;margin-top:6px;color:${gaugeColor}">${pctOfTarget}%</div>
+        </div>
+      </div>
+      <hr style="margin:12px 0;border-color:var(--border)">
+      <div style="display:flex;gap:16px;align-items:center">
+        <div>
+          <span style="font-size:12px;color:var(--text-secondary)">${strings.adaptive.consistencyScore}</span>
+          <div style="font-size:20px;font-weight:700">${consistencyPct}%</div>
+          <div style="font-size:11px;color:var(--text-secondary)">${consistentWeeks} ${strings.adaptive.weeksOnTrack}</div>
+        </div>
+        <div style="flex:1;padding:8px 12px;background:var(--bg-tertiary);border-radius:8px">
+          ${!onTrack ? `<span style="color:var(--warning)">⚠ ${strings.adaptive.needsAdjustment}</span>` : `<span style="color:var(--success)">✓ ${strings.adaptive.onTrack}</span>`}
+          ${!onTrack && Math.abs(actualRate) < pace ? `<p style="font-size:12px;margin-top:4px">${strings.adaptive.increaseDeficit} ${Math.round((pace - Math.abs(actualRate)) * 7700 / 7)} ${strings.adaptive.kcalPerDay}</p>` : ''}
+          ${onTrack ? `<p style="font-size:12px;margin-top:4px">${strings.adaptive.maintainPace}</p>` : ''}
+        </div>
+      </div>
     `;
   }
 
@@ -143,16 +190,43 @@ export function init() {
     const profile = await api.getProfile();
     const el = document.getElementById('recomp-detection');
 
-    if (!sets || sets.length < 2 || !profile) return;
+    if (!sets || sets.length < 2 || !profile) {
+      el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.recompMissingData}</p></div>`;
+      return;
+    }
 
     const sorted = [...sets].sort((a, b) => a.date.localeCompare(b.date));
-    if (sorted.length < 4) return;
+    const latest = sorted[sorted.length - 1];
+    const missingMetrics = [];
+    if (!latest.waist_cm) missingMetrics.push(strings.measurements.waist);
+    if (!latest.neck_cm) missingMetrics.push(strings.measurements.neck);
+    if (!latest.hips_cm) missingMetrics.push(strings.measurements.hips);
+    if (!latest.weight_kg) missingMetrics.push(strings.measurements.weight);
+
+    if (sorted.length < 4) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <p>${strings.adaptive.recompMissingData}</p>
+          <div class="sub">${sorted.length}/4 ${strings.general.created}</div>
+          ${missingMetrics.length > 0 ? `<div class="sub" style="margin-top:6px">${strings.adaptive.recompMissingMetrics} ${missingMetrics.join(', ')}</div>` : ''}
+        </div>
+      `;
+      return;
+    }
+
+    if (missingMetrics.length > 0) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <p style="color:var(--warning)">⚠ ${strings.adaptive.recompMissingMetrics} ${missingMetrics.join(', ')}</p>
+          <div class="sub">${strings.adaptive.recompMissingData}</div>
+        </div>
+      `;
+      return;
+    }
 
     const recent = sorted.slice(-4);
     const first = recent[0];
     const last = recent[recent.length - 1];
-
-    if (!first.waist_cm || !last.waist_cm || !first.weight_kg || !last.weight_kg) return;
 
     const weightStable = Math.abs(last.weight_kg - first.weight_kg) < 1.0;
     let bfFirst = null, bfLast = null;
@@ -165,16 +239,59 @@ export function init() {
     const isRecomp = weightStable && waistDecreasing;
 
     let html = `
-      <p>${strings.adaptive.period}: ${first.date} → ${last.date} (${recent.length} mediciones)</p>
-      <p>${strings.adaptive.weightChange}: <strong>${(last.weight_kg - first.weight_kg).toFixed(1)} kg</strong> ${weightStable ? `(${strings.adaptive.stable})` : ''}</p>
-      <p>${strings.adaptive.waistChange}: <strong>${(last.waist_cm - first.waist_cm).toFixed(1)} cm</strong> ${waistDecreasing ? `(${strings.adaptive.decreasing})` : ''}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <p>${strings.adaptive.period}: ${first.date} → ${last.date} (${recent.length} mediciones)</p>
+          <p>${strings.adaptive.weightChange}: <strong>${(last.weight_kg - first.weight_kg).toFixed(1)} kg</strong> ${weightStable ? `(${strings.adaptive.stable})` : ''}</p>
+          <p>${strings.adaptive.waistChange}: <strong>${(last.waist_cm - first.waist_cm).toFixed(1)} cm</strong> ${waistDecreasing ? `(${strings.adaptive.decreasing})` : ''}</p>
+          ${bfFirst !== null && bfLast !== null ? `<p>${strings.adaptive.bodyFat}: ${bfFirst.toFixed(1)}% → ${bfLast.toFixed(1)}%</p>` : ''}
+          <p>${strings.adaptive.status}: <strong style="color:${isRecomp ? 'var(--success)' : 'var(--text-secondary)'}">${isRecomp ? strings.adaptive.recompDetected : strings.adaptive.noRecomp}</strong></p>
+        </div>
+        <div>
+          <canvas id="recomp-chart" width="280" height="180"></canvas>
+        </div>
+      </div>
     `;
-    if (bfFirst !== null && bfLast !== null) {
-      html += `<p>${strings.adaptive.bodyFat}: ${bfFirst.toFixed(1)}% → ${bfLast.toFixed(1)}%</p>`;
-    }
-    html += `<p>${strings.adaptive.status}: <strong style="color:${isRecomp ? 'var(--success)' : 'var(--text-secondary)'}">${isRecomp ? strings.adaptive.recompDetected : strings.adaptive.noRecomp}</strong></p>`;
 
     el.innerHTML = html;
+
+    const ctx = document.getElementById('recomp-chart')?.getContext('2d');
+    if (ctx) {
+      const chartData = sorted.slice(-12);
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.map(s => s.date.slice(5)),
+          datasets: [
+            {
+              label: strings.measurements.weight,
+              data: chartData.map(s => s.weight_kg),
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239,68,68,0.1)',
+              yAxisID: 'y',
+              tension: 0.3,
+            },
+            {
+              label: strings.measurements.waist,
+              data: chartData.map(s => s.waist_cm),
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59,130,246,0.1)',
+              yAxisID: 'y1',
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            y: { type: 'linear', position: 'left', title: { display: true, text: 'kg' } },
+            y1: { type: 'linear', position: 'right', title: { display: true, text: 'cm' }, grid: { drawOnChartArea: false } },
+          },
+          plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } },
+        },
+      });
+    }
   }
 
   async function loadAdjustments() {
@@ -247,6 +364,55 @@ export function init() {
         el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.adjustmentDismissed}</p></div>`;
       });
     }
+  }
+
+  async function loadDeficitImpact() {
+    const el = document.getElementById('deficit-impact');
+    const profile = await api.getProfile();
+    if (!profile) {
+      el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.completeProfileFirst}</p></div>`;
+      return;
+    }
+
+    const templates = await api.getMealTemplates();
+    if (!templates || templates.length === 0) {
+      el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.deficitImpactEmpty}</p></div>`;
+      return;
+    }
+
+    let pdfBaselineKcal = 0;
+    for (const tmpl of templates) {
+      for (const comp of tmpl.components || []) {
+        pdfBaselineKcal += (comp.default_grams / 100) * comp.kcal_per_100g;
+      }
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const plan = await api.getDailyPlan(today);
+    let currentIntakeKcal = 0;
+    if (plan) {
+      for (const entry of plan) {
+        currentIntakeKcal += (entry.grams / 100) * entry.kcal_per_100g;
+      }
+    }
+
+    const diff = currentIntakeKcal - pdfBaselineKcal;
+    const diffPct = pdfBaselineKcal > 0 ? Math.round((diff / pdfBaselineKcal) * 100) : 0;
+
+    el.innerHTML = `
+      <p>${strings.adaptive.pdfBaseline}: <strong>${pdfBaselineKcal.toFixed(0)} kcal</strong></p>
+      <p>${strings.adaptive.currentIntake} (hoy): <strong>${currentIntakeKcal > 0 ? currentIntakeKcal.toFixed(0) + ' kcal' : strings.general.noData}</strong></p>
+      ${currentIntakeKcal > 0 ? `
+        <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+          <span style="font-size:13px">${strings.adaptive.difference}:</span>
+          <span style="font-weight:700;color:${diff < 0 ? 'var(--success)' : 'var(--danger)'}">${diff > 0 ? '+' : ''}${diff.toFixed(0)} kcal</span>
+          <span style="font-size:12px;color:var(--text-secondary)">(${diffPct > 0 ? '+' : ''}${diffPct}%)</span>
+        </div>
+        <div style="width:100%;height:12px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden;margin-top:6px">
+          <div style="width:${Math.min(100, Math.abs(diffPct) * 3)}%;height:100%;background:${diff < 0 ? 'var(--success)' : 'var(--danger)'};border-radius:6px"></div>
+        </div>
+      ` : ''}
+    `;
   }
 
   async function loadHistory() {

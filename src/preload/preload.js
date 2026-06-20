@@ -18,6 +18,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importActivityCSV: (csvPath) => ipcRenderer.invoke('db:importActivityCSV', csvPath),
   getWeeklySportSummary: () => ipcRenderer.invoke('db:getWeeklySportSummary'),
   getActivityKcalByType: (from, to) => ipcRenderer.invoke('db:getActivityKcalByType', from, to),
+  getSportSummaryByRange: (from, to) => ipcRenderer.invoke('db:getSportSummaryByRange', from, to),
+  getActivityComparison: (from, to) => ipcRenderer.invoke('db:getActivityComparison', from, to),
+  getWeightStats: (from, to) => ipcRenderer.invoke('db:getWeightStats', from, to),
+  searchFoodItems: (query) => ipcRenderer.invoke('db:searchFoodItems', query),
 
   // Diet
   getFoodItems: (includeHidden) => ipcRenderer.invoke('db:getFoodItems', includeHidden),
@@ -107,6 +111,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getHealthDistanceSummary: (from, to) => ipcRenderer.invoke('health:getDistanceSummary', from, to),
   getHealthWalkingSpeedRange: (from, to) => ipcRenderer.invoke('health:getWalkingSpeedRange', from, to),
   getHealthFlightsClimbedRange: (from, to) => ipcRenderer.invoke('health:getFlightsClimbedRange', from, to),
+
+  // HealthSync dashboard metrics (v3)
+  getHealthBloodPressure: (from, to) => ipcRenderer.invoke('health:getBloodPressure', from, to),
+  getHealthStandingHours: (from, to) => ipcRenderer.invoke('health:getStandingHours', from, to),
+  getHealthExerciseTime: (from, to) => ipcRenderer.invoke('health:getExerciseTime', from, to),
+  getHealthWalkingDistance: (from, to) => ipcRenderer.invoke('health:getWalkingDistance', from, to),
+  getHealthSpO2Range: (from, to) => ipcRenderer.invoke('health:getSpO2Range', from, to),
+  getHealthDashboardMetrics: (from, to) => ipcRenderer.invoke('health:getDashboardMetrics', from, to),
 
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),

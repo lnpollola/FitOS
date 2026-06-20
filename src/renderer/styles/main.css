@@ -227,6 +227,12 @@ body {
   letter-spacing: -0.5px;
 }
 
+.dashboard-chart-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
 .dashboard-card .subtitle {
   font-size: 12px;
   color: var(--text-secondary);

@@ -59,6 +59,20 @@ The system SHALL display a ranking table of sport activities with Spanish names,
 - **WHEN** there are more than 20 days of data
 - **THEN** the timeline table SHALL display only 20 rows by default with the rest accessible via scroll
 
+#### Scenario: Duration column added to ranking table
+- **WHEN** sport_activities has non-NULL duration_minutes
+- **THEN** the ranking table SHALL show total duration per sport type
+- **THEN** the IPC handler SHALL use COALESCE(duration_minutes, 0) and verify column aliases match frontend keys
+
+#### Scenario: Period comparison in ranking table
+- **WHEN** the ranking table renders
+- **THEN** "Total kcal" column SHALL include a trend arrow comparing vs previous period
+- **THEN** clicking toggles between 15d, 1m, 3m windows
+
+#### Scenario: Mini sparkline per sport type
+- **WHEN** the ranking table renders
+- **THEN** each row SHALL include a mini sparkline (60×18px) for last-7-day kcal trend
+
 ### Requirement: Expanded sport types for HealthSync workouts
 
 The system SHALL expand the sport type mapping to accommodate all HKWorkoutActivityType values from HealthSync, beyond the current set (cycling, boxing, HIIT, walking, football, paddle).
@@ -70,6 +84,23 @@ The system SHALL expand the sport type mapping to accommodate all HKWorkoutActiv
 #### Scenario: Unknown activity_type fallback
 - **WHEN** a Workout record has an unrecognized activity_type
 - **THEN** the system SHALL insert it with sport_type "other" and log the original type
+
+### Requirement: Weekly sport summary with session count and duration
+
+The system SHALL display a "Deporte - Tipo" chart showing session count, average calories, and duration per sport type.
+
+#### Scenario: Duration correctly displays non-zero values
+- **WHEN** sport_activities has non-NULL duration_minutes
+- **THEN** the chart SHALL display actual duration values
+- **THEN** the migration `migrateHealthData` SHALL populate `duration_minutes` from HealthSync workout data
+
+#### Scenario: Sport summary chart shows all metrics
+- **WHEN** sport activity data exists
+- **THEN** the chart SHALL display session count, avg kcal, total minutes per sport type
+
+#### Scenario: Custom period selection
+- **WHEN** user selects a date range via the range selector
+- **THEN** the chart SHALL update for the selected range (not just 7 days)
 
 ### Requirement: Unified sport type display name registry
 
