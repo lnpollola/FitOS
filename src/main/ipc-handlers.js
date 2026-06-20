@@ -93,6 +93,35 @@ function registerIpcHandlers(mainWindow) {
     `).all(fromDate, toDate);
   });
 
+  ipcMain.handle('db:getSportSummaryByRange', (_event, fromDate, toDate) => {
+    const db = getDb();
+    return db.prepare(`
+      SELECT sport_type, COUNT(*) as count, COALESCE(ROUND(AVG(calories), 0), 0) as avg_kcal, COALESCE(SUM(calories), 0) as total_kcal, COALESCE(SUM(duration_minutes), 0) as total_duration
+      FROM sport_activities
+      WHERE date >= ? AND date <= ?
+      GROUP BY sport_type
+      ORDER BY count DESC
+    `).all(fromDate, toDate);
+  });
+
+  ipcMain.handle('db:getActivityComparison', (_event, from, to) => {
+    const db = getDb();
+    const current = db.prepare(`
+      SELECT sport_type, COUNT(*) as count, COALESCE(SUM(calories), 0) as total_kcal, COALESCE(SUM(duration_minutes), 0) as total_duration
+      FROM sport_activities WHERE date >= ? AND date <= ?
+      GROUP BY sport_type
+    `).all(from, to);
+    const periodMs = new Date(to) - new Date(from);
+    const prevFrom = new Date(new Date(from).getTime() - periodMs).toISOString().split('T')[0];
+    const prevTo = new Date(new Date(from).getTime() - 86400000).toISOString().split('T')[0];
+    const previous = db.prepare(`
+      SELECT sport_type, COUNT(*) as count, COALESCE(SUM(calories), 0) as total_kcal, COALESCE(SUM(duration_minutes), 0) as total_duration
+      FROM sport_activities WHERE date >= ? AND date <= ?
+      GROUP BY sport_type
+    `).all(prevFrom, prevTo);
+    return { current, previous };
+  });
+
   // Apple Health XML import
   ipcMain.handle('db:checkHealthsync', () => {
     return !!getHealthsyncPath();
@@ -509,6 +538,36 @@ function registerIpcHandlers(mainWindow) {
       firstDate: weights[0].date,
       lastDate: weights[weights.length - 1].date,
     };
+  });
+
+  ipcMain.handle('db:getWeightStats', (_event, from, to) => {
+    const db = getDb();
+    const entries = db.prepare('SELECT date, weight_kg FROM weight_entries WHERE date >= ? AND date <= ? ORDER BY date ASC').all(from, to);
+    if (entries.length < 2) return { first: null, last: null, min: null, max: null, avg: null, trend: null, count: entries.length };
+    const weights = entries.map(e => e.weight_kg);
+    const first = weights[0];
+    const last = weights[weights.length - 1];
+    const min = Math.min(...weights);
+    const max = Math.max(...weights);
+    const avg = weights.reduce((s, w) => s + w, 0) / weights.length;
+    // Linear regression slope for trend
+    const n = weights.length;
+    const indices = weights.map((_, i) => i);
+    const sumX = indices.reduce((s, x) => s + x, 0);
+    const sumY = weights.reduce((s, y) => s + y, 0);
+    const sumXY = indices.reduce((s, x, i) => s + x * weights[i], 0);
+    const sumXX = indices.reduce((s, x) => s + x * x, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    return { first, last, min, max, avg, trend: slope, count: entries.length };
+  });
+
+  ipcMain.handle('db:searchFoodItems', (_event, query) => {
+    const db = getDb();
+    if (!query || query.trim().length < 2) return [];
+    return db.prepare(`
+      SELECT id, name, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g
+      FROM food_items WHERE is_hidden = 0 AND name LIKE ? ORDER BY name LIMIT 5
+    `).all(`%${query.trim()}%`);
   });
 
   // Dashboard
@@ -1036,6 +1095,99 @@ function registerIpcHandlers(mainWindow) {
         WHERE date(start_date) BETWEEN ? AND ?
         GROUP BY date ORDER BY date ASC
       `).all(from, to) };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  // ─── HealthSync dashboard metrics (v3) ───
+
+  ipcMain.handle('health:getBloodPressure', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const data = hs.prepare(`
+        SELECT date(start_date) as date, systolic, diastolic
+        FROM blood_pressure
+        WHERE date(start_date) BETWEEN ? AND ?
+        ORDER BY start_date DESC
+      `).all(from, to);
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getStandingHours', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const data = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 1) as hours
+        FROM stand_hours
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to);
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getExerciseTime', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const data = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 1) as minutes
+        FROM exercise_time
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to);
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getWalkingDistance', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const data = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 3) as km
+        FROM distance_walking_running
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to);
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getSpO2Range', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const data = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(AVG(value), 1) as spo2_percent
+        FROM spo2
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date DESC
+      `).all(from, to);
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('health:getDashboardMetrics', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const bp = hs.prepare(`SELECT date(start_date) as date, systolic, diastolic FROM blood_pressure WHERE date(start_date) BETWEEN ? AND ? ORDER BY start_date DESC`).all(from, to);
+      const stand = hs.prepare(`SELECT date(start_date) as date, ROUND(SUM(value), 1) as hours FROM stand_hours WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
+      const exercise = hs.prepare(`SELECT date(start_date) as date, ROUND(SUM(value), 1) as minutes FROM exercise_time WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
+      const walk = hs.prepare(`SELECT date(start_date) as date, ROUND(SUM(value), 3) as km FROM distance_walking_running WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
+      const spo2 = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as spo2_percent FROM spo2 WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date DESC`).all(from, to);
+      const hrv = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as hrv_ms FROM hrv WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
+      const rhr = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as rhr_bpm FROM resting_heart_rate WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
+      return { ok: true, data: { blood_pressure: bp, standing_hours: stand, exercise_time: exercise, walking_distance: walk, spo2, hrv, resting_hr: rhr } };
     } catch (e) {
       return { ok: false, error: e.message };
     }

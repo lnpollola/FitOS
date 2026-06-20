@@ -1,6 +1,7 @@
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
 import { SPORT_ICONS } from '../utils/sport-icons.js';
+import { getRangeDates } from '../utils/date-range.js';
 
 export async function init() {
   if (window._loadingActivity) return;
@@ -37,10 +38,20 @@ export async function init() {
     </div>
     <div class="card">
       <h2>${strings.activity.weeklySportSummary}</h2>
-      <div class="chart-container"><canvas id="weekly-chart"></canvas></div>
+      <div class="analytics-filters" id="summary-filters">
+        <button class="filter-btn active" data-range="7d">7d</button>
+        <button class="filter-btn" data-range="15d">15d</button>
+        <button class="filter-btn" data-range="1m">1m</button>
+      </div>
+      <div class="chart-container" style="height:250px"><canvas id="weekly-chart"></canvas></div>
     </div>
     <div class="card" id="recognition-table-card" style="display:none">
       <h2>${strings.activity.sport} — ${strings.activity.rankingType}</h2>
+      <div class="analytics-filters" id="comparison-filters">
+        <button class="filter-btn active" data-period="15d">${strings.activity.period15d}</button>
+        <button class="filter-btn" data-period="1m">${strings.activity.period1m}</button>
+        <button class="filter-btn" data-period="3m">${strings.activity.period3m}</button>
+      </div>
       <div id="recognition-table"></div>
     </div>
   `;
@@ -59,6 +70,9 @@ export async function init() {
   const lastImportInfo = document.getElementById('last-import-info');
   const reimportSection = document.getElementById('reimport-section');
   const reimportCheckbox = document.getElementById('reimport-checkbox');
+
+  let _chartRange = '7d';
+  let _comparisonPeriod = '15d';
 
   async function loadLastImport() {
     const ts = await api.getLastImportTimestamp();
@@ -124,11 +138,9 @@ export async function init() {
     const result = await api.importAppleHealthXML(xmlPath);
     progressBar.style.width = '100%';
 
-    // Store import timestamp
     const now = new Date().toISOString();
     await api.setLastImportTimestamp(now);
 
-    // Reset reimport UI
     reimportCheckbox.checked = false;
     healthImportBtn.disabled = true;
     healthImportBtn.style.opacity = '0.5';
@@ -148,6 +160,24 @@ export async function init() {
 
   checkHealthsync();
   await loadLastImport();
+
+  // Summary chart date range filters
+  document.querySelectorAll('#summary-filters .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _chartRange = btn.dataset.range;
+      document.querySelectorAll('#summary-filters .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.range === _chartRange));
+      loadChart();
+    });
+  });
+
+  // Comparison period filters
+  document.querySelectorAll('#comparison-filters .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _comparisonPeriod = btn.dataset.period;
+      document.querySelectorAll('#comparison-filters .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.period === _comparisonPeriod));
+      loadTimeline();
+    });
+  });
 
   function formatSleep(hours) {
     if (hours == null) return '--';
@@ -186,7 +216,6 @@ export async function init() {
     const allDays = await api.getActivityDays();
     const timeline = document.getElementById('activity-timeline');
 
-    // Filter by current month with pagination
     let monthOffset = 0;
     function getMonthRange(offset) {
       const now = new Date();
@@ -212,7 +241,6 @@ export async function init() {
         return;
       }
 
-      // Build sport type stats from visible days
       const sportTypeMap = {};
       for (const d of days) {
         const sports = await api.getSportActivities(d.date);
@@ -236,7 +264,6 @@ export async function init() {
 
       let html = '<table><thead><tr><th>Fecha</th><th>Pasos</th><th>kcal Activas</th><th>kcal Reposo</th><th>FC media</th><th>Sueño</th></tr></thead><tbody>';
 
-      // Build last-7-days data per metric for sparklines
       const allSteps = allDays.filter(d => d.steps != null).map(d => d.steps);
       const allActive = allDays.filter(d => d.active_calories != null).map(d => d.active_calories);
       const allResting = allDays.filter(d => d.resting_calories != null).map(d => d.resting_calories);
@@ -245,7 +272,7 @@ export async function init() {
 
       for (let i = 0; i < days.length; i++) {
         const d = days[i];
-        const prev = days[i + 1]; // next in sorted-desc = previous day
+        const prev = days[i + 1];
 
         const arrowSteps = dayArrow(d.steps, prev?.steps);
         const arrowActive = dayArrow(d.active_calories, prev?.active_calories);
@@ -253,7 +280,6 @@ export async function init() {
         const arrowHr = dayArrow(d.heart_rate_avg, prev?.heart_rate_avg);
         const arrowSleep = dayArrow(d.sleep_hours, prev?.sleep_hours);
 
-        // Last 7 values for sparklines (including current)
         const recentSteps = allSteps.slice(-7);
         const recentActive = allActive.slice(-7);
         const recentResting = allResting.slice(-7);
@@ -305,7 +331,6 @@ export async function init() {
       timeline.innerHTML = header + html;
       wirePagination();
 
-      // Draw sparklines after DOM is ready
       requestAnimationFrame(() => {
         for (const d of days) {
           const id = d.date.replace(/-/g, '');
@@ -323,7 +348,6 @@ export async function init() {
         }
       });
 
-      // Sport KPIs section
       renderSportKPIs(sportTypeMap);
     }
 
@@ -338,7 +362,7 @@ export async function init() {
     renderMonth();
   }
 
-  function renderSportKPIs(sportTypeMap) {
+  async function renderSportKPIs(sportTypeMap) {
     const recCard = document.getElementById('recognition-table-card');
     const recTable = document.getElementById('recognition-table');
     const types = Object.entries(sportTypeMap);
@@ -354,7 +378,41 @@ export async function init() {
     const totalMin = types.reduce((s, [, data]) => s + data.totalMin, 0);
     const uniqueTypes = types.length;
 
-    // KPI cards
+    // Compute comparison data for the selected period
+    let comparisonData = null;
+    const now = new Date();
+    let compFrom, compTo, compLabel;
+    if (_comparisonPeriod === '15d') {
+      compTo = now.toISOString().split('T')[0];
+      const d = new Date(now); d.setDate(d.getDate() - 15); compFrom = d.toISOString().split('T')[0];
+      compLabel = strings.activity.period15d;
+    } else if (_comparisonPeriod === '1m') {
+      compTo = now.toISOString().split('T')[0];
+      const d = new Date(now); d.setDate(d.getDate() - 30); compFrom = d.toISOString().split('T')[0];
+      compLabel = strings.activity.period1m;
+    } else {
+      compTo = now.toISOString().split('T')[0];
+      const d = new Date(now); d.setDate(d.getDate() - 90); compFrom = d.toISOString().split('T')[0];
+      compLabel = strings.activity.period3m;
+    }
+    comparisonData = await api.getActivityComparison(compFrom, compTo).catch(() => null);
+
+    // Build comparison lookup
+    const prevKcalByType = {};
+    if (comparisonData?.previous) {
+      for (const p of comparisonData.previous) {
+        prevKcalByType[p.sport_type] = p.total_kcal;
+      }
+    }
+
+    function getTrendArrow(currentKcal, prevKcal) {
+      if (prevKcal == null || prevKcal === 0) return { arrow: '―', cls: 'text-muted' };
+      const pct = ((currentKcal - prevKcal) / prevKcal) * 100;
+      if (pct > 5) return { arrow: '▲', cls: 'text-success' };
+      if (pct < -5) return { arrow: '▼', cls: 'text-danger' };
+      return { arrow: '―', cls: 'text-muted' };
+    }
+
     const kpiHtml = `
       <div class="analytics-kpis" style="margin-bottom:12px">
         <div class="analytics-kpi-card">
@@ -379,7 +437,6 @@ export async function init() {
         </div>
       </div>`;
 
-    // Sortable table
     let sortCol = 'totalKcal';
     let sortAsc = false;
     function renderTable() {
@@ -402,17 +459,22 @@ export async function init() {
               <th style="cursor:pointer" data-sort="avgMin">${strings.activity.durationMin} ${sortCol === 'avgMin' ? (sortAsc ? '▲' : '▼') : ''}</th>
               <th style="cursor:pointer" data-sort="avgKcal">${strings.activity.rankingAvgKcal} ${sortCol === 'avgKcal' ? (sortAsc ? '▲' : '▼') : ''}</th>
               <th style="cursor:pointer" data-sort="totalKcal">${strings.activity.rankingTotalKcal} ${sortCol === 'totalKcal' ? (sortAsc ? '▲' : '▼') : ''}</th>
+              <th>${strings.activity.rankingDuration || 'Dur.'}</th>
             </tr></thead>
             <tbody>
-              ${maxRows.map(([type, data]) => `
-                <tr>
+              ${maxRows.map(([type, data]) => {
+                const trend = getTrendArrow(data.totalKcal, prevKcalByType[type]);
+                return `<tr>
                   <td><strong>${SPORT_ICONS[type] || '🏅'} ${getSportDisplayName(type)}</strong></td>
                   <td>${data.count}</td>
                   <td>${data.count ? Math.round(data.totalMin / data.count) : 0} min</td>
                   <td>${data.count ? Math.round(data.totalKcal / data.count) : 0}</td>
-                  <td>${data.totalKcal.toLocaleString()}</td>
-                </tr>
-              `).join('')}
+                  <td>${data.totalKcal.toLocaleString()} <span class="${trend.cls}" style="font-size:10px;margin-left:2px" title="${strings.activity.periodComparison}">${trend.arrow}</span>
+                    <canvas id="spk-type-${type.replace(/\s/g, '')}" width="60" height="18" style="display:inline-block;vertical-align:middle;margin-left:4px"></canvas>
+                  </td>
+                  <td>${data.count ? Math.round(data.totalMin / data.count) : 0}</td>
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>`;
@@ -428,32 +490,59 @@ export async function init() {
   }
 
   async function loadChart() {
-    const summary = await api.getWeeklySportSummary();
+    const { from, to } = getRangeDates(_chartRange);
+    const summary = await api.getSportSummaryByRange(from, to);
     const canvas = document.getElementById('weekly-chart');
+    const chartContainer = canvas?.parentElement;
     if (!canvas || !summary || summary.length === 0) {
-      document.getElementById('weekly-chart-container').style.display = 'none';
+      if (chartContainer) chartContainer.style.display = 'none';
       return;
     }
-    document.getElementById('weekly-chart-container').style.display = 'block';
+    if (chartContainer) chartContainer.style.display = 'block';
     const ctx = canvas.getContext('2d');
     if (window._weeklyChart) window._weeklyChart.destroy();
+
+    const labels = summary.map(s => getSportDisplayName(s.sport_type));
     window._weeklyChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: summary.map(s => getSportDisplayName(s.sport_type)),
-        datasets: [{
-          label: strings.activity.calories,
-          data: summary.map(s => s.total_calories),
-          backgroundColor: '#0D9488',
-          borderRadius: 6,
-        }],
+        labels,
+        datasets: [
+          {
+            label: strings.activity.calories,
+            data: summary.map(s => s.total_kcal),
+            backgroundColor: '#0D9488',
+            borderRadius: 6,
+            order: 2,
+          },
+          {
+            label: strings.activity.durationMin,
+            data: summary.map(s => s.total_duration),
+            backgroundColor: '#F59E0B',
+            borderRadius: 6,
+            order: 1,
+            yAxisID: 'y1',
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { labels: { color: '#64748B', boxWidth: 12, padding: 8 } },
+          tooltip: {
+            callbacks: {
+              afterLabel: function(context) {
+                const i = context.dataIndex;
+                const s = summary[i];
+                return `${s.count} ${strings.dashboard.sessions} · ${s.avg_kcal} ${strings.dashboard.avgKcal}`;
+              },
+            },
+          },
+        },
         scales: {
-          y: { beginAtZero: true, ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
+          y: { beginAtZero: true, ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' }, position: 'left' },
+          y1: { beginAtZero: true, ticks: { color: '#F59E0B' }, grid: { display: false }, position: 'right' },
           x: { ticks: { color: '#64748B' } },
         },
       },
