@@ -93,18 +93,18 @@
 
 ## 11. Final Verification
 
-- [ ] 11.1 Run app in dev mode — verify build passes
-- [ ] 11.2 Verify all dashboard health metric cards render (standing hours, exercise time, walking distance, SpO2, HRV+RHR, BP empty state)
-- [ ] 11.3 Verify session-first layout with trend chart
-- [ ] 11.4 Verify weekly balance breakdown, weight variation, steps periods, HRV card
-- [ ] 11.5 Verify activity chart shows correct non-zero duration
-- [ ] 11.6 Verify activity period comparison arrows and sparklines
-- [ ] 11.7 Verify 5-column meal template UI with selectable options
-- [ ] 11.8 Verify auto-fill on food name entry (searches food_items, not JSON)
-- [ ] 11.9 Verify pagination and category filters in food browser
-- [ ] 11.10 Verify daily plan auto-generator creates entries
-- [ ] 11.11 Verify recomp detection and adherence gauge in energy balance
-- [ ] 11.12 Check no untranslated strings in modified views
+- [x] 11.1 Run app in dev mode — verify build passes
+- [x] 11.2 Verify all dashboard health metric cards render (standing hours, exercise time, walking distance, SpO2, HRV+RHR, BP empty state)
+- [x] 11.3 Verify session-first layout with trend chart
+- [x] 11.4 Verify weekly balance breakdown, weight variation, steps periods, HRV card
+- [x] 11.5 Verify activity chart shows correct non-zero duration
+- [x] 11.6 Verify activity period comparison arrows and sparklines
+- [x] 11.7 Verify 5-column meal template UI with selectable options
+- [x] 11.8 Verify auto-fill on food name entry (searches food_items, not JSON)
+- [x] 11.9 Verify pagination and category filters in food browser
+- [x] 11.10 Verify daily plan auto-generator creates entries
+- [x] 11.11 Verify recomp detection and adherence gauge in energy balance
+- [x] 11.12 Check no untranslated strings in modified views
 
 ## Deferred to v4
 

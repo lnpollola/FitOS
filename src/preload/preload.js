@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNavigate: (callback) => ipcRenderer.on('navigate', (_event, view) => callback(view)),
   onDataChanged: (callback) => ipcRenderer.on('data-changed', () => callback()),
   onHealthImportProgress: (callback) => ipcRenderer.on('health-import-progress', (_event, msg) => callback(msg)),
+  removeHealthImportProgressListener: () => ipcRenderer.removeAllListeners('health-import-progress'),
 
   // Profile
   getProfile: () => ipcRenderer.invoke('db:getProfile'),
@@ -31,6 +32,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMealTemplates: () => ipcRenderer.invoke('db:getMealTemplates'),
   getDailyPlan: (date) => ipcRenderer.invoke('db:getDailyPlan', date),
   saveDailyPlanEntry: (entry) => ipcRenderer.invoke('db:saveDailyPlanEntry', entry),
+  deleteDailyPlanEntries: (date) => ipcRenderer.invoke('db:deleteDailyPlanEntries', date),
+  updateDailyPlanEntry: (id, grams) => ipcRenderer.invoke('db:updateDailyPlanEntry', id, grams),
 
   // Body measurements
   getMeasurementSets: () => ipcRenderer.invoke('db:getMeasurementSets'),
@@ -67,6 +70,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Dashboard
   getDashboardData: () => ipcRenderer.invoke('db:getDashboardData'),
+  getSleepData: (from, to) => ipcRenderer.invoke('db:getSleepData', from, to),
 
   // Elaborated dishes
   saveDish: (dish) => ipcRenderer.invoke('db:saveDish', dish),

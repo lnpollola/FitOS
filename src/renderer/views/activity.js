@@ -2,6 +2,7 @@ import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
 import { SPORT_ICONS } from '../utils/sport-icons.js';
 import { getRangeDates } from '../utils/date-range.js';
+import { safeCall } from '../utils/safe-call.js';
 
 export async function init() {
   if (window._loadingActivity) return;
@@ -14,7 +15,7 @@ export async function init() {
       <p style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">${strings.activity.importReference}</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="btn-import-health">${strings.activity.importAppleHealth}</button>
-        <button class="btn btn-secondary" id="btn-install-healthsync" style="display:none">Instalar HealthSync</button>
+        <button class="btn btn-secondary" id="btn-install-healthsync" style="display:none">${strings.activity.installHealthsync}</button>
         <span id="healthsync-status" style="font-size:13px;color:var(--text-secondary)"></span>
       </div>
       <div id="last-import-info" style="margin-top:8px;font-size:13px;color:var(--text-secondary)"></div>
@@ -75,7 +76,7 @@ export async function init() {
   let _comparisonPeriod = '15d';
 
   async function loadLastImport() {
-    const ts = await api.getLastImportTimestamp();
+    const ts = await safeCall(api.getLastImportTimestamp(), null);
     if (ts) {
       const d = new Date(ts);
       lastImportInfo.textContent = `${strings.activity.lastImport}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
@@ -95,25 +96,26 @@ export async function init() {
   }
 
   async function checkHealthsync() {
-    const hasHealthsync = await api.checkHealthsync();
+    const hasHealthsync = await safeCall(api.checkHealthsync(), false);
     if (!hasHealthsync) {
       installBtn.style.display = 'inline-block';
-      healthStatus.textContent = 'HealthSync no instalado';
+      healthStatus.textContent = strings.activity.healthsyncNotInstalled;
     } else {
       installBtn.style.display = 'none';
-      healthStatus.textContent = 'HealthSync disponible';
+      healthStatus.textContent = strings.activity.healthsyncAvailable;
     }
   }
 
   installBtn.addEventListener('click', async () => {
     installBtn.disabled = true;
-    installBtn.textContent = 'Instalando...';
-    const ok = await api.installHealthsync();
+    installBtn.textContent = strings.activity.installingHealthsync;
+    const ok = await safeCall(api.installHealthsync(), false);
     await checkHealthsync();
     installBtn.disabled = false;
-    installBtn.textContent = 'Instalar HealthSync';
+    installBtn.textContent = strings.activity.installHealthsync;
   });
 
+  if (api.removeHealthImportProgressListener) api.removeHealthImportProgressListener();
   if (api.onHealthImportProgress) {
     api.onHealthImportProgress((msg) => {
       progressEl.style.display = 'block';
@@ -122,24 +124,24 @@ export async function init() {
   }
 
   healthImportBtn.addEventListener('click', async () => {
-    const hasHealthsync = await api.checkHealthsync();
+    const hasHealthsync = await safeCall(api.checkHealthsync(), false);
     if (!hasHealthsync) {
       resultEl.style.display = 'block';
-      resultEl.innerHTML = `<p style="color:var(--danger)">HealthSync no encontrado. Instálalo primero.</p>`;
+      resultEl.innerHTML = `<p style="color:var(--danger)">${strings.activity.healthsyncImportError}</p>`;
       return;
     }
 
-    const xmlPath = 'apple-healt-export/exportar.xml';
+    const xmlPath = 'apple-health-export/exportar.xml';
     progressEl.style.display = 'block';
     progressBar.style.width = '50%';
-    progressText.textContent = 'Importando datos de Apple Health...';
+    progressText.textContent = strings.activity.importingData;
     healthImportBtn.disabled = true;
 
-    const result = await api.importAppleHealthXML(xmlPath);
+    const result = await safeCall(api.importAppleHealthXML(xmlPath), { created: 0, skipped: 0, errors: ['Error de comunicación'] });
     progressBar.style.width = '100%';
 
     const now = new Date().toISOString();
-    await api.setLastImportTimestamp(now);
+    await safeCall(api.setLastImportTimestamp(now));
 
     reimportCheckbox.checked = false;
     healthImportBtn.disabled = true;
@@ -183,7 +185,7 @@ export async function init() {
     if (hours == null) return '--';
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+    return strings.activity.sleepFormat.replace('{h}', h).replace('{m}', m);
   }
 
   function dayArrow(current, previous) {
@@ -213,7 +215,7 @@ export async function init() {
   }
 
   async function loadTimeline() {
-    const allDays = await api.getActivityDays();
+    const allDays = await safeCall(api.getActivityDays(), []);
     const timeline = document.getElementById('activity-timeline');
 
     let monthOffset = 0;
@@ -232,9 +234,9 @@ export async function init() {
       if (!days.length) {
         timeline.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">‹ Mes ant.</button>
+            <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">${strings.activity.prevMonth}</button>
             <span style="font-size:14px;font-weight:600">${monthNames[parseInt(month) - 1]} ${year}</span>
-            <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>Mes sig. ›</button>
+            <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>${strings.activity.nextMonth}</button>
           </div>
           <div class="empty-state"><p>${strings.activity.noActivities}</p></div>`;
         wirePagination();
@@ -243,13 +245,13 @@ export async function init() {
 
       const sportTypeMap = {};
       for (const d of days) {
-        const sports = await api.getSportActivities(d.date);
+        const sports = await safeCall(api.getSportActivities(d.date), []);
         if (sports) {
           for (const s of sports) {
             if (!sportTypeMap[s.sport_type]) sportTypeMap[s.sport_type] = { count: 0, totalKcal: 0, totalMin: 0 };
             sportTypeMap[s.sport_type].count++;
             sportTypeMap[s.sport_type].totalKcal += (s.calories || 0);
-            sportTypeMap[s.sport_type].totalMin += (s.duration_min || 0);
+            sportTypeMap[s.sport_type].totalMin += (s.duration_minutes || 0);
           }
         }
       }
@@ -257,12 +259,12 @@ export async function init() {
       const sparklineColor = '#0D9488';
       const header = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">‹ Mes ant.</button>
+          <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">${strings.activity.prevMonth}</button>
           <span style="font-size:14px;font-weight:600">${monthNames[parseInt(month) - 1]} ${year}</span>
-          <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>Mes sig. ›</button>
+          <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>${strings.activity.nextMonth}</button>
         </div>`;
 
-      let html = '<table><thead><tr><th>Fecha</th><th>Pasos</th><th>kcal Activas</th><th>kcal Reposo</th><th>FC media</th><th>Sueño</th></tr></thead><tbody>';
+      let html = `<table><thead><tr><th>${strings.activity.timelineDate}</th><th>${strings.activity.timelineSteps}</th><th>${strings.activity.timelineActive}</th><th>${strings.activity.timelineResting}</th><th>${strings.activity.timelineHeartRate}</th><th>${strings.activity.timelineSleep}</th></tr></thead><tbody>`;
 
       const allSteps = allDays.filter(d => d.steps != null).map(d => d.steps);
       const allActive = allDays.filter(d => d.active_calories != null).map(d => d.active_calories);
@@ -358,7 +360,7 @@ export async function init() {
       if (nextBtn) nextBtn.addEventListener('click', () => { monthOffset++; renderMonth(); });
     }
 
-    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const monthNames = strings.activity.monthNames;
     renderMonth();
   }
 
@@ -491,7 +493,7 @@ export async function init() {
 
   async function loadChart() {
     const { from, to } = getRangeDates(_chartRange);
-    const summary = await api.getSportSummaryByRange(from, to);
+    const summary = await safeCall(api.getSportSummaryByRange(from, to), []);
     const canvas = document.getElementById('weekly-chart');
     const chartContainer = canvas?.parentElement;
     if (!canvas || !summary || summary.length === 0) {

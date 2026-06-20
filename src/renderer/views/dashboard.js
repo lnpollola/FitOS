@@ -2,6 +2,7 @@ import { strings, getSportDisplayName } from '../locales/es.js';
 import { SPORT_ICONS } from '../utils/sport-icons.js';
 import { getRangeDates } from '../utils/date-range.js';
 import Chart from 'chart.js/auto';
+import { safeCall } from '../utils/safe-call.js';
 
 export async function init() {
   if (window._loadingDashboard) return;
@@ -49,12 +50,12 @@ export async function init() {
     const { from, to } = getRangeDates(_range);
     const daysInPeriod = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
 
-    const [appData, healthMetrics, activityKcal, lastImport] = await Promise.all([
-      api.getDashboardData(),
+    const [appData, healthMetrics, activityKcal, lastImport, sleepData] = await Promise.all([
+      safeCall(api.getDashboardData(), null),
       api.getHealthDashboardMetrics(from, to).catch(() => ({ ok: false })),
       api.getActivityKcalByType(from, to).catch(() => []),
       api.getLastImportTimestamp().catch(() => null),
-      api.getWeightStats(from, to).catch(() => ({ first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 })),
+      api.getSleepData ? api.getSleepData(from, to).catch(() => ({ ok: false, data: [], avg7d: null })) : { ok: false, data: [], avg7d: null },
     ]);
 
     const [weightStats, healthSummary] = await Promise.all([
@@ -90,13 +91,13 @@ export async function init() {
     let weightDisplay = '--';
     let weightTrendSpan = '';
     if (weightStats.last != null) {
-      weightDisplay = `${weightStats.last} kg`;
+      weightDisplay = `${weightStats.last} ${strings.dashboard.unitKg}`;
       if (weightStats.count >= 2 && weightStats.first != null) {
         const variation = (weightStats.last - weightStats.first);
         const sign = variation > 0 ? '+' : '';
         const arrow = weightStats.trend > 0.01 ? strings.dashboard.trendUp : weightStats.trend < -0.01 ? strings.dashboard.trendDown : strings.dashboard.trendFlat;
         const arrowColor = weightStats.trend > 0.01 ? 'var(--danger)' : weightStats.trend < -0.01 ? 'var(--success)' : 'var(--text-secondary)';
-        weightTrendSpan = `<span style="font-size:12px;color:${arrowColor};margin-left:4px">${sign}${variation.toFixed(1)} kg ${arrow}</span>`;
+        weightTrendSpan = `<span style="font-size:12px;color:${arrowColor};margin-left:4px">${sign}${variation.toFixed(1)} ${strings.dashboard.unitKg} ${arrow}</span>`;
       }
     }
 
@@ -108,13 +109,13 @@ export async function init() {
       if (hrvData.length > 0) {
         const latestHrv = hrvData[hrvData.length - 1].hrv_ms;
         const avgHrv = (hrvData.reduce((s, d) => s + d.hrv_ms, 0) / hrvData.length).toFixed(1);
-        hrvDisplay = `${latestHrv} ms`;
-        hrvTrend = `<span style="font-size:11px;color:var(--text-secondary)">${strings.dashboard.avg7d}: ${avgHrv} ms</span>`;
+        hrvDisplay = `${latestHrv} ${strings.dashboard.unitMs}`;
+        hrvTrend = `<span style="font-size:11px;color:var(--text-secondary)">${strings.dashboard.avg7d}: ${avgHrv} ${strings.dashboard.unitMs}</span>`;
       }
       if (rhrData.length > 0) {
         const latestRhr = rhrData[rhrData.length - 1].rhr_bpm;
         const avgRhr = (rhrData.reduce((s, d) => s + d.rhr_bpm, 0) / rhrData.length).toFixed(1);
-        rhrDisplay = `${Math.round(latestRhr)} bpm`;
+        rhrDisplay = `${Math.round(latestRhr)} ${strings.dashboard.unitBpm}`;
       }
     }
 
@@ -122,7 +123,7 @@ export async function init() {
     let standDisplay = '--', standCompliance = '';
     if (metrics?.standing_hours?.length) {
       const avgStand = metrics.standing_hours.reduce((s, d) => s + d.hours, 0) / metrics.standing_hours.length;
-      standDisplay = `${avgStand.toFixed(1)} h`;
+      standDisplay = `${avgStand.toFixed(1)} ${strings.dashboard.unitH}`;
       standCompliance = avgStand >= 8 ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.standingCompliant}</span>` : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.standingBelow}</span>`;
     }
 
@@ -130,7 +131,20 @@ export async function init() {
     let walkDisplay = '--';
     if (metrics?.walking_distance?.length) {
       const avgWalk = metrics.walking_distance.reduce((s, d) => s + d.km, 0) / metrics.walking_distance.length;
-      walkDisplay = `${avgWalk.toFixed(2)} km`;
+      walkDisplay = `${avgWalk.toFixed(2)} ${strings.dashboard.unitKm}`;
+    }
+
+    // Sleep
+    let sleepDisplay = '--', sleepCompliance = '';
+    if (sleepData?.ok && sleepData.data?.length) {
+      const avgSleep = sleepData.data.reduce((s, d) => s + d.sleep_hours, 0) / sleepData.data.length;
+      sleepDisplay = `${avgSleep.toFixed(1)} ${strings.dashboard.unitH}`;
+      if (sleepData.avg7d) {
+        sleepDisplay += ` <span style="font-size:11px;color:var(--text-secondary)">(${strings.dashboard.sleepAvg7d}: ${sleepData.avg7d.toFixed(1)}${strings.dashboard.unitH})</span>`;
+      }
+      sleepCompliance = (avgSleep >= 7 && avgSleep <= 9)
+        ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.sleepOptimal}</span>`
+        : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.sleepAdjust}</span>`;
     }
 
     // Balance split: basal vs activity + diet target
@@ -146,6 +160,7 @@ export async function init() {
       { title: strings.dashboard.hrvComposite, valueHtml: `<span>${strings.dashboard.hrvLabel}: ${hrvDisplay}</span><br><span style="font-size:12px">${strings.dashboard.restingHr}: ${rhrDisplay}</span>${hrvTrend ? `<br>${hrvTrend}` : ''}` },
       { title: strings.dashboard.standingHours, value: standDisplay, subtitle: standCompliance },
       { title: strings.dashboard.walkingDistance, value: walkDisplay, subtitle: strings.dashboard.avgDay },
+      { title: strings.dashboard.sleepTitle, valueHtml: sleepDisplay, subtitle: sleepCompliance },
     ];
 
     metricsRow.innerHTML = coreCards.map(c => `
@@ -158,16 +173,18 @@ export async function init() {
 
     // --- Row 2: Steps period cards + extra health metrics ---
 
-    // Steps averages
-    const steps7d = dailyData.length ? Math.round(dailyData.reduce((a, d) => a + d.steps, 0) / dailyData.length) : null;
-    const steps15d = dailyData.length ? Math.round(dailyData.reduce((a, d) => a + d.steps, 0) / dailyData.length) : null;
+    // Steps averages over correct sub-ranges
+    const steps7dData = dailyData.slice(-7);
+    const steps15dData = dailyData.slice(-15);
+    const steps7d = steps7dData.length ? Math.round(steps7dData.reduce((a, d) => a + d.steps, 0) / steps7dData.length) : null;
+    const steps15d = steps15dData.length ? Math.round(steps15dData.reduce((a, d) => a + d.steps, 0) / steps15dData.length) : null;
     const steps1m = dailyData.length ? Math.round(dailyData.reduce((a, d) => a + d.steps, 0) / dailyData.length) : null;
 
     // Exercise time
     let exerciseDisplay = '--', exerciseCompliance = '';
     if (metrics?.exercise_time?.length) {
       const avgEx = metrics.exercise_time.reduce((s, d) => s + d.minutes, 0) / metrics.exercise_time.length;
-      exerciseDisplay = `${avgEx.toFixed(0)} min`;
+      exerciseDisplay = `${avgEx.toFixed(0)} ${strings.dashboard.unitMin}`;
       exerciseCompliance = avgEx >= 30 ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.exerciseCompliant}</span>` : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.exerciseBelow}</span>`;
     }
 
@@ -175,7 +192,7 @@ export async function init() {
     let spo2Display = '--', spo2Compliance = '';
     if (metrics?.spo2?.length) {
       const latestSpO2 = metrics.spo2[0].spo2_percent;
-      spo2Display = `${latestSpO2}%`;
+      spo2Display = `${latestSpO2}${strings.dashboard.unitPercent}`;
       spo2Compliance = latestSpO2 >= 95 ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.spo2Normal}</span>` : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.spo2Low}</span>`;
     }
 

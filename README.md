@@ -1,6 +1,6 @@
 # FitOS — Acompañante Adaptativo de Nutrición y Entrenamiento
 
-![FitOS](https://img.shields.io/badge/FitOS-v0.1.0-0D9488?style=flat-square)
+![FitOS](https://img.shields.io/badge/FitOS-v0.2.0-0D9488?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-28.1-47848F?style=flat-square)
 ![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
@@ -26,19 +26,19 @@ App de escritorio local-first (**Electron + SQLite**) para unificar datos de **A
 
 ---
 
-## Novedades v0.1.0
+## Novedades v0.2.0
 
 | Novedad | Descripción |
 |---|---|
+| Suite de tests automatizados | Vitest + jsdom, 22 tests (14 unit + 8 smoke), `npm test` verifica todas las vistas sin crash |
+| Manejo de errores IPC robusto | Wrapper `safeCall` en ~99 calls IPC; fallos de DB no rompen vistas |
+| Card de sueño en Dashboard | Promedio de sueño + trailing 7d + indicador de cumplimiento (Óptimo/Ajustar) |
+| Limpieza de Chart.js | Destroy-before-recreate en actividad, dashboard, analytics y adaptive (sin leaks de event listeners) |
+| Localización completa | Strings hardcodeados reemplazados por claves de `locales/es.js` en las 8 vistas |
 | Dashboard renovado | 9 cards métricas (balance semanal, peso, pasos, FC reposo, HRV, SpO2, ejercicio, distancia, presión arterial) + selector 7d/15d/1m + gráfico tendencia + ranking actividad por sesiones |
 | Plan de Dieta 5 columnas | Interfaz de 5 comidas (Desayuno, Media Mañana, Comida, Merienda, Cena) con opciones de alimentos clickables, gramos por tipo de día, y totales por columna |
 | Generador automático de plan | Genera plan diario de 5 comidas desde el objetivo de déficit calórico, con ratios de macros calculados de la semilla de datos |
-| Paginación y búsqueda de alimentos | Tabla paginada (20/página) con filtros por categoría y búsqueda por nombre + auto-completar al escribir |
 | Platos elaborados | CRUD de platos con ingredientes, macros totales, y vinculación a comidas |
-| Evaluación de adherencia | Gáug visual de progreso, puntuación de consistencia semanal, recomendaciones específicas (aumentar déficit o mantener ritmo) |
-| Detección de recomposición | Gráfico peso vs cintura, guía de datos faltantes, detección automática de recomposición corporal |
-| Impacto vs Base PDF | Comparación entre ingesta actual y la base del plan de dieta PDF |
-| Comparación por períodos | Flechas de tendencia (▲/▼/―) en dashboard y actividad, sparklines por tipo de deporte |
 | Importación Apple Health XML | Parseo mediante HealthSync CLI con migración a SQLite |
 | Biblioteca de 55 ejercicios | Filtros por grupo muscular y equipo, 6 patrones de movimiento, 5 planes de entrenamiento (2x a 6x semana) |
 | +180 alimentos precargados | Base de datos de alimentos con macros por 100g de referencia BEDCA/USDA |
@@ -71,14 +71,8 @@ App de escritorio local-first (**Electron + SQLite**) para unificar datos de **A
 npm run dev          # Vite + Electron en concurrently
 npm run build        # Build producción + empaquetado
 npm run dev:web      # Solo frontend en navegador (sin Electron)
-```
-
-## Scripts
-
-```bash
-npm run dev          # Vite + Electron en concurrently
-npm run build        # Build producción + empaquetado
-npm run dev:web      # Solo frontend en navegador (sin Electron)
+npm test             # Vitest (22 tests: unit + smoke)
+npm run test:watch   # Vitest en modo watch
 ```
 
 ## Propósito

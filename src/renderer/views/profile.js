@@ -1,4 +1,5 @@
 import { strings } from '../locales/es.js';
+import { safeCall } from '../utils/safe-call.js';
 
 export async function init() {
   const container = document.getElementById('view-profile');
@@ -57,22 +58,22 @@ export async function init() {
 
   // Unused metrics section
   const unusedMetrics = [
-    { name: 'Presión Arterial Sistólica', icon: '💓', source: 'Blood Pressure', note: 'Disponible en HealthSync' },
-    { name: 'Presión Arterial Diastólica', icon: '💓', source: 'Blood Pressure', note: 'Disponible en HealthSync' },
-    { name: 'Glucosa en Sangre', icon: '🩸', source: 'Blood Glucose', note: 'Disponible en HealthSync' },
-    { name: 'Oxígeno en Sangre (SpO2)', icon: '🫁', source: 'Oxygen Saturation', note: 'Disponible en HealthSync' },
-    { name: 'Temperatura Muñeca', icon: '🌡️', source: 'Wrist Temperature', note: 'Disponible en HealthSync' },
-    { name: 'Frecuencia Respiratoria', icon: '🫁', source: 'Respiratory Rate', note: 'Disponible en HealthSync' },
-    { name: 'Tiempo en Zonas FC', icon: '❤️', source: 'Heart Rate Zone', note: 'Disponible en HealthSync' },
-    { name: 'Distancia Caminando Detallada', icon: '🚶', source: 'Walking/Running Distance', note: 'Agregado parcialmente' },
-    { name: 'Ciclismo Detallado', icon: '🚴', source: 'Cycling Distance', note: 'Agregado parcialmente' },
+    { name: strings.profile.bloodPressureSystolic, icon: '💓', source: 'Blood Pressure', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.bloodPressureDiastolic, icon: '💓', source: 'Blood Pressure', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.bloodGlucose, icon: '🩸', source: 'Blood Glucose', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.oxygenSaturation, icon: '🫁', source: 'Oxygen Saturation', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.wristTemperature, icon: '🌡️', source: 'Wrist Temperature', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.respiratoryRate, icon: '🫁', source: 'Respiratory Rate', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.hrZoneTime, icon: '❤️', source: 'Heart Rate Zone', note: strings.profile.availableInHealthSync },
+    { name: strings.profile.walkingDistance, icon: '🚶', source: 'Walking/Running Distance', note: strings.profile.partiallyAdded },
+    { name: strings.profile.cyclingDistance, icon: '🚴', source: 'Cycling Distance', note: strings.profile.partiallyAdded },
   ];
 
   const metricsHtml = `
     <div class="card">
-      <h2>📊 ${strings.profile.availableMetrics || 'Métricas Disponibles'}</h2>
+      <h2>📊 ${strings.profile.availableMetrics}</h2>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
-        ${strings.profile.availableMetricsDesc || 'Estas métricas están disponibles en Apple Health / HealthSync pero no tienen visualización dedicada en la app actualmente:'}
+        ${strings.profile.availableMetricsDesc}
       </p>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
         ${unusedMetrics.map(m => `
@@ -99,15 +100,15 @@ export async function init() {
     data.age = parseInt(data.age);
     data.height_cm = parseFloat(data.height_cm);
     data.weight_kg = parseFloat(data.weight_kg);
-    await api.saveProfile(data);
+    await safeCall(api.saveProfile(data), null);
     loadProfile();
   });
 
-  document.getElementById('btn-export').addEventListener('click', () => api.exportData());
-  document.getElementById('btn-import').addEventListener('click', () => api.importData());
+  document.getElementById('btn-export').addEventListener('click', () => safeCall(api.exportData(), null));
+  document.getElementById('btn-import').addEventListener('click', () => safeCall(api.importData(), null));
 
   async function loadProfile() {
-    const profile = await api.getProfile();
+    const profile = await safeCall(api.getProfile(), null);
     const display = document.getElementById('profile-display');
     const info = document.getElementById('profile-info');
     if (profile) {

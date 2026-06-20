@@ -294,6 +294,34 @@ function registerIpcHandlers(mainWindow) {
     return true;
   });
 
+  ipcMain.handle('db:updateDailyPlanEntry', (_event, id, grams) => {
+    const db = getDb();
+    db.prepare('UPDATE daily_plan_entries SET grams = ? WHERE id = ?').run(grams, id);
+    return true;
+  });
+
+  ipcMain.handle('db:deleteDailyPlanEntries', (_event, date) => {
+    const db = getDb();
+    const plan = db.prepare('SELECT id FROM daily_plans WHERE date = ?').get(date);
+    if (plan) {
+      db.prepare('DELETE FROM daily_plan_entries WHERE daily_plan_id = ?').run(plan.id);
+      db.prepare('DELETE FROM daily_plans WHERE id = ?').run(plan.id);
+    }
+    return true;
+  });
+
+  // Sleep data
+  ipcMain.handle('db:getSleepData', (_event, from, to) => {
+    const db = getDb();
+    const data = db.prepare('SELECT date, sleep_hours FROM activity_days WHERE date >= ? AND date <= ? AND sleep_hours IS NOT NULL ORDER BY date').all(from, to);
+    let avg7d = null;
+    if (data.length > 0) {
+      const last7 = data.slice(-7);
+      avg7d = last7.reduce((s, d) => s + d.sleep_hours, 0) / last7.length;
+    }
+    return { ok: true, data, avg7d };
+  });
+
   // Body measurements
   ipcMain.handle('db:getMeasurementSets', () => {
     const db = getDb();

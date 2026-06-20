@@ -238,6 +238,7 @@ export async function init() {
 
     const ma7 = movingAverage(steps, 7);
 
+    if (window._stepsChart) window._stepsChart.destroy();
     window._stepsChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -294,6 +295,7 @@ export async function init() {
       return;
     }
 
+    if (window._hrChart) window._hrChart.destroy();
     window._hrChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -357,6 +359,7 @@ export async function init() {
       return;
     }
 
+    if (window._energyChart) window._energyChart.destroy();
     window._energyChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -403,6 +406,7 @@ export async function init() {
       return;
     }
 
+    if (window._hrvChart) window._hrvChart.destroy();
     window._hrvChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -447,6 +451,7 @@ export async function init() {
 
     const ma7 = movingAverage(hours, 7);
 
+    if (window._sleepChart) window._sleepChart.destroy();
     window._sleepChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -501,6 +506,7 @@ export async function init() {
     const kcal = data.map(d => d.total_kcal);
     const colors = labels.map((_, i) => ACTIVITY_COLORS[i % ACTIVITY_COLORS.length]);
 
+    if (window._activityChart) window._activityChart.destroy();
     window._activityChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -649,7 +655,9 @@ export async function init() {
     const labels = data.map(d => d.date);
     const values = data.map(d => d[valueKey]);
 
-    window[`_${id}Chart`] = new Chart(ctx, {
+    const chartKey = `_${id}Chart`;
+    if (window[chartKey]) window[chartKey].destroy();
+    window[chartKey] = new Chart(ctx, {
       type: 'line',
       data: {
         labels,
@@ -688,7 +696,9 @@ export async function init() {
     const labels = data.map(d => d.date);
     const values = data.map(d => d.km);
 
-    window[`_${id.replace('-', '')}Chart`] = new Chart(ctx, {
+    const chartKey2 = `_${id.replace('-', '')}Chart`;
+    if (window[chartKey2]) window[chartKey2].destroy();
+    window[chartKey2] = new Chart(ctx, {
       type: 'line',
       data: {
         labels,
