@@ -1,4 +1,4 @@
-# Activity Ingestion
+# Activity Ingestion (v3)
 
 ## Purpose
 
@@ -15,7 +15,8 @@ The system SHALL display a "Deporte - Tipo" chart showing session count, average
 #### Scenario: Duration correctly displays non-zero values
 - **WHEN** sport_activities has non-NULL duration_minutes
 - **THEN** the chart SHALL display actual duration values
-- **THEN** the IPC handler SHALL use COALESCE(duration_minutes, 0) and verify column aliases
+- **THEN** the IPC handler SHALL use COALESCE(duration_minutes, 0) and verify column aliases match frontend keys
+- **THEN** the migration `migrateHealthData` SHALL populate `duration_minutes` from HealthSync workout data (root cause: duration may be missing from sport_activities because the import doesn't map it)
 
 #### Scenario: Sport summary chart shows all metrics
 - **WHEN** sport activity data exists
