@@ -26,6 +26,19 @@ The system SHALL display all UI text — navigation labels, view titles, form la
 - **WHEN** the system displays an error or validation message
 - **THEN** the message text SHALL be in Spanish
 
+#### Scenario: Activity timeline headers use locale keys
+- **WHEN** a user views the activity timeline table
+- **THEN** the column headers SHALL use locale keys: `strings.activity.date` for date, `strings.activity.steps` for steps, `strings.activity.activeCalories` for active kcal, `strings.activity.restingCalories` for resting kcal, `strings.activity.avgHeartRate` for heart rate, `strings.activity.sleepHours` for sleep
+
+#### Scenario: HealthSync status messages use locale keys
+- **WHEN** HealthSync is not installed
+- **THEN** the install button label SHALL use a locale key (not hardcoded "HealthSync no instalado")
+- **THEN** the status text SHALL use a locale key (not hardcoded "HealthSync disponible")
+
+#### Scenario: Import error message uses locale key
+- **WHEN** the Apple Health import fails because HealthSync is missing
+- **THEN** the error message SHALL reference a locale key instead of hardcoded "HealthSync no encontrado. Instálalo primero."
+
 ### Requirement: Spanish string constants module
 
 The system SHALL export all UI strings from a single ES module at `src/renderer/locales/es.js` that every view imports, instead of hardcoding strings in each view.

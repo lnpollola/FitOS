@@ -98,10 +98,10 @@ export async function init() {
     const hasHealthsync = await api.checkHealthsync();
     if (!hasHealthsync) {
       installBtn.style.display = 'inline-block';
-      healthStatus.textContent = 'HealthSync no instalado';
+      healthStatus.textContent = strings.activity.healthsyncNotInstalled;
     } else {
       installBtn.style.display = 'none';
-      healthStatus.textContent = 'HealthSync disponible';
+      healthStatus.textContent = strings.activity.healthsyncAvailable;
     }
   }
 
@@ -125,7 +125,7 @@ export async function init() {
     const hasHealthsync = await api.checkHealthsync();
     if (!hasHealthsync) {
       resultEl.style.display = 'block';
-      resultEl.innerHTML = `<p style="color:var(--danger)">HealthSync no encontrado. Instálalo primero.</p>`;
+      resultEl.innerHTML = `<p style="color:var(--danger)">${strings.activity.healthsyncImportError}</p>`;
       return;
     }
 
@@ -262,7 +262,7 @@ export async function init() {
           <button class="btn btn-secondary" id="timeline-next" style="padding:4px 10px;font-size:12px" ${monthOffset === 0 ? 'disabled' : ''}>Mes sig. ›</button>
         </div>`;
 
-      let html = '<table><thead><tr><th>Fecha</th><th>Pasos</th><th>kcal Activas</th><th>kcal Reposo</th><th>FC media</th><th>Sueño</th></tr></thead><tbody>';
+      let html = `<table><thead><tr><th>${strings.activity.timelineDate}</th><th>${strings.activity.timelineSteps}</th><th>${strings.activity.timelineActive}</th><th>${strings.activity.timelineResting}</th><th>${strings.activity.timelineHeartRate}</th><th>${strings.activity.timelineSleep}</th></tr></thead><tbody>`;
 
       const allSteps = allDays.filter(d => d.steps != null).map(d => d.steps);
       const allActive = allDays.filter(d => d.active_calories != null).map(d => d.active_calories);
