@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="0" y="0" width="200" height="800" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
+  <rect x="10" y="12" width="180" height="36" rx="6" fill="url(#accent)"/>
+  <text x="100" y="36" text-anchor="middle" fill="white" font-size="14" font-weight="bold">FitOS</text>
+  <text x="50" y="116" fill="#9ca3af" font-size="13">📊 Panel</text>
+  <rect x="10" y="130" width="180" height="32" rx="6" fill="#0D9488" opacity="0.2"/>
+  <rect x="10" y="130" width="3" height="32" rx="2" fill="#0D9488"/>
+  <text x="50" y="151" fill="white" font-size="13">🏃 Actividad</text>
+  <text x="50" y="193" fill="#9ca3af" font-size="13">🥗 Plan de Dieta</text>
+  <text x="50" y="235" fill="#9ca3af" font-size="13">⚡ Balance Energético</text>
+  <text x="50" y="277" fill="#9ca3af" font-size="13">📏 Mediciones</text>
+  <text x="50" y="319" fill="#9ca3af" font-size="13">🏋️ Entrenamiento</text>
+  <text x="50" y="361" fill="#9ca3af" font-size="13">👤 Perfil</text>
+
+  <text x="220" y="36" fill="white" font-size="18" font-weight="bold">Actividad</text>
+
+  <!-- Date range selector -->
+  <rect x="220" y="50" width="960" height="36" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <rect x="230" y="56" width="50" height="24" rx="6" fill="#0D9488"/>
+  <text x="255" y="72" text-anchor="middle" fill="white" font-size="11">7d</text>
+  <rect x="285" y="56" width="50" height="24" rx="6" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="310" y="72" text-anchor="middle" fill="#9ca3af" font-size="11">15d</text>
+  <rect x="340" y="56" width="50" height="24" rx="6" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="365" y="72" text-anchor="middle" fill="#9ca3af" font-size="11">1m</text>
+  <rect x="395" y="56" width="50" height="24" rx="6" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="420" y="72" text-anchor="middle" fill="#9ca3af" font-size="11">3m</text>
+
+  <!-- KPI row -->
+  <rect x="220" y="100" width="230" height="60" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="240" y="122" fill="#6b7280" font-size="11">Total Sesiones</text>
+  <text x="240" y="148" fill="white" font-size="18" font-weight="bold">14</text>
+
+  <rect x="460" y="100" width="230" height="60" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="480" y="122" fill="#6b7280" font-size="11">Total kcal</text>
+  <text x="480" y="148" fill="#0D9488" font-size="18" font-weight="bold">3,770</text>
+
+  <rect x="700" y="100" width="230" height="60" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="720" y="122" fill="#6b7280" font-size="11">Horas Deporte</text>
+  <text x="720" y="148" fill="white" font-size="18" font-weight="bold">8.5 h</text>
+
+  <rect x="940" y="100" width="230" height="60" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="960" y="122" fill="#6b7280" font-size="11">Tipos</text>
+  <text x="960" y="148" fill="white" font-size="18" font-weight="bold">4</text>
+
+  <!-- Dual-axis chart -->
+  <rect x="220" y="175" width="960" height="220" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="240" y="198" fill="white" font-size="13" font-weight="600">Resumen Deportivo Semanal</text>
+  <!-- Chart area -->
+  <rect x="230" y="210" width="930" height="170" rx="4" fill="#1a1a2e"/>
+  <!-- Bars (kcal left axis) -->
+  <polygon points="270,350 270,240 320,240 320,350" fill="#0D9488" opacity="0.7"/>
+  <polygon points="340,350 340,260 390,260 390,350" fill="#0D9488" opacity="0.7"/>
+  <polygon points="410,350 410,290 460,290 460,350" fill="#0D9488" opacity="0.7"/>
+  <polygon points="480,350 480,230 530,230 530,350" fill="#0D9488" opacity="0.7"/>
+  <polygon points="550,350 550,270 600,270 600,350" fill="#0D9488" opacity="0.7"/>
+  <!-- Duration line (right axis) -->
+  <circle cx="295" cy="275" r="4" fill="#f59e0b"/>
+  <circle cx="365" cy="285" r="4" fill="#f59e0b"/>
+  <circle cx="435" cy="310" r="4" fill="#f59e0b"/>
+  <circle cx="505" cy="265" r="4" fill="#f59e0b"/>
+  <circle cx="575" cy="295" r="4" fill="#f59e0b"/>
+  <polyline points="295,275 365,285 435,310 505,265 575,295" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <!-- Axes labels -->
+  <text x="240" y="240" fill="#0D9488" font-size="10">kcal</text>
+  <text x="240" y="365" fill="#f59e0b" font-size="10">duración</text>
+
+  <!-- Ranking table -->
+  <rect x="220" y="410" width="960" height="200" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="240" y="435" fill="white" font-size="13" font-weight="600">Ranking de Actividades</text>
+  <!-- Table header -->
+  <rect x="230" y="445" width="930" height="28" rx="4" fill="#1a1a2e"/>
+  <text x="250" y="464" fill="#6b7280" font-size="11" font-weight="600">Tipo</text>
+  <text x="480" y="464" fill="#6b7280" font-size="11" font-weight="600">Sesiones</text>
+  <text x="610" y="464" fill="#6b7280" font-size="11" font-weight="600">kcal Promedio</text>
+  <text x="780" y="464" fill="#6b7280" font-size="11" font-weight="600">Total kcal</text>
+  <text x="950" y="464" fill="#6b7280" font-size="11" font-weight="600">Duración</text>
+  <text x="1100" y="464" fill="#6b7280" font-size="11" font-weight="600">Sparkline</text>
+  <!-- Rows -->
+  <line x1="230" y1="478" x2="1160" y2="478" stroke="#2d2d4a" stroke-width="1"/>
+
+  <text x="250" y="495" fill="white" font-size="12">🏃 Carrera</text>
+  <text x="480" y="495" fill="white" font-size="12">4</text>
+  <text x="610" y="495" fill="#9ca3af" font-size="12">320 kcal</text>
+  <text x="790" y="495" fill="#0D9488" font-size="14" font-weight="bold">1,280</text>
+  <text x="890" y="495" fill="#10b981" font-size="12">▲</text>
+  <text x="950" y="495" fill="#9ca3af" font-size="12">180 min</text>
+  <polyline points="1090,492 1110,488 1130,494 1150,490" fill="none" stroke="#0D9488" stroke-width="1.5"/>
+
+  <text x="250" y="520" fill="white" font-size="12">🚴 Ciclismo</text>
+  <text x="480" y="520" fill="white" font-size="12">3</text>
+  <text x="610" y="520" fill="#9ca3af" font-size="12">450 kcal</text>
+  <text x="790" y="520" fill="#0D9488" font-size="14" font-weight="bold">1,350</text>
+  <text x="890" y="520" fill="#10b981" font-size="12">▲</text>
+  <text x="950" y="520" fill="#9ca3af" font-size="12">210 min</text>
+  <polyline points="1090,517 1110,513 1130,519 1150,515" fill="none" stroke="#0D9488" stroke-width="1.5"/>
+
+  <text x="250" y="545" fill="white" font-size="12">🏋️ Fuerza</text>
+  <text x="480" y="545" fill="white" font-size="12">5</text>
+  <text x="610" y="545" fill="#9ca3af" font-size="12">180 kcal</text>
+  <text x="790" y="545" fill="#0D9488" font-size="14" font-weight="bold">900</text>
+  <text x="890" y="545" fill="#ef4444" font-size="12">▼</text>
+  <text x="950" y="545" fill="#9ca3af" font-size="12">300 min</text>
+  <polyline points="1090,542 1110,546 1130,543 1150,547" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+
+  <text x="250" y="570" fill="white" font-size="12">🥾 Caminata</text>
+  <text x="480" y="570" fill="white" font-size="12">2</text>
+  <text x="610" y="570" fill="#9ca3af" font-size="12">120 kcal</text>
+  <text x="790" y="570" fill="#0D9488" font-size="14" font-weight="bold">240</text>
+  <text x="890" y="570" fill="#6b7280" font-size="12">―</text>
+  <text x="950" y="570" fill="#9ca3af" font-size="12">90 min</text>
+  <polyline points="1090,567 1110,568 1130,567 1150,568" fill="none" stroke="#6b7280" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="200" height="800" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
+  <rect x="10" y="12" width="180" height="36" rx="6" fill="url(#accent)"/>
+  <text x="100" y="36" text-anchor="middle" fill="white" font-size="14" font-weight="bold">FitOS</text>
+
+  <text x="20" y="80" fill="#6b7280" font-size="11" font-weight="600">NAVEGACIÓN</text>
+  <!-- Active nav item -->
+  <rect x="10" y="95" width="180" height="32" rx="6" fill="#0D9488" opacity="0.2"/>
+  <rect x="10" y="95" width="3" height="32" rx="2" fill="#0D9488"/>
+  <text x="50" y="116" fill="white" font-size="13">📊 Panel</text>
+  <text x="50" y="158" fill="#9ca3af" font-size="13">🏃 Actividad</text>
+  <text x="50" y="200" fill="#9ca3af" font-size="13">🥗 Plan de Dieta</text>
+  <text x="50" y="242" fill="#9ca3af" font-size="13">⚡ Balance Energético</text>
+  <text x="50" y="284" fill="#9ca3af" font-size="13">📏 Mediciones</text>
+  <text x="50" y="326" fill="#9ca3af" font-size="13">🏋️ Entrenamiento</text>
+  <text x="50" y="368" fill="#9ca3af" font-size="13">👤 Perfil</text>
+
+  <!-- Main content -->
+  <text x="220" y="36" fill="white" font-size="18" font-weight="bold">Panel</text>
+
+  <!-- Row 1: 6 metric cards -->
+  <rect x="220" y="55" width="155" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="240" y="80" fill="#6b7280" font-size="11">Balance Semanal</text>
+  <text x="240" y="105" fill="#10b981" font-size="20" font-weight="bold">-1,450 kcal</text>
+  <text x="240" y="125" fill="#6b7280" font-size="11">Promedio/día: -207 kcal</text>
+  <text x="240" y="138" fill="#6b7280" font-size="10">TMB 1,642 + Activ 487</text>
+
+  <rect x="390" y="55" width="155" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="410" y="80" fill="#6b7280" font-size="11">Último Peso</text>
+  <text x="410" y="105" fill="white" font-size="20" font-weight="bold">78.5 kg</text>
+  <text x="410" y="125" fill="#ef4444" font-size="12">▼ -0.8 kg</text>
+
+  <rect x="560" y="55" width="155" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="580" y="80" fill="#6b7280" font-size="11">Pasos Promedio</text>
+  <text x="580" y="105" fill="white" font-size="20" font-weight="bold">8,542</text>
+  <text x="580" y="125" fill="#10b981" font-size="12">▲ +12% vs período ant.</text>
+
+  <rect x="730" y="55" width="155" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="750" y="80" fill="#6b7280" font-size="11">FC en Reposo</text>
+  <text x="750" y="105" fill="white" font-size="20" font-weight="bold">58 bpm</text>
+  <text x="750" y="125" fill="#10b981" font-size="12">▲ -3 vs período ant.</text>
+
+  <rect x="900" y="55" width="155" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="920" y="80" fill="#6b7280" font-size="11">HRV</text>
+  <text x="920" y="105" fill="white" font-size="20" font-weight="bold">52 ms</text>
+  <text x="920" y="125" fill="#6b7280" font-size="12">FC Reposo 58 bpm</text>
+
+  <rect x="1070" y="55" width="115" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="1090" y="80" fill="#6b7280" font-size="11">Delta Meds</text>
+  <text x="1090" y="105" fill="#10b981" font-size="16" font-weight="bold">-2.3 cm</text>
+  <text x="1090" y="125" fill="#6b7280" font-size="10">Cintura</text>
+
+  <!-- Row 2: Steps periods + extras -->
+  <rect x="220" y="160" width="100" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="240" y="182" fill="#6b7280" font-size="11">7d</text>
+  <text x="240" y="202" fill="white" font-size="14" font-weight="bold">8,542</text>
+  <text x="240" y="218" fill="#6b7280" font-size="10">pasos/día</text>
+
+  <rect x="335" y="160" width="100" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="355" y="182" fill="#6b7280" font-size="11">15d</text>
+  <text x="355" y="202" fill="white" font-size="14" font-weight="bold">7,891</text>
+  <text x="355" y="218" fill="#6b7280" font-size="10">pasos/día</text>
+
+  <rect x="450" y="160" width="100" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="470" y="182" fill="#6b7280" font-size="11">1m</text>
+  <text x="470" y="202" fill="white" font-size="14" font-weight="bold">7,210</text>
+  <text x="470" y="218" fill="#6b7280" font-size="10">pasos/día</text>
+
+  <rect x="565" y="160" width="130" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="585" y="182" fill="#6b7280" font-size="11">Horas de Pie</text>
+  <text x="585" y="202" fill="#f59e0b" font-size="16" font-weight="bold">6.2 h</text>
+  <text x="585" y="218" fill="#f59e0b" font-size="10">Por debajo objetivo</text>
+
+  <rect x="710" y="160" width="130" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="730" y="182" fill="#6b7280" font-size="11">Ejercicio</text>
+  <text x="730" y="202" fill="#10b981" font-size="16" font-weight="bold">42 min/día</text>
+  <text x="730" y="218" fill="#10b981" font-size="10">✓ Cumple objetivo</text>
+
+  <rect x="855" y="160" width="130" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="875" y="182" fill="#6b7280" font-size="11">Distancia</text>
+  <text x="875" y="202" fill="white" font-size="14" font-weight="bold">3.2 km/día</text>
+
+  <rect x="1000" y="160" width="130" height="70" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="1020" y="182" fill="#6b7280" font-size="11">SpO2</text>
+  <text x="1020" y="202" fill="#10b981" font-size="16" font-weight="bold">97%</text>
+  <text x="1020" y="218" fill="#10b981" font-size="10">✓ Normal</text>
+
+  <!-- Row 3: Trend chart -->
+  <rect x="220" y="245" width="560" height="200" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <rect x="240" y="260" width="520" height="170" rx="4" fill="#1a1a2e"/>
+  <text x="250" y="278" fill="#6b7280" font-size="11">Tendencia de Actividad — kcal/día (7d)</text>
+  <!-- Chart grid lines -->
+  <line x1="260" y1="300" x2="740" y2="300" stroke="#2d2d4a" stroke-width="1"/>
+  <line x1="260" y1="330" x2="740" y2="330" stroke="#2d2d4a" stroke-width="1"/>
+  <line x1="260" y1="360" x2="740" y2="360" stroke="#2d2d4a" stroke-width="1"/>
+  <line x1="260" y1="390" x2="740" y2="390" stroke="#2d2d4a" stroke-width="1"/>
+  <!-- Bars -->
+  <rect x="270" y="340" width="40" height="80" rx="2" fill="#0D9488" opacity="0.6"/>
+  <rect x="325" y="310" width="40" height="110" rx="2" fill="#0D9488" opacity="0.6"/>
+  <rect x="380" y="355" width="40" height="65" rx="2" fill="#0D9488" opacity="0.6"/>
+  <rect x="435" y="325" width="40" height="95" rx="2" fill="#0D9488" opacity="0.6"/>
+  <rect x="490" y="345" width="40" height="75" rx="2" fill="#0D9488" opacity="0.6"/>
+  <rect x="545" y="315" width="40" height="105" rx="2" fill="#0D9488" opacity="0.6"/>
+  <rect x="600" y="335" width="40" height="85" rx="2" fill="#0D9488" opacity="0.6"/>
+  <!-- 7-day MA line -->
+  <polyline points="290,355 345,335 400,350 455,340 510,348 565,338 620,345" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <!-- Labels -->
+  <text x="740" y="300" fill="#6b7280" font-size="10">600 kcal</text>
+  <text x="740" y="330" fill="#6b7280" font-size="10">450 kcal</text>
+  <text x="740" y="360" fill="#6b7280" font-size="10">300 kcal</text>
+  <text x="740" y="390" fill="#6b7280" font-size="10">150 kcal</text>
+
+  <!-- Activity ranking -->
+  <rect x="800" y="245" width="380" height="200" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="820" y="270" fill="white" font-size="13" font-weight="600">Actividad por tipo</text>
+  <line x1="820" y1="280" x2="1160" y2="280" stroke="#2d2d4a" stroke-width="1"/>
+  <!-- Ranking items -->
+  <rect x="820" y="290" width="340" height="28" rx="4" fill="#1a1a2e"/>
+  <text x="830" y="310" fill="white" font-size="12">🏃 Carrera</text>
+  <text x="940" y="310" fill="#6b7280" font-size="11">4 sesiones</text>
+  <text x="1040" y="310" fill="#6b7280" font-size="11">320 kcal/ses</text>
+  <text x="1120" y="310" fill="#0D9488" font-size="12">1,280</text>
+  <text x="1145" y="310" fill="#10b981" font-size="12">▲</text>
+
+  <rect x="820" y="322" width="340" height="28" rx="4" fill="#1a1a2e"/>
+  <text x="830" y="342" fill="white" font-size="12">🚴 Ciclismo</text>
+  <text x="940" y="342" fill="#6b7280" font-size="11">3 sesiones</text>
+  <text x="1040" y="342" fill="#6b7280" font-size="11">450 kcal/ses</text>
+  <text x="1120" y="342" fill="#0D9488" font-size="12">1,350</text>
+  <text x="1145" y="342" fill="#10b981" font-size="12">▲</text>
+
+  <rect x="820" y="354" width="340" height="28" rx="4" fill="#1a1a2e"/>
+  <text x="830" y="374" fill="white" font-size="12">🏋️ Fuerza</text>
+  <text x="940" y="374" fill="#6b7280" font-size="11">5 sesiones</text>
+  <text x="1040" y="374" fill="#6b7280" font-size="11">180 kcal/ses</text>
+  <text x="1120" y="374" fill="#0D9488" font-size="12">900</text>
+  <text x="1145" y="374" fill="#ef4444" font-size="12">▼</text>
+
+  <rect x="820" y="386" width="340" height="28" rx="4" fill="#1a1a2e"/>
+  <text x="830" y="406" fill="white" font-size="12">🥾 Caminata</text>
+  <text x="940" y="406" fill="#6b7280" font-size="11">2 sesiones</text>
+  <text x="1040" y="406" fill="#6b7280" font-size="11">120 kcal/ses</text>
+  <text x="1120" y="406" fill="#0D9488" font-size="12">240</text>
+  <text x="1145" y="406" fill="#6b7280" font-size="12">―</text>
+
+  <!-- Row 4: additional cards -->
+  <rect x="220" y="460" width="240" height="100" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="240" y="485" fill="#6b7280" font-size="11">Resumen de Actividad</text>
+  <text x="240" y="510" fill="white" font-size="14" font-weight="bold">14 sesiones</text>
+  <text x="240" y="530" fill="#6b7280" font-size="12">3,770 kcal totales</text>
+  <text x="240" y="548" fill="#6b7280" font-size="12">4 tipos diferentes</text>
+
+  <rect x="475" y="460" width="240" height="100" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="495" y="485" fill="#6b7280" font-size="11">Próximo Entrenamiento</text>
+  <text x="495" y="510" fill="white" font-size="14">4x Superior/Inferior</text>
+  <text x="495" y="530" fill="#6b7280" font-size="12">Empuje — Pecho, Hombros</text>
+  <text x="495" y="548" fill="#6b7280" font-size="12">6 ejercicios planificados</text>
+
+  <rect x="730" y="460" width="240" height="100" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
+  <text x="750" y="485" fill="#6b7280" font-size="11">Sueño Promedio</text>
+  <text x="750" y="510" fill="white" font-size="20" font-weight="bold">7h 32m</text>
+  <text x="750" y="530" fill="#6b7280" font-size="12">7d: 7.5h | 15d: 7.2h</text>
+
+  <!-- Footer -->
+  <text x="220" y="600" fill="#4b5563" font-size="10">Última actualización: 20/06/2026 18:30</text>
+</svg>

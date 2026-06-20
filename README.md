@@ -7,24 +7,41 @@
 
 App de escritorio local-first (**Electron + SQLite**) para unificar datos de **Apple Watch**, plan de dieta basado en slots, balance energético con GET real, mediciones corporales y entrenamiento de fuerza. Cero dependencias cloud, todo corre localmente.
 
+## Capturas de Pantalla
+
+### Panel (Dashboard)
+![Dashboard](screenshots/dashboard.svg)
+
+### Actividad
+![Actividad](screenshots/activity.svg)
+
+### Plan de Dieta
+![Plan de Dieta](screenshots/diet.svg)
+
+### Balance Energético
+![Balance Energético](screenshots/energy-balance.svg)
+
+### Entrenamiento
+![Entrenamiento](screenshots/training.svg)
+
+---
+
 ## Novedades v0.1.0
 
 | Novedad | Descripción |
 |---|---|
-| Importación Apple Health XML | Reemplazó el CSV como fuente principal de datos |
-| Timeline con sparklines | Cada métrica diaria muestra tendencia 7d + flecha vs día anterior |
-| Dashboard renovado | Selector de rango (7d/15d/1m), cards por actividad con iconos, resumen total |
-| KPIs deportivos | Tarjetas con total sesiones, kcal, minutos, tipos + tabla ordenable |
-| Biblioteca de ejercicios | Filtros por grupo muscular/equipo, paginación, iconos |
-| Tendencias de salud | 6 gráficos, ranking con nombres en español, métricas secundarias (VO2, RHR, etc.) |
-| Mediciones corporales | 13 métricas con gráficos individuales, pre-fill último valor, labels en español |
-| Perfil con métricas disponibles | Listado de 9 métricas de HealthSync aún no visualizadas |
-
-## Capturas de Pantalla
-
-*Próximamente — coloca archivos `screenshots/*.png` y haz commit para que aparezcan aquí.*
-
----
+| Dashboard renovado | 9 cards métricas (balance semanal, peso, pasos, FC reposo, HRV, SpO2, ejercicio, distancia, presión arterial) + selector 7d/15d/1m + gráfico tendencia + ranking actividad por sesiones |
+| Plan de Dieta 5 columnas | Interfaz de 5 comidas (Desayuno, Media Mañana, Comida, Merienda, Cena) con opciones de alimentos clickables, gramos por tipo de día, y totales por columna |
+| Generador automático de plan | Genera plan diario de 5 comidas desde el objetivo de déficit calórico, con ratios de macros calculados de la semilla de datos |
+| Paginación y búsqueda de alimentos | Tabla paginada (20/página) con filtros por categoría y búsqueda por nombre + auto-completar al escribir |
+| Platos elaborados | CRUD de platos con ingredientes, macros totales, y vinculación a comidas |
+| Evaluación de adherencia | Gáug visual de progreso, puntuación de consistencia semanal, recomendaciones específicas (aumentar déficit o mantener ritmo) |
+| Detección de recomposición | Gráfico peso vs cintura, guía de datos faltantes, detección automática de recomposición corporal |
+| Impacto vs Base PDF | Comparación entre ingesta actual y la base del plan de dieta PDF |
+| Comparación por períodos | Flechas de tendencia (▲/▼/―) en dashboard y actividad, sparklines por tipo de deporte |
+| Importación Apple Health XML | Parseo mediante HealthSync CLI con migración a SQLite |
+| Biblioteca de 55 ejercicios | Filtros por grupo muscular y equipo, 6 patrones de movimiento, 5 planes de entrenamiento (2x a 6x semana) |
+| +180 alimentos precargados | Base de datos de alimentos con macros por 100g de referencia BEDCA/USDA |
 
 ## Stack
 
@@ -36,18 +53,25 @@ App de escritorio local-first (**Electron + SQLite**) para unificar datos de **A
 | Importación salud | HealthSync CLI (Go) para parseo de XML Apple Health |
 | Build | Vite + electron-builder (AppImage / NSIS / dmg) |
 
-## Vistas (8)
+## Vistas (7)
 
 | Vista | ID | Funcionalidad |
 |---|---|---|
-| Panel | `dashboard` | Balance semanal, pasos promedio, FC reposo, cards actividad por tipo con resumen total |
-| Actividad | `activity` | Importación Apple Health XML, timeline con sparklines + flechas, KPIs deportivos |
-| Plan de Dieta | `diet` | Plantillas de comidas por slots, alimentos, platos elaborados, plan diario |
-| Balance Energético | `energy` | Desglose GET (TMB + deporte + NEAT), balance diario y semanal |
-| Mediciones | `measurements` | 13 métricas + peso, método Navy body fat, 13 gráficos individuales |
-| Tendencias | `analytics` | 6 gráficos de salud, ranking actividades, métricas secundarias (VO2, RHR, HRV, etc.) |
-| Entrenamiento | `training` | Planes 2-6 días, biblioteca con filtros, sesiones, progresión |
-| Perfil | `profile` | Perfil usuario, export/import JSON, métricas disponibles |
+| Panel | `dashboard` | 9+ cards métricas (balance, peso, pasos, FC reposo, HRV, SpO2, ejercicio, distancia, PA), gráfico tendencia 7d MA, ranking actividad por sesiones, selector rango 7d/15d/1m, flechas de tendencia |
+| Actividad | `activity` | Importación Apple Health XML, resumen semanal con gráfico kcal+duración dual, tabla ranking ordenable con sparklines y comparación por períodos (15d/1m/3m) |
+| Plan de Dieta | `diet` | 5 columnas de comidas con opciones clickables, gestor de alimentos con paginación y filtros, platos elaborados, plan diario con auto-generador desde déficit objetivo |
+| Balance Energético | `energy` | Planificación adaptativa: ritmo objetivo, desglose GET (TMB+deporte+NEAT), gauge de adherencia, consistencia semanal, detección de recomposición con gráfico peso vs cintura, impacto vs base PDF |
+| Mediciones | `measurements` | 10 métricas + peso, método Navy body fat, gráficos históricos, comparativa antes/después |
+| Entrenamiento | `training` | 5 planes predefinidos (2x-6x semana), biblioteca de 55 ejercicios con filtros, registro de sesiones con series/reps/RPE, gráficos de progresión |
+| Perfil | `profile` | Perfil usuario (edad, sexo, altura, peso), export/import JSON completo, umbrales de cumplimiento |
+
+## Scripts
+
+```bash
+npm run dev          # Vite + Electron en concurrently
+npm run build        # Build producción + empaquetado
+npm run dev:web      # Solo frontend en navegador (sin Electron)
+```
 
 ## Scripts
 
