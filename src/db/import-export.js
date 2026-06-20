@@ -5,8 +5,10 @@ const TABLES = [
   'user_profile', 'activity_days', 'sport_activities', 'food_items',
   'meal_templates', 'meal_components', 'meal_options', 'daily_plans',
   'daily_plan_entries', 'measurement_sets', 'weight_entries',
-  'training_routines', 'training_routine_days', 'exercise_library',
+  'training_routines', 'exercise_library',
   'training_sessions', 'training_sets', 'settings',
+  'elaborated_dishes', 'dish_ingredients', 'meal_dish_options',
+  'workout_plans', 'workout_plan_days',
 ];
 
 function exportAllData(filePath) {

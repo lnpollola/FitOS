@@ -65,12 +65,12 @@ export async function init() {
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <select id="food-category-filter" style="padding:6px 10px">
           <option value="">${strings.diet.categoryFilter || 'Todas las categorías'}</option>
-          <option value="breads">Pan/Cereales</option>
-          <option value="proteins">Proteínas</option>
-          <option value="fats">Grasas</option>
-          <option value="fruits">Frutas</option>
-          <option value="vegetables">Verduras</option>
-          <option value="drinks">Bebidas</option>
+          <option value="breads">${strings.diet.categories?.breads || 'Pan/Cereales'}</option>
+          <option value="proteins">${strings.diet.categories?.proteins || 'Proteínas'}</option>
+          <option value="fats">${strings.diet.categories?.fats || 'Grasas'}</option>
+          <option value="fruits">${strings.diet.categories?.fruits || 'Frutas'}</option>
+          <option value="vegetables">${strings.diet.categories?.vegetables || 'Verduras'}</option>
+          <option value="drinks">${strings.diet.categories?.drinks || 'Bebidas'}</option>
         </select>
         <input type="text" id="food-search" placeholder="${strings.diet.search || 'Buscar...'}" style="flex:1;padding:6px 10px" />
       </div>
@@ -470,7 +470,7 @@ export async function init() {
               return `
                 <div class="meal-entry" style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
                   <span style="flex:1;font-size:13px">${entry.food_name}</span>
-                  <input type="number" value="${entry.grams}" step="5" min="0" data-entry-id="${entry.id}" class="gram-input meal-gram-input" style="width:60px;padding:2px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px" />
+                   <input type="number" value="${entry.grams}" step="5" min="0" data-entry-id="${entry.id}" data-meal-id="${tmpl.id}" data-kcal="${entry.kcal_per_100g}" data-protein="${entry.protein_per_100g}" data-carbs="${entry.carbs_per_100g}" data-fat="${entry.fat_per_100g}" class="gram-input meal-gram-input" style="width:60px;padding:2px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px" />
                    <span class="data-value" style="font-size:12px;width:50px;text-align:right">${kcal.toFixed(0)}</span>
                   <span style="font-size:11px;color:var(--text-secondary);width:80px;text-align:right">P:${protein.toFixed(1)} C:${carbs.toFixed(1)} G:${fat.toFixed(1)}</span>
                   <button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-hide-food-id="${entry.food_item_id}">${strings.diet.hide}</button>
@@ -604,48 +604,41 @@ export async function init() {
 
   function recalcTotals() {
     let totalKcal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    const mealTotals = {};
     document.querySelectorAll('.gram-input').forEach(input => {
       const grams = parseFloat(input.value) || 0;
-      const row = input.closest('tr');
-      const cells = row.querySelectorAll('td');
-      const kcalText = cells[2].textContent;
-      const proteinText = cells[3].textContent;
-      const carbsText = cells[4].textContent;
-      const fatText = cells[5].textContent;
-      const origKcal = parseFloat(kcalText);
-      const origProtein = parseFloat(proteinText);
-      const origCarbs = parseFloat(carbsText);
-      const origFat = parseFloat(fatText);
-      const prevKcal = cells[2].dataset.origKcal ? parseFloat(cells[2].dataset.origKcal) : origKcal;
-      const prevProtein = cells[3].dataset.origProtein ? parseFloat(cells[3].dataset.origProtein) : origProtein;
-      const prevCarbs = cells[4].dataset.origCarbs ? parseFloat(cells[4].dataset.origCarbs) : origCarbs;
-      const prevFat = cells[5].dataset.origFat ? parseFloat(cells[5].dataset.origFat) : origFat;
-      const prevGrams = cells[1].dataset.origGrams ? parseFloat(cells[1].dataset.origGrams) : parseFloat(input.defaultValue);
-      if (!cells[2].dataset.origKcal) {
-        cells[2].dataset.origKcal = origKcal;
-        cells[3].dataset.origProtein = origProtein;
-        cells[4].dataset.origCarbs = origCarbs;
-        cells[5].dataset.origFat = origFat;
-        cells[1].dataset.origGrams = input.defaultValue;
+      const kcalPer100 = parseFloat(input.dataset.kcal) || 0;
+      const proteinPer100 = parseFloat(input.dataset.protein) || 0;
+      const carbsPer100 = parseFloat(input.dataset.carbs) || 0;
+      const fatPer100 = parseFloat(input.dataset.fat) || 0;
+      const factor = grams / 100;
+      const kcal = kcalPer100 * factor;
+      const protein = proteinPer100 * factor;
+      const carbs = carbsPer100 * factor;
+      const fat = fatPer100 * factor;
+      totalKcal += kcal;
+      totalProtein += protein;
+      totalCarbs += carbs;
+      totalFat += fat;
+      const mealId = input.dataset.mealId;
+      if (mealId) {
+        if (!mealTotals[mealId]) mealTotals[mealId] = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+        mealTotals[mealId].kcal += kcal;
+        mealTotals[mealId].protein += protein;
+        mealTotals[mealId].carbs += carbs;
+        mealTotals[mealId].fat += fat;
       }
-      const ratio = prevGrams > 0 ? grams / prevGrams : 0;
-      const newKcal = prevKcal * ratio;
-      const newProtein = prevProtein * ratio;
-      const newCarbs = prevCarbs * ratio;
-      const newFat = prevFat * ratio;
-      cells[2].textContent = newKcal.toFixed(0);
-      cells[3].textContent = `${newProtein.toFixed(1)}g`;
-      cells[4].textContent = `${newCarbs.toFixed(1)}g`;
-      cells[5].textContent = `${newFat.toFixed(1)}g`;
-      totalKcal += newKcal;
-      totalProtein += newProtein;
-      totalCarbs += newCarbs;
-      totalFat += newFat;
     });
-    document.getElementById('total-kcal').textContent = totalKcal.toFixed(0);
-    document.getElementById('total-protein').textContent = `${totalProtein.toFixed(1)}g`;
-    document.getElementById('total-carbs').textContent = `${totalCarbs.toFixed(1)}g`;
-    document.getElementById('total-fat').textContent = `${totalFat.toFixed(1)}g`;
+    document.getElementById('plan-total-kcal').textContent = `${totalKcal.toFixed(0)} kcal`;
+    document.getElementById('plan-total-protein').textContent = `P: ${totalProtein.toFixed(1)}g`;
+    document.getElementById('plan-total-carbs').textContent = `C: ${totalCarbs.toFixed(1)}g`;
+    document.getElementById('plan-total-fat').textContent = `G: ${totalFat.toFixed(1)}g`;
+    for (const [mealId, mt] of Object.entries(mealTotals)) {
+      const el = document.getElementById(`meal-total-${mealId}`);
+      if (el) {
+        el.textContent = `${mt.kcal.toFixed(0)} kcal | P:${mt.protein.toFixed(1)} C:${mt.carbs.toFixed(1)} G:${mt.fat.toFixed(1)}`;
+      }
+    }
   }
 
   async function loadFoods() {

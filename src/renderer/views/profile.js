@@ -1,6 +1,6 @@
 import { strings } from '../locales/es.js';
 
-export function init() {
+export async function init() {
   const container = document.getElementById('view-profile');
   const api = window.electronAPI;
 

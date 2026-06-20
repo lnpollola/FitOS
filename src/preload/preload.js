@@ -32,16 +32,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMeasurementSets: () => ipcRenderer.invoke('db:getMeasurementSets'),
   getLatestMeasurementSet: () => ipcRenderer.invoke('db:getLatestMeasurementSet'),
   saveMeasurementSet: (set) => ipcRenderer.invoke('db:saveMeasurementSet', set),
+  deleteMeasurementSet: (id) => ipcRenderer.invoke('db:deleteMeasurementSet', id),
   getWeightEntries: () => ipcRenderer.invoke('db:getWeightEntries'),
   saveWeightEntry: (entry) => ipcRenderer.invoke('db:saveWeightEntry', entry),
+  deleteWeightEntry: (id) => ipcRenderer.invoke('db:deleteWeightEntry', id),
 
   // Training
   getExerciseLibrary: () => ipcRenderer.invoke('db:getExerciseLibrary'),
   saveExercise: (exercise) => ipcRenderer.invoke('db:saveExercise', exercise),
   getTrainingSessions: () => ipcRenderer.invoke('db:getTrainingSessions'),
   saveTrainingSession: (session) => ipcRenderer.invoke('db:saveTrainingSession', session),
+  deleteTrainingSession: (id) => ipcRenderer.invoke('db:deleteTrainingSession', id),
   getTrainingSets: (sessionId) => ipcRenderer.invoke('db:getTrainingSets', sessionId),
   saveTrainingSet: (set) => ipcRenderer.invoke('db:saveTrainingSet', set),
+  deleteTrainingSet: (id) => ipcRenderer.invoke('db:deleteTrainingSet', id),
+  deleteExercise: (id) => ipcRenderer.invoke('db:deleteExercise', id),
   getTrainingRoutines: () => ipcRenderer.invoke('db:getTrainingRoutines'),
   saveTrainingRoutine: (routine) => ipcRenderer.invoke('db:saveTrainingRoutine', routine),
 
@@ -53,7 +58,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSetting: (key) => ipcRenderer.invoke('db:getSetting', key),
   setSetting: (key, value) => ipcRenderer.invoke('db:setSetting', key, value),
   getTrendWeight: () => ipcRenderer.invoke('db:getTrendWeight'),
-  getRecompData: () => ipcRenderer.invoke('db:getRecompData'),
   getLastImportTimestamp: () => ipcRenderer.invoke('db:getLastImportTimestamp'),
   setLastImportTimestamp: (timestamp) => ipcRenderer.invoke('db:setLastImportTimestamp', timestamp),
 

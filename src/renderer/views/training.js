@@ -453,12 +453,22 @@ export async function init() {
             <button class="btn btn-secondary" id="ex-next" style="padding:2px 8px;font-size:12px" ${_page >= totalPages - 1 ? 'disabled' : ''}>›</button>
           </div>
         </div>
-        <table><thead><tr><th>${strings.training.exerciseName}</th><th>${strings.training.muscleGroup}</th><th>${strings.training.equipment}</th><th>${strings.training.movementPattern}</th></tr></thead><tbody>`;
+        <table><thead><tr><th>${strings.training.exerciseName}</th><th>${strings.training.muscleGroup}</th><th>${strings.training.equipment}</th><th>${strings.training.movementPattern}</th><th></th></tr></thead><tbody>`;
       for (const e of page) {
-        html += `<tr><td>${getMuscleIcon(e.muscle_group)} ${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td></tr>`;
+        html += `<tr><td>${getMuscleIcon(e.muscle_group)} ${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-exercise="${e.id}">Eliminar</button></td></tr>`;
       }
       html += '</tbody></table>';
       el.innerHTML = html;
+
+      el.querySelectorAll('[data-delete-exercise]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (confirm('¿Eliminar este ejercicio?')) {
+            await api.deleteExercise(parseInt(btn.dataset.deleteExercise));
+            _page = 0;
+            renderPage();
+          }
+        });
+      });
 
       // Wire filters
       const muscleSelect = document.getElementById('ex-filter-muscle');
@@ -504,12 +514,24 @@ export async function init() {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noSessions}</p></div>`;
       return;
     }
-    let html = '<table><thead><tr><th>Fecha</th><th>Rutina</th><th>Notas</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Fecha</th><th>Rutina</th><th>Notas</th><th></th></tr></thead><tbody>';
     for (const s of sessions) {
-      html += `<tr><td>${s.date}</td><td>${s.routine_name ?? '--'}</td><td>${s.notes ?? ''}</td></tr>`;
+      html += `<tr><td>${s.date}</td><td>${s.routine_name ?? '--'}</td><td>${s.notes ?? ''}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-session="${s.id}">Eliminar</button></td></tr>`;
     }
     html += '</tbody></table>';
     el.innerHTML = html;
+
+    el.querySelectorAll('[data-delete-session]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (confirm('¿Eliminar esta sesión y todas sus series?')) {
+          await api.deleteTrainingSession(parseInt(btn.dataset.deleteSession));
+          loadSessions();
+          loadProgression();
+          loadDeltas();
+          loadStrengthStatus();
+        }
+      });
+    });
   }
 
   async function loadProgression() {
