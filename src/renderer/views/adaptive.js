@@ -1,8 +1,10 @@
 import { strings } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
+import { calculateBMR } from '../utils/bmr.js';
 import Chart from 'chart.js/auto';
+import { safeCall } from '../utils/safe-call.js';
 
-export function init() {
+export async function init() {
   const container = document.getElementById('view-energy');
   container.innerHTML = `
     <h2 class="view-title">${strings.adaptive.title}</h2>
@@ -60,7 +62,7 @@ export function init() {
   }
 
   async function loadStatus() {
-    const profile = await api.getProfile();
+    const profile = await safeCall(api.getProfile(), null);
     const pace = parseFloat(document.getElementById('target-pace').value);
     const el = document.getElementById('current-status');
 
@@ -69,16 +71,11 @@ export function init() {
       return;
     }
 
-    let bmr;
-    if (profile.sex === 'male') {
-      bmr = 10 * profile.weight_kg + 6.25 * profile.height_cm - 5 * profile.age + 5;
-    } else {
-      bmr = 10 * profile.weight_kg + 6.25 * profile.height_cm - 5 * profile.age - 161;
-    }
+    const bmr = calculateBMR(profile.weight_kg, profile.height_cm, profile.age, profile.sex);
 
     const today = new Date().toISOString().split('T')[0];
-    const balance = await api.getEnergyBalance(today);
-    const maintenance = balance?.tdee || (bmr * 1.2);
+    const balance = await safeCall(api.getEnergyBalance(today), null);
+    const maintenance = balance?.tdee ?? (bmr * 1.2);
     const deficitPerKg = 7700;
     const targetDeficit = pace * deficitPerKg / 7;
     const targetIntake = maintenance - targetDeficit;
@@ -117,12 +114,12 @@ export function init() {
   }
 
   async function loadAdherence() {
-    const profile = await api.getProfile();
+    const profile = await safeCall(api.getProfile(), null);
     const pace = parseFloat(document.getElementById('target-pace').value);
     const el = document.getElementById('adherence-eval');
     if (!profile) return;
 
-    const weights = await api.getWeightEntries();
+    const weights = await safeCall(api.getWeightEntries(), []);
     if (!weights || weights.length < 2) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.adherenceEmpty}</p></div>`;
       return;
@@ -132,9 +129,12 @@ export function init() {
     const recentWeights = sorted.slice(-14);
     const trendWeight = recentWeights.reduce((sum, w) => sum + w.weight_kg, 0) / recentWeights.length;
 
-    const oldestWeight = sorted[0].weight_kg;
-    const daysDiff = (new Date(sorted[sorted.length - 1].date) - new Date(sorted[0].date)) / (1000 * 60 * 60 * 24);
-    const actualRate = daysDiff > 0 ? ((oldestWeight - trendWeight) / daysDiff) * 7 : 0;
+    const oldestRecent = recentWeights[0];
+    const newestRecent = recentWeights[recentWeights.length - 1];
+    const daysDiff = recentWeights.length > 1
+      ? (new Date(newestRecent.date) - new Date(oldestRecent.date)) / (1000 * 60 * 60 * 24)
+      : 0;
+    const actualRate = daysDiff > 0 ? ((oldestRecent.weight_kg - newestRecent.weight_kg) / daysDiff) * 7 : 0;
     const onTrack = Math.abs(actualRate - pace) < 0.2;
 
     // Consistency score: % of weekly intervals within 0.2kg of target
@@ -186,8 +186,8 @@ export function init() {
   }
 
   async function loadRecomp() {
-    const sets = await api.getMeasurementSets();
-    const profile = await api.getProfile();
+    const sets = await safeCall(api.getMeasurementSets(), []);
+    const profile = await safeCall(api.getProfile(), null);
     const el = document.getElementById('recomp-detection');
 
     if (!sets || sets.length < 2 || !profile) {
@@ -257,8 +257,9 @@ export function init() {
 
     const ctx = document.getElementById('recomp-chart')?.getContext('2d');
     if (ctx) {
+      if (window._recompChart) window._recompChart.destroy();
       const chartData = sorted.slice(-12);
-      new Chart(ctx, {
+      window._recompChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: chartData.map(s => s.date.slice(5)),
@@ -295,13 +296,13 @@ export function init() {
   }
 
   async function loadAdjustments() {
-    const profile = await api.getProfile();
+    const profile = await safeCall(api.getProfile(), null);
     const pace = parseFloat(document.getElementById('target-pace').value);
     const el = document.getElementById('adjustment-recs');
 
     if (!profile) return;
 
-    const balance = await api.getEnergyBalance(new Date().toISOString().split('T')[0]);
+    const balance = await safeCall(api.getEnergyBalance(new Date().toISOString().split('T')[0]), null);
     if (!balance) return;
 
     const deficitPerKg = 7700;
@@ -347,13 +348,13 @@ export function init() {
 
     if (acceptBtn) {
       acceptBtn.addEventListener('click', async () => {
-        await api.setSetting('last_adjustment', JSON.stringify({
+        await safeCall(api.setSetting('last_adjustment', JSON.stringify({
           date: new Date().toISOString().split('T')[0],
           pace,
           targetDeficit,
           currentDeficit,
           deficitGap,
-        }));
+        })), null);
         loadHistory();
         el.innerHTML = `<p style="color:var(--success)">${strings.adaptive.adjustmentApplied}</p>`;
       });
@@ -368,13 +369,13 @@ export function init() {
 
   async function loadDeficitImpact() {
     const el = document.getElementById('deficit-impact');
-    const profile = await api.getProfile();
+    const profile = await safeCall(api.getProfile(), null);
     if (!profile) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.completeProfileFirst}</p></div>`;
       return;
     }
 
-    const templates = await api.getMealTemplates();
+    const templates = await safeCall(api.getMealTemplates(), []);
     if (!templates || templates.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.deficitImpactEmpty}</p></div>`;
       return;
@@ -388,7 +389,7 @@ export function init() {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const plan = await api.getDailyPlan(today);
+    const plan = await safeCall(api.getDailyPlan(today), null);
     let currentIntakeKcal = 0;
     if (plan) {
       for (const entry of plan) {
@@ -417,7 +418,7 @@ export function init() {
 
   async function loadHistory() {
     const el = document.getElementById('adjustment-history');
-    const lastAdj = await api.getSetting('last_adjustment');
+    const lastAdj = await safeCall(api.getSetting('last_adjustment'), null);
     if (!lastAdj) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div>`;
       return;
@@ -425,11 +426,11 @@ export function init() {
     const adj = JSON.parse(lastAdj);
     el.innerHTML = `
       <table>
-        <thead><tr><th>Fecha</th><th>Ritmo</th><th>Déficit Objetivo</th><th>Déficit Actual</th><th>Brecha</th></tr></thead>
+        <thead><tr><th>${strings.adaptive.adjDate}</th><th>${strings.adaptive.adjPace}</th><th>${strings.adaptive.adjTargetDeficit}</th><th>${strings.adaptive.adjCurrentDeficit}</th><th>${strings.adaptive.adjGap}</th></tr></thead>
         <tbody>
           <tr>
             <td>${adj.date}</td>
-            <td>${adj.pace} kg/sem</td>
+            <td>${adj.pace} ${strings.adaptive.kgPerWeekShort}</td>
             <td>${adj.targetDeficit.toFixed(0)} kcal</td>
             <td>${adj.currentDeficit.toFixed(0)} kcal</td>
             <td>${adj.deficitGap > 0 ? '+' : ''}${adj.deficitGap.toFixed(0)} kcal</td>

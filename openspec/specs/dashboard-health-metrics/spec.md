@@ -88,3 +88,37 @@ The system SHALL provide IPC handlers for all new health metrics, ideally batche
 #### Scenario: Batched metrics
 - **WHEN** dashboard initializes
 - **THEN** the system SHOULD call a single `health:getDashboardMetrics(from, to)` returning all metrics together, rather than 5 separate IPC calls
+
+### Requirement: Sleep card on dashboard
+
+The system SHALL display sleep hours as a health metric card on the dashboard, using data from the app's `activity_days` table.
+
+#### Scenario: Sleep card renders with data
+- **WHEN** the dashboard loads and sleep data exists for the selected period
+- **THEN** the system SHALL display a card showing average sleep hours for the period
+- **THEN** the card SHALL display a 7-day trailing average
+- **THEN** the card SHALL show a trend arrow (▲/▼/―) comparing the current period to the previous period
+- **THEN** sleep between 7-9h SHALL show green "Óptimo"; outside that range SHALL show yellow "Ajustar"
+
+#### Scenario: Sleep card empty state
+- **WHEN** no sleep data exists for the selected period
+- **THEN** the card SHALL display "--" without breaking the layout
+
+### Requirement: IPC handler for sleep data
+
+The system SHALL provide an IPC handler `db:getSleepData(from, to)` that returns sleep hours aggregated by date from `activity_days`.
+
+#### Scenario: Sleep data query
+- **WHEN** the dashboard requests sleep data for a date range
+- **THEN** the system SHALL return an array of `{ date, sleep_hours }` from `activity_days` where `sleep_hours IS NOT NULL`
+- **THEN** the system SHALL return a 7-day trailing average as a separate field
+- **THEN** failed queries SHALL return `{ ok: false, error: message }` without crashing
+
+### Requirement: Health metrics IPC error resilience
+
+The system SHALL handle IPC failures in health metric cards gracefully, displaying "--" or a neutral fallback without crashing the dashboard.
+
+#### Scenario: Failed IPC calls show fallback
+- **WHEN** an IPC call for any health metric fails (network error, DB locked, etc.)
+- **THEN** the card SHALL display "--" for the affected metric
+- **THEN** the dashboard SHALL continue rendering unaffected metrics

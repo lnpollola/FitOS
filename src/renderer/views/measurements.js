@@ -1,6 +1,7 @@
 import Chart from 'chart.js/auto';
 import { strings, getMeasurementLabel } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
+import { safeCall } from '../utils/safe-call.js';
 
 const METRIC_COLUMNS = [
   'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
@@ -26,6 +27,7 @@ function formatDelta(delta, metricKey) {
 export async function init() {
   if (window._loadingMeasurements) return;
   window._loadingMeasurements = true;
+  try {
   const container = document.getElementById('view-measurements');
 
   const formFields = METRIC_COLUMNS.map(m => `
@@ -108,10 +110,10 @@ export async function init() {
   `;
 
   const api = window.electronAPI;
-  if (!api) { window._loadingMeasurements = false; return; }
+  if (!api) { return; }
 
   async function prefillForm() {
-    const latest = await api.getLatestMeasurementSet();
+    const latest = await safeCall(api.getLatestMeasurementSet(), null);
     if (latest) {
       document.querySelector('#measurement-form input[name="date"]').value = new Date().toISOString().split('T')[0];
       for (const col of METRIC_COLUMNS) {
@@ -130,7 +132,7 @@ export async function init() {
       if (key !== 'date' && data[key] !== '') data[key] = parseFloat(data[key]);
       else if (key !== 'date' && data[key] === '') data[key] = null;
     }
-    await api.saveMeasurementSet(data);
+    await safeCall(api.saveMeasurementSet(data), null);
     loadAll();
   });
 
@@ -138,7 +140,7 @@ export async function init() {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
     data.weight_kg = parseFloat(data.weight_kg);
-    await api.saveWeightEntry(data);
+    await safeCall(api.saveWeightEntry(data), null);
     loadAll();
   });
 
@@ -156,8 +158,8 @@ export async function init() {
   }
 
   async function loadBodyFatEstimate() {
-    const profile = await api.getProfile();
-    const sets = await api.getMeasurementSets();
+    const profile = await safeCall(api.getProfile(), null);
+    const sets = await safeCall(api.getMeasurementSets(), []);
     const el = document.getElementById('body-fat-estimate');
     if (!sets || sets.length === 0 || !profile) {
       el.innerHTML = `<div class="empty-state"><p>${strings.measurements.bodyFatEmpty}</p></div>`;
@@ -178,18 +180,18 @@ export async function init() {
   }
 
   async function loadHistory() {
-    const sets = await api.getMeasurementSets();
+    const sets = await safeCall(api.getMeasurementSets(), []);
     const el = document.getElementById('measurement-history');
     if (!sets || sets.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${strings.measurements.noMeasurements}</p></div>`;
       return;
     }
     const allCols = [...METRIC_COLUMNS, 'weight_kg'];
-    const headers = ['Fecha', ...allCols.map(c => getMeasurementLabel(c)), ''];
+    const headers = [strings.measurements.date, ...allCols.map(c => getMeasurementLabel(c)), ''];
     const showAll = el.dataset.showAll === 'true';
     const displaySets = showAll ? sets : sets.slice(0, 5);
     let html = '<div style="overflow-x:auto"><table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
-    const profile = await api.getProfile();
+    const profile = await safeCall(api.getProfile(), null);
     for (let i = 0; i < displaySets.length; i++) {
       const s = displaySets[i];
       const rowClass = i % 2 === 1 ? ' style="background:var(--bg-tertiary)"' : '';
@@ -217,8 +219,8 @@ export async function init() {
 
     el.querySelectorAll('[data-delete-measurement]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm(strings.importExport?.confirmImport || '¿Eliminar esta medición?')) {
-          await api.deleteMeasurementSet(parseInt(btn.dataset.deleteMeasurement));
+        if (confirm(strings.measurements?.deleteConfirm || '¿Eliminar esta medición?')) {
+          await safeCall(api.deleteMeasurementSet(parseInt(btn.dataset.deleteMeasurement)), null);
           loadAll();
         }
       });
@@ -226,7 +228,7 @@ export async function init() {
   }
 
   async function loadWeightChart() {
-    const weights = await api.getWeightEntries();
+    const weights = await safeCall(api.getWeightEntries(), []);
     const canvas = document.getElementById('weight-chart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -316,7 +318,7 @@ export async function init() {
   }
 
   async function loadMeasurementCharts() {
-    const sets = await api.getMeasurementSets();
+    const sets = await safeCall(api.getMeasurementSets(), []);
     const grid = document.getElementById('measurement-charts-grid');
     if (!sets || sets.length < 2) {
       grid.innerHTML = '';
@@ -388,8 +390,8 @@ export async function init() {
   }
 
   async function loadBodyFatChart() {
-    const sets = await api.getMeasurementSets();
-    const profile = await api.getProfile();
+    const sets = await safeCall(api.getMeasurementSets(), []);
+    const profile = await safeCall(api.getProfile(), null);
     const canvas = document.getElementById('bodyfat-chart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -446,7 +448,7 @@ export async function init() {
   }
 
   async function loadChestNeckShouldersChart() {
-    const sets = await api.getMeasurementSets();
+    const sets = await safeCall(api.getMeasurementSets(), []);
     const card = document.getElementById('cns-chart-card');
     if (!sets || sets.length < 2) {
       card.style.display = 'none';
@@ -539,7 +541,7 @@ export async function init() {
     const afterDate = document.getElementById('after-date').value;
     if (!beforeDate || !afterDate) return;
 
-    const sets = await api.getMeasurementSets();
+    const sets = await safeCall(api.getMeasurementSets(), []);
     const before = sets.find(s => s.date === beforeDate);
     const after = sets.find(s => s.date === afterDate);
     const el = document.getElementById('comparison-result');
@@ -565,5 +567,7 @@ export async function init() {
 
   await prefillForm();
   await loadAll();
-  window._loadingMeasurements = false;
+  } finally {
+    window._loadingMeasurements = false;
+  }
 }

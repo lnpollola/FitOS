@@ -1,9 +1,11 @@
 import Chart from 'chart.js/auto';
 import { strings } from '../locales/es.js';
+import { safeCall } from '../utils/safe-call.js';
 
 export async function init() {
   if (window._loadingTraining) return;
   window._loadingTraining = true;
+  try {
   const container = document.getElementById('view-training');
   container.innerHTML = `
     <h2 class="view-title">${strings.training.title}</h2>
@@ -13,15 +15,15 @@ export async function init() {
         <div class="form-group">
           <label>${strings.training.frequency || 'Frecuencia'}</label>
           <select id="frequency-select" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
-            <option value="">${strings.training.daysPerWeek || 'Seleccionar días/semana'}</option>
-            <option value="2">2 ${strings.training.daysPerWeek || 'días/semana'}</option>
-            <option value="3">3 ${strings.training.daysPerWeek || 'días/semana'}</option>
-            <option value="4">4 ${strings.training.daysPerWeek || 'días/semana'}</option>
-            <option value="5">5 ${strings.training.daysPerWeek || 'días/semana'}</option>
-            <option value="6">6 ${strings.training.daysPerWeek || 'días/semana'}</option>
+            <option value="">${strings.training.daysPerWeek}</option>
+            <option value="2">2 ${strings.training.daysPerWeek}</option>
+            <option value="3">3 ${strings.training.daysPerWeek}</option>
+            <option value="4">4 ${strings.training.daysPerWeek}</option>
+            <option value="5">5 ${strings.training.daysPerWeek}</option>
+            <option value="6">6 ${strings.training.daysPerWeek}</option>
           </select>
         </div>
-        <button class="btn btn-primary" id="btn-generate-plan">Generar Plan</button>
+        <button class="btn btn-primary" id="btn-generate-plan">${strings.training.frequency}</button>
       </div>
       <div id="workout-plan-display"></div>
       <div id="plan-day-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px"></div>
@@ -66,7 +68,7 @@ export async function init() {
       <h2>${strings.training.sessionLogging}</h2>
       <form id="session-form" class="form-row" style="margin-bottom:16px">
         <div class="form-group">
-          <label>${strings.measurements?.date || 'Fecha'}</label>
+          <label>${strings.measurements.date}</label>
           <input type="date" name="date" required />
         </div>
         <div class="form-group">
@@ -105,7 +107,7 @@ export async function init() {
   document.getElementById('exercise-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
-    await api.saveExercise(data);
+    await safeCall(api.saveExercise(data), null);
     e.target.reset();
     loadExercises();
   });
@@ -113,7 +115,7 @@ export async function init() {
   document.getElementById('routine-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
-    await api.saveTrainingRoutine(data);
+    await safeCall(api.saveTrainingRoutine(data), null);
     e.target.reset();
     loadRoutines();
   });
@@ -122,7 +124,7 @@ export async function init() {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
     data.routine_id = data.routine_id ? parseInt(data.routine_id) : null;
-    await api.saveTrainingSession(data);
+    await safeCall(api.saveTrainingSession(data), null);
     e.target.reset();
     loadSessions();
     loadProgression();
@@ -139,24 +141,24 @@ export async function init() {
     const freq = parseInt(frequencySelect.value);
     if (!freq) return;
 
-    const plans = await api.getWorkoutPlans();
+    const plans = await safeCall(api.getWorkoutPlans(), []);
     const matching = plans.filter(p => freq >= p.min_sessions && freq <= p.max_sessions);
 
     if (matching.length === 0) {
-      planDisplay.innerHTML = `<p style="color:var(--text-secondary)">No hay planes disponibles para ${freq} días/semana</p>`;
+      planDisplay.innerHTML = `<p style="color:var(--text-secondary)">${strings.training.noPlansAvailable.replace('{freq}', freq)}</p>`;
       planDayCards.innerHTML = '';
       return;
     }
 
-    const exercises = await api.getExerciseLibrary();
+    const exercises = await safeCall(api.getExerciseLibrary(), []);
     const exMap = {};
     for (const ex of exercises) exMap[ex.id] = ex;
 
     let html = '<p style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">Planes disponibles:</p>';
     for (const plan of matching) {
       html += `<div style="padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-        <span><strong>${plan.name}</strong> (${plan.min_sessions}-${plan.max_sessions} días/semana)</span>
-        <button class="btn btn-primary" style="padding:4px 12px;font-size:12px" data-activate-plan="${plan.id}">${strings.training.useThisPlan || 'Usar este Plan'}</button>
+        <span><strong>${plan.name}</strong> (${plan.min_sessions}-${plan.max_sessions} ${strings.training.daysPerWeek})</span>
+        <button class="btn btn-primary" style="padding:4px 12px;font-size:12px" data-activate-plan="${plan.id}">${strings.training.useThisPlan}</button>
       </div>`;
     }
     planDisplay.innerHTML = html;
@@ -164,7 +166,7 @@ export async function init() {
     planDisplay.querySelectorAll('[data-activate-plan]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const planId = parseInt(btn.dataset.activatePlan);
-        const days = await api.getPlanDays(planId);
+        const days = await safeCall(api.getPlanDays(planId), []);
         const plan = matching.find(p => p.id === planId);
 
         let cardsHtml = '';
@@ -174,7 +176,7 @@ export async function init() {
           cardsHtml += `
             <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg-secondary)">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <strong>Día ${day.day_number}</strong>
+                <strong>${strings.training.routine} ${day.day_number}</strong>
                 <span class="tag">${day.focus_area}</span>
               </div>
               <div style="font-size:12px;color:var(--text-secondary)">
@@ -187,8 +189,8 @@ export async function init() {
                 `).join('')}
               </div>
               <div style="margin-top:8px;display:flex;gap:6px">
-                <button class="btn btn-primary" style="padding:3px 8px;font-size:11px" data-use-plan-day="${planId}" data-day-number="${day.day_number}">${strings.training.useThisPlan || 'Usar'}</button>
-                <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" data-add-exercise-to-day="${planId}" data-day-number="${day.day_number}">${strings.training.addExercise_ || 'Añadir ejercicio'}</button>
+                <button class="btn btn-primary" style="padding:3px 8px;font-size:11px" data-use-plan-day="${planId}" data-day-number="${day.day_number}">${strings.training.usePlan}</button>
+                <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" data-add-exercise-to-day="${planId}" data-day-number="${day.day_number}">${strings.training.addExercise_}</button>
               </div>
             </div>`;
         }
@@ -203,30 +205,27 @@ export async function init() {
 
             const today = new Date().toISOString().split('T')[0];
             const routineName = `${plan.name} - Día ${dayNum}`;
-            const routineResult = await api.saveTrainingRoutine({ name: routineName });
-            const routines = await api.getTrainingRoutines();
+            const routineResult = await safeCall(api.saveTrainingRoutine({ name: routineName }), null);
+            const routines = await safeCall(api.getTrainingRoutines(), []);
             const routine = routines.find(r => r.name === routineName);
             const routineId = routine ? routine.id : null;
 
-            const session = await api.saveTrainingSession({
+            const newSession = await safeCall(api.saveTrainingSession({
               date: today,
               routine_id: routineId,
               notes: dayExercises.focus_area,
-            });
-
-            const sessions = await api.getTrainingSessions();
-            const newSession = sessions[0];
+            }), null);
             if (newSession) {
               const exIds = dayExercises.exercise_ids.split(',').map(Number);
               for (let i = 0; i < exIds.length; i++) {
-                await api.saveTrainingSet({
+                await safeCall(api.saveTrainingSet({
                   session_id: newSession.id,
                   exercise_id: exIds[i],
                   set_number: i + 1,
                   load_kg: null,
                   reps: null,
                   rpe: null,
-                });
+                }), null);
               }
             }
 
@@ -248,9 +247,9 @@ export async function init() {
             let pickerHtml = `
               <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center" id="exercise-picker-overlay">
                 <div style="background:var(--bg-primary);border-radius:12px;padding:20px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
-                  <h3 style="margin-bottom:12px">${strings.training.addExercise_ || 'Añadir ejercicio'} — Día ${dayNum}</h3>
-                  <div style="display:flex;gap:8px;margin-bottom:12px">
-                    <input type="text" id="picker-search" placeholder="Buscar..." style="flex:1;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" />
+                   <h3 style="margin-bottom:12px">${strings.training.addExercise_} — ${strings.training.routine} ${dayNum}</h3>
+                   <div style="display:flex;gap:8px;margin-bottom:12px">
+                     <input type="text" id="picker-search" placeholder="${strings.diet.search}..." style="flex:1;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" />
                     <select id="picker-muscle-filter" style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
                       <option value="">${strings.training.muscleGroup}</option>
                       ${[...new Set(allExercises.map(e => e.muscle_group).filter(Boolean))].map(m => `<option value="${m}">${m}</option>`).join('')}
@@ -298,9 +297,9 @@ export async function init() {
                 if (updatedDay) {
                   // Store complement in settings
                   const key = `plan_${planId}_day_${dayNum}_complement`;
-                  const existing = JSON.parse(await api.getSetting(key) || '[]');
+                  const existing = JSON.parse(await safeCall(api.getSetting(key), null) || '[]');
                   existing.push(exId);
-                  await api.setSetting(key, JSON.stringify(existing));
+                  await safeCall(api.setSetting(key, JSON.stringify(existing)), null);
                 }
                 overlayEl.remove();
                 // Refresh display
@@ -310,42 +309,42 @@ export async function init() {
           });
         });
 
-        await api.setSetting('active_workout_plan', JSON.stringify({ planId: plan.id, planName: plan.name }));
+        await safeCall(api.setSetting('active_workout_plan', JSON.stringify({ planId: plan.id, planName: plan.name })), null);
       });
     });
   });
 
   // Load active plan on init
   (async function loadActivePlan() {
-    const activePlanSetting = await api.getSetting('active_workout_plan');
+    const activePlanSetting = await safeCall(api.getSetting('active_workout_plan'), null);
     if (activePlanSetting) {
       const active = JSON.parse(activePlanSetting);
-      const plans = await api.getWorkoutPlans();
+    const plans = await safeCall(api.getWorkoutPlans(), []);
       const plan = plans.find(p => p.id === active.planId);
       if (plan) {
-        const days = await api.getPlanDays(plan.id);
-        const exercises = await api.getExerciseLibrary();
+        const days = await safeCall(api.getPlanDays(plan.id), []);
+        const exercises = await safeCall(api.getExerciseLibrary(), []);
         const exMap = {};
         for (const ex of exercises) exMap[ex.id] = ex;
         let cardsHtml = '';
         for (const day of days) {
           const exIds = day.exercise_ids ? day.exercise_ids.split(',').map(Number) : [];
           const key = `plan_${plan.id}_day_${day.day_number}_complement`;
-          const complement = JSON.parse(await api.getSetting(key) || '[]');
+          const complement = JSON.parse(await safeCall(api.getSetting(key), null) || '[]');
           const allExIds = [...exIds, ...complement];
           const dayExercises = allExIds.map(id => exMap[id]).filter(Boolean);
           cardsHtml += `
             <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg-secondary)">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <strong>Día ${day.day_number}</strong>
+                <strong>${strings.training.routine} ${day.day_number}</strong>
                 <span class="tag">${day.focus_area}</span>
               </div>
               <div style="font-size:12px;color:var(--text-secondary)">
                 ${dayExercises.map(ex => `<div style="padding:2px 0"><span>${ex.name}</span>${ex.practical_examples ? `<span class="text-warning" style="font-size:11px"> — ${ex.practical_examples}</span>` : ''}<span class="text-muted" style="font-size:11px"> (${ex.muscle_group || ''}${ex.equipment ? `, ${ex.equipment}` : ''})</span></div>`).join('')}
               </div>
               <div style="margin-top:8px;display:flex;gap:6px">
-                <button class="btn btn-primary" style="padding:3px 8px;font-size:11px" data-use-plan-day="${plan.id}" data-day-number="${day.day_number}">${strings.training.useThisPlan || 'Usar'}</button>
-                <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" data-add-exercise-to-day="${plan.id}" data-day-number="${day.day_number}">${strings.training.addExercise_ || 'Añadir ejercicio'}</button>
+                <button class="btn btn-primary" style="padding:3px 8px;font-size:11px" data-use-plan-day="${plan.id}" data-day-number="${day.day_number}">${strings.training.usePlan}</button>
+                <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" data-add-exercise-to-day="${plan.id}" data-day-number="${day.day_number}">${strings.training.addExercise_}</button>
               </div>
             </div>`;
         }
@@ -380,7 +379,7 @@ export async function init() {
   }
 
   async function loadExercises() {
-    const allExercises = await api.getExerciseLibrary();
+    const allExercises = await safeCall(api.getExerciseLibrary(), []);
     const el = document.getElementById('exercise-list');
     if (!allExercises || allExercises.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noExercises}</p></div>`;
@@ -455,15 +454,15 @@ export async function init() {
         </div>
         <table><thead><tr><th>${strings.training.exerciseName}</th><th>${strings.training.muscleGroup}</th><th>${strings.training.equipment}</th><th>${strings.training.movementPattern}</th><th></th></tr></thead><tbody>`;
       for (const e of page) {
-        html += `<tr><td>${getMuscleIcon(e.muscle_group)} ${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-exercise="${e.id}">Eliminar</button></td></tr>`;
+        html += `<tr><td>${getMuscleIcon(e.muscle_group)} ${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-exercise="${e.id}">${strings.general.delete}</button></td></tr>`;
       }
       html += '</tbody></table>';
       el.innerHTML = html;
 
       el.querySelectorAll('[data-delete-exercise]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (confirm('¿Eliminar este ejercicio?')) {
-            await api.deleteExercise(parseInt(btn.dataset.deleteExercise));
+          if (confirm(strings.training.deleteExerciseConfirm)) {
+            await safeCall(api.deleteExercise(parseInt(btn.dataset.deleteExercise)), null);
             _page = 0;
             renderPage();
           }
@@ -490,7 +489,7 @@ export async function init() {
   }
 
   async function loadRoutines() {
-    const routines = await api.getTrainingRoutines();
+    const routines = await safeCall(api.getTrainingRoutines(), []);
     const el = document.getElementById('routine-list');
     const select = document.getElementById('routine-select');
     select.innerHTML = `<option value="">${strings.training.none}</option>`;
@@ -498,7 +497,7 @@ export async function init() {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noRoutines}</p></div>`;
       return;
     }
-    let html = '<table><thead><tr><th>Nombre</th><th>Creado</th></tr></thead><tbody>';
+    let html = `<table><thead><tr><th>${strings.general.name}</th><th>${strings.general.created}</th></tr></thead><tbody>`;
     for (const r of routines) {
       html += `<tr><td>${r.name}</td><td>${r.created_at}</td></tr>`;
       select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
@@ -508,23 +507,23 @@ export async function init() {
   }
 
   async function loadSessions() {
-    const sessions = await api.getTrainingSessions();
+    const sessions = await safeCall(api.getTrainingSessions(), []);
     const el = document.getElementById('session-list');
     if (!sessions || sessions.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noSessions}</p></div>`;
       return;
     }
-    let html = '<table><thead><tr><th>Fecha</th><th>Rutina</th><th>Notas</th><th></th></tr></thead><tbody>';
+    let html = `<table><thead><tr><th>${strings.general.date}</th><th>${strings.general.routine}</th><th>${strings.general.notes}</th><th></th></tr></thead><tbody>`;
     for (const s of sessions) {
-      html += `<tr><td>${s.date}</td><td>${s.routine_name ?? '--'}</td><td>${s.notes ?? ''}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-session="${s.id}">Eliminar</button></td></tr>`;
+      html += `<tr><td>${s.date}</td><td>${s.routine_name ?? '--'}</td><td>${s.notes ?? ''}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-session="${s.id}">${strings.general.delete}</button></td></tr>`;
     }
     html += '</tbody></table>';
     el.innerHTML = html;
 
     el.querySelectorAll('[data-delete-session]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (confirm('¿Eliminar esta sesión y todas sus series?')) {
-          await api.deleteTrainingSession(parseInt(btn.dataset.deleteSession));
+        if (confirm(strings.training.deleteSessionConfirm)) {
+          await safeCall(api.deleteTrainingSession(parseInt(btn.dataset.deleteSession)), null);
           loadSessions();
           loadProgression();
           loadDeltas();
@@ -535,7 +534,7 @@ export async function init() {
   }
 
   async function loadProgression() {
-    const sessions = await api.getTrainingSessions();
+    const sessions = await safeCall(api.getTrainingSessions(), []);
     const canvas = document.getElementById('progression-chart');
     const ctx = canvas.getContext('2d');
     if (window._progChart) window._progChart.destroy();
@@ -551,7 +550,7 @@ export async function init() {
     const labels = [];
 
     for (const s of sorted) {
-      const sets = await api.getTrainingSets ? await api.getTrainingSets(s.id) : [];
+      const sets = await safeCall(api.getTrainingSets(s.id), []);
       const volume = sets.reduce((sum, set) => sum + (set.load_kg || 0) * (set.reps || 0), 0);
       volumes.push(volume);
       labels.push(s.date);
@@ -583,7 +582,7 @@ export async function init() {
   }
 
   async function loadDeltas() {
-    const sessions = await api.getTrainingSessions();
+    const sessions = await safeCall(api.getTrainingSessions(), []);
     const el = document.getElementById('session-deltas');
 
     if (!sessions || sessions.length < 2) {
@@ -595,25 +594,25 @@ export async function init() {
     const last = sorted[sorted.length - 1];
     const prev = sorted[sorted.length - 2];
 
-    let html = '<table><thead><tr><th>Métrica</th><th>Anterior</th><th>Última</th><th>Delta</th></tr></thead><tbody>';
-    html += `<tr><td>Fecha</td><td>${prev.date}</td><td>${last.date}</td><td></td></tr>`;
-    html += `<tr><td>Rutina</td><td>${prev.routine_name || '--'}</td><td>${last.routine_name || '--'}</td><td></td></tr>`;
+    let html = `<table><thead><tr><th>${strings.general.metric}</th><th>${strings.general.previous}</th><th>${strings.general.last}</th><th>${strings.general.delta}</th></tr></thead><tbody>`;
+    html += `<tr><td>${strings.general.date}</td><td>${prev.date}</td><td>${last.date}</td><td></td></tr>`;
+    html += `<tr><td>${strings.general.routine}</td><td>${prev.routine_name || '--'}</td><td>${last.routine_name || '--'}</td><td></td></tr>`;
 
-    const prevSets = await api.getTrainingSets ? await api.getTrainingSets(prev.id) : [];
-    const lastSets = await api.getTrainingSets ? await api.getTrainingSets(last.id) : [];
+    const prevSets = await safeCall(api.getTrainingSets(prev.id), []);
+    const lastSets = await safeCall(api.getTrainingSets(last.id), []);
     const prevVolume = prevSets.reduce((sum, s) => sum + (s.load_kg || 0) * (s.reps || 0), 0);
     const lastVolume = lastSets.reduce((sum, s) => sum + (s.load_kg || 0) * (s.reps || 0), 0);
     const volDelta = lastVolume - prevVolume;
     const volArrow = volDelta > 0 ? '▲' : volDelta < 0 ? '▼' : '―';
 
-    html += `<tr><td>Volumen</td><td>${prevVolume.toFixed(0)} kg</td><td>${lastVolume.toFixed(0)} kg</td><td style="color:${volDelta > 0 ? 'var(--success)' : volDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${volArrow} ${volDelta > 0 ? '+' : ''}${volDelta.toFixed(0)} kg</td></tr>`;
+    html += `<tr><td>${strings.general.volume}</td><td>${prevVolume.toFixed(0)} ${strings.dashboard.unitKg}</td><td>${lastVolume.toFixed(0)} ${strings.dashboard.unitKg}</td><td style="color:${volDelta > 0 ? 'var(--success)' : volDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${volArrow} ${volDelta > 0 ? '+' : ''}${volDelta.toFixed(0)} ${strings.dashboard.unitKg}</td></tr>`;
     html += '</tbody></table>';
     el.innerHTML = html;
   }
 
   async function loadStrengthStatus() {
-    const profile = await api.getProfile();
-    const sessions = await api.getTrainingSessions();
+    const profile = await safeCall(api.getProfile(), null);
+    const sessions = await safeCall(api.getTrainingSessions(), []);
     const el = document.getElementById('strength-status');
 
     if (!profile || !sessions || sessions.length < 2) return;
@@ -622,8 +621,8 @@ export async function init() {
     const last = sorted[sorted.length - 1];
     const prev = sorted[sorted.length - 2];
 
-    const prevSets = await api.getTrainingSets ? await api.getTrainingSets(prev.id) : [];
-    const lastSets = await api.getTrainingSets ? await api.getTrainingSets(last.id) : [];
+    const prevSets = await safeCall(api.getTrainingSets(prev.id), []);
+    const lastSets = await safeCall(api.getTrainingSets(last.id), []);
 
     const prevVolume = prevSets.reduce((sum, s) => sum + (s.load_kg || 0) * (s.reps || 0), 0);
     const lastVolume = lastSets.reduce((sum, s) => sum + (s.load_kg || 0) * (s.reps || 0), 0);
@@ -647,6 +646,8 @@ export async function init() {
     el.innerHTML = html;
   }
 
-  await Promise.all([loadExercises(), loadRoutines(), loadSessions(), loadProgression(), loadDeltas(), loadStrengthStatus()]);
-  window._loadingTraining = false;
+  await Promise.allSettled([loadExercises(), loadRoutines(), loadSessions(), loadProgression(), loadDeltas(), loadStrengthStatus()]);
+  } finally {
+    window._loadingTraining = false;
+  }
 }

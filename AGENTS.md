@@ -74,27 +74,54 @@ export function init() {
 - Vistas: importan `strings` y usan `window.electronAPI` (no destructurar `api` si puede ser null)
 - Sin TypeScript, sin framework de UI, sin librería de componentes
 
+## Sesión — feedback-v5 (20 Jun 2026) [ARCHIVADO]
+
+### Estado: Completo — archivado en `openspec/changes/archive/2026-06-20-feedback-v5/`
+- **82/82 tareas** implementadas (feedback original + auditoría + smoke tests)
+- 13 bugs corregidos (6 originales + 7 audit-descubiertos)
+- safeCall wrapper en todas las vistas (~99 calls IPC)
+- Chart.js destroy-before-recreate en activity, dashboard, analytics, adaptive
+- Loading flags con try/finally en training, measurements
+- sleep card en dashboard con avg + 7d trailing + compliance indicator
+- BMR duplicado eliminado: utilidad compartida `src/renderer/utils/bmr.js`
+- Localización completa en las 8 vistas
+- Delta specs sincronizados a main specs: `automated-testing`, `error-handling` (nuevos), `dashboard-health-metrics`, `spanish-ui` (actualizados)
+
+### Tests (Vitest + jsdom)
+- **22/22 tests pasan** (14 unit + 8 smoke)
+- Smoke tests habilitados en `vitest.config.js` (include: `tests/unit/**/*.test.js`, `tests/smoke/**/*.test.js`)
+- Fix: `adaptive.js` `init()` hecho `async` para compatibilidad con smoke tests
+
 ## OpenSpec — Ciclo de Spec-Driven Development
 
 ```
 openspec/
 ├── config.yaml          # schema: spec-driven
-├── specs/               # 11 specs activas (Gherkin-style scenarios)
+├── specs/               # 13 specs activas (Gherkin-style scenarios)
 │   ├── spec.md          # Root proposal
 │   ├── activity-ingestion/spec.md
 │   ├── apple-health-import/spec.md
+│   ├── automated-testing/spec.md
 │   ├── diet-plan-management/spec.md
 │   ├── energy-balance/spec.md
 │   ├── adaptive-planning/spec.md
 │   ├── body-measurements/spec.md
+│   ├── dashboard-health-metrics/spec.md
+│   ├── error-handling/spec.md
+│   ├── spanish-ui/spec.md
 │   ├── strength-training/spec.md
 │   ├── desktop-app/spec.md
 │   ├── elaborated-dishes/spec.md
-│   ├── predefined-workout-plans/spec.md
-│   └── spanish-ui/spec.md
+│   └── predefined-workout-plans/spec.md
 └── changes/archive/     # Cambios completados
     ├── 2026-06-18-adaptive-health-foundation/
-    └── 2026-06-18-feedback-v0/
+    ├── 2026-06-18-feedback-v0/
+    ├── 2026-06-19-feedback-v1/
+    ├── 2026-06-19-health-analytics-view/
+    ├── 2026-06-20-feedback-v2/
+    ├── 2026-06-20-feedback-v3/
+    ├── 2026-06-20-feedback-v4/
+    └── 2026-06-20-feedback-v5/
 ```
 
 Ciclo de vida:

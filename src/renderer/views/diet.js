@@ -1,4 +1,5 @@
 import { strings } from '../locales/es.js';
+import { safeCall } from '../utils/safe-call.js';
 
 export async function init() {
   if (window._loadingDiet) return;
@@ -67,7 +68,7 @@ export async function init() {
         <div id="food-category-pills" style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="filter-btn active" data-cat="">${strings.diet.categoryFilter || 'Todas'}</button>
           <button class="filter-btn" data-cat="breads">${strings.diet.categories?.breads || 'Pan'}</button>
-          <button class="filter-btn" data-cat="proteins">${strings.diet.categories?.proteins || 'Prot'}</button>
+          <button class="filter-btn" data-cat="proteins">${strings.diet.categories.proteins}</button>
           <button class="filter-btn" data-cat="fats">${strings.diet.categories?.fats || 'Gras'}</button>
           <button class="filter-btn" data-cat="fruits">${strings.diet.categories?.fruits || 'Frut'}</button>
           <button class="filter-btn" data-cat="vegetables">${strings.diet.categories?.vegetables || 'Verdu'}</button>
@@ -133,7 +134,7 @@ export async function init() {
     data.protein_per_100g = parseFloat(data.protein_per_100g);
     data.carbs_per_100g = parseFloat(data.carbs_per_100g);
     data.fat_per_100g = parseFloat(data.fat_per_100g);
-    await api.saveFoodItem(data);
+    await safeCall(api.saveFoodItem(data), null);
     e.target.reset();
     document.getElementById('food-search-results').textContent = '';
     loadFoods();
@@ -205,7 +206,7 @@ export async function init() {
     }
 
     const foodSelect = document.getElementById('ingredient-food-select');
-    api.getFoodItems(false).then(foods => {
+    safeCall(api.getFoodItems(false), []).then(foods => {
       foodSelect.innerHTML = foods.map(f => `<option value="${f.id}" data-kcal="${f.kcal_per_100g}" data-protein="${f.protein_per_100g}" data-carbs="${f.carbs_per_100g}" data-fat="${f.fat_per_100g}">${f.name}</option>`).join('');
     });
 
@@ -266,7 +267,7 @@ export async function init() {
         totalCarbs += ing.carbs_per_100g * factor;
         totalFat += ing.fat_per_100g * factor;
       }
-      const dishId = await api.saveDish({
+      const dishId = await safeCall(api.saveDish({
         name,
         description: document.getElementById('dish-desc').value,
         total_kcal: totalKcal,
@@ -274,9 +275,9 @@ export async function init() {
         total_carbs: totalCarbs,
         total_fat: totalFat,
         servings,
-      });
+      }), null);
       for (const ing of ingredients) {
-        await api.saveDishIngredient({ dish_id: dishId, food_item_id: ing.food_item_id, grams: ing.grams });
+        await safeCall(api.saveDishIngredient({ dish_id: dishId, food_item_id: ing.food_item_id, grams: ing.grams }), null);
       }
       dishFormContainer.style.display = 'none';
       loadDishes();
@@ -288,7 +289,7 @@ export async function init() {
   });
 
   async function loadDishes() {
-    const dishes = await api.getDishes();
+    const dishes = await safeCall(api.getDishes(), []);
     const el = document.getElementById('dish-list');
     if (!dishes || dishes.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>Aún no hay platos creados</p></div>`;
@@ -296,7 +297,7 @@ export async function init() {
     }
     let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">';
     for (const d of dishes) {
-      const ingredients = await api.getDishIngredients(d.id);
+      const ingredients = await safeCall(api.getDishIngredients(d.id), []);
       const ingList = ingredients.map(i => `${i.food_name} (${i.grams}g)`).join(', ');
       html += `
         <div class="dish-card" style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg-secondary)">
@@ -307,14 +308,14 @@ export async function init() {
           ${d.description ? `<div style="font-size:12px;color:var(--text-secondary);margin:4px 0">${d.description}</div>` : ''}
           <div style="font-size:13px;margin-top:6px">
             <span class="data-value">${(d.total_kcal || 0).toFixed(0)} kcal</span> |
-            <span style="color:var(--success)">P: ${(d.total_protein || 0).toFixed(1)}g</span> |
-            <span>C: ${(d.total_carbs || 0).toFixed(1)}g</span> |
-            <span>G: ${(d.total_fat || 0).toFixed(1)}g</span>
+            <span style="color:var(--success)">${strings.diet.proteinShort}: ${(d.total_protein || 0).toFixed(1)}g</span> |
+            <span>${strings.diet.carbsShort}: ${(d.total_carbs || 0).toFixed(1)}g</span> |
+            <span>${strings.diet.fatShort}: ${(d.total_fat || 0).toFixed(1)}g</span>
           </div>
           <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${d.servings} ración(es)</div>
           <details style="font-size:12px;margin-top:6px">
             <summary style="cursor:pointer;color:var(--text-secondary)">${strings.diet.ingredients}</summary>
-            <p style="margin-top:4px;color:var(--text-secondary)">${ingList || 'Ninguno'}</p>
+            <p style="margin-top:4px;color:var(--text-secondary)">${ingList || strings.diet.none}</p>
           </details>
         </div>
       `;
@@ -324,7 +325,7 @@ export async function init() {
 
     el.querySelectorAll('[data-delete-dish]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await api.deleteDish(parseInt(btn.dataset.deleteDish));
+        await safeCall(api.deleteDish(parseInt(btn.dataset.deleteDish)), null);
         loadDishes();
       });
     });
@@ -335,7 +336,7 @@ export async function init() {
   // --- 5-Column Meal Template UI ---
   async function loadMealTemplates() {
     const el = document.getElementById('meal-templates');
-    const templates = await api.getMealTemplates();
+    const templates = await safeCall(api.getMealTemplates(), []);
     if (!templates || templates.length === 0) {
       el.innerHTML = `<div class="empty-state"><p>${strings.diet.noMealTemplates}</p><div class="sub">${strings.diet.noMealTemplatesSub}</div></div>`;
       return;
@@ -424,21 +425,18 @@ export async function init() {
       if (!date) return;
       const totals = updateColumnTotals();
       // Create daily plan from selections
-      let plan = await api.getDailyPlan(date);
-      if (plan && plan.length > 0) {
-        // Replace: delete existing for this date and recreate
-      }
+      await safeCall(api.deleteDailyPlanEntries(date), null);
       for (const tmpl of templates) {
         for (const comp of tmpl.components || []) {
           const sel = selections[comp.id];
           const foodId = sel ? sel.food_item_id : comp.food_item_id;
           const grams = sel ? sel.grams : comp.default_grams;
-          await api.saveDailyPlanEntry({
+          await safeCall(api.saveDailyPlanEntry({
             date,
             meal_component_id: comp.id,
             food_item_id: foodId,
             grams,
-          });
+          }), null);
         }
       }
       if (document.getElementById('plan-date').value) {
@@ -492,7 +490,7 @@ export async function init() {
       return;
     }
 
-    const templates = await api.getMealTemplates();
+    const templates = await safeCall(api.getMealTemplates(), []);
     if (!templates || templates.length === 0) return;
 
     // Compute meal ratios from seed data
@@ -522,12 +520,12 @@ export async function init() {
         const compTargetKcal = Math.round(mealTarget * compRatio);
         const grams = foodKcal > 0 ? Math.round((compTargetKcal / foodKcal) * 100) : 0;
 
-        await api.saveDailyPlanEntry({
+        await safeCall(api.saveDailyPlanEntry({
           date,
           meal_component_id: comp.id,
           food_item_id: foodId,
           grams: Math.max(grams, 10),
-        });
+        }), null);
       }
     }
 
@@ -536,8 +534,8 @@ export async function init() {
   });
 
   async function loadDailyPlan(date) {
-    const plan = await api.getDailyPlan(date);
-    const templates = await api.getMealTemplates();
+    const plan = await safeCall(api.getDailyPlan(date), []);
+    const templates = await safeCall(api.getMealTemplates(), []);
     const mealsContainer = document.getElementById('daily-plan-meals');
     const totalsContainer = document.getElementById('daily-plan-totals');
 
@@ -577,7 +575,7 @@ export async function init() {
                   <span style="flex:1;font-size:13px">${entry.food_name}</span>
                    <input type="number" value="${entry.grams}" step="5" min="0" data-entry-id="${entry.id}" data-meal-id="${tmpl.id}" data-kcal="${entry.kcal_per_100g}" data-protein="${entry.protein_per_100g}" data-carbs="${entry.carbs_per_100g}" data-fat="${entry.fat_per_100g}" class="gram-input meal-gram-input" style="width:60px;padding:2px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px" />
                    <span class="data-value" style="font-size:12px;width:50px;text-align:right">${kcal.toFixed(0)}</span>
-                  <span style="font-size:11px;color:var(--text-secondary);width:80px;text-align:right">P:${protein.toFixed(1)} C:${carbs.toFixed(1)} G:${fat.toFixed(1)}</span>
+                  <span style="font-size:11px;color:var(--text-secondary);width:80px;text-align:right">${strings.diet.proteinShort}:${protein.toFixed(1)} ${strings.diet.carbsShort}:${carbs.toFixed(1)} ${strings.diet.fatShort}:${fat.toFixed(1)}</span>
                   <button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-hide-food-id="${entry.food_item_id}">${strings.diet.hide}</button>
                 </div>
               `;
@@ -585,10 +583,10 @@ export async function init() {
           </div>
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
             <select class="swap-food-select" data-meal-template-id="${tmpl.id}" data-meal-component-id="" style="font-size:12px;padding:3px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);max-width:150px">
-              <option value="">${strings.diet.suggest || 'Cambiar alimento...'}</option>
+              <option value="">${strings.diet.changeFood}</option>
             </select>
             <select class="dish-option-select" data-meal-template-id="${tmpl.id}" style="font-size:12px;padding:3px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);max-width:150px">
-              <option value="">${strings.diet.linkToMeal || 'Añadir plato...'}</option>
+              <option value="">${strings.diet.addDish}</option>
             </select>
           </div>
         </div>`;
@@ -603,9 +601,9 @@ export async function init() {
     if (hasEntries) {
       totalsContainer.style.display = 'block';
       document.getElementById('plan-total-kcal').textContent = `${totalKcal.toFixed(0)} kcal`;
-      document.getElementById('plan-total-protein').textContent = `P: ${totalProtein.toFixed(1)}g`;
-      document.getElementById('plan-total-carbs').textContent = `C: ${totalCarbs.toFixed(1)}g`;
-      document.getElementById('plan-total-fat').textContent = `G: ${totalFat.toFixed(1)}g`;
+      document.getElementById('plan-total-protein').textContent = `${strings.diet.proteinShort}: ${totalProtein.toFixed(1)}g`;
+      document.getElementById('plan-total-carbs').textContent = `${strings.diet.carbsShort}: ${totalCarbs.toFixed(1)}g`;
+      document.getElementById('plan-total-fat').textContent = `${strings.diet.fatShort}: ${totalFat.toFixed(1)}g`;
 
       for (const tmpl of templates || []) {
         const entries = entriesByMeal[tmpl.id] || [];
@@ -619,7 +617,7 @@ export async function init() {
             mFat += entry.fat_per_100g * factor;
           }
           const el = document.getElementById(`meal-total-${tmpl.id}`);
-          if (el) el.textContent = `${mKcal.toFixed(0)} kcal | P:${mProt.toFixed(1)} C:${mCarb.toFixed(1)} G:${mFat.toFixed(1)}`;
+          if (el) el.textContent = `${mKcal.toFixed(0)} ${strings.diet.kcal} | ${strings.diet.proteinShort}:${mProt.toFixed(1)} ${strings.diet.carbsShort}:${mCarb.toFixed(1)} ${strings.diet.fatShort}:${mFat.toFixed(1)}`;
         }
       }
     } else {
@@ -630,18 +628,22 @@ export async function init() {
       input.addEventListener('change', () => {
         if (window._gramUpdateTimeout) clearTimeout(window._gramUpdateTimeout);
         window._gramUpdateTimeout = setTimeout(() => recalcTotals(), 300);
+        const entryId = parseInt(input.dataset.entryId);
+        if (entryId) {
+          safeCall(api.updateDailyPlanEntry(entryId, parseFloat(input.value) || 0), null);
+        }
       });
     });
 
     mealsContainer.querySelectorAll('[data-hide-food-id]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await api.hideFoodItem(parseInt(btn.dataset.hideFoodId));
+        await safeCall(api.hideFoodItem(parseInt(btn.dataset.hideFoodId)), null);
         loadFoods();
         loadHiddenFoods();
       });
     });
 
-    const allFoods = await api.getFoodItems(false);
+    const allFoods = await safeCall(api.getFoodItems(false), []);
     mealsContainer.querySelectorAll('.swap-food-select').forEach(select => {
       const mealId = parseInt(select.dataset.mealTemplateId);
       const mealEntries = entriesByMeal[mealId] || [];
@@ -659,12 +661,12 @@ export async function init() {
           const food = allFoods.find(f => f.id === foodId);
           if (!food) return;
           for (const entry of mealEntries) {
-            await api.saveDailyPlanEntry({
+            await safeCall(api.saveDailyPlanEntry({
               date,
               meal_component_id: entry.meal_component_id,
               food_item_id: foodId,
               grams: entry.grams,
-            });
+            }), null);
           }
           select.value = '';
           loadDailyPlan(date);
@@ -672,7 +674,7 @@ export async function init() {
       }
     });
 
-    const allDishes = await api.getDishes();
+    const allDishes = await safeCall(api.getDishes(), []);
     mealsContainer.querySelectorAll('.dish-option-select').forEach(select => {
       const mealId = parseInt(select.dataset.mealTemplateId);
       if (allDishes && allDishes.length > 0) {
@@ -685,15 +687,15 @@ export async function init() {
         select.addEventListener('change', async () => {
           if (!select.value) return;
           const dishId = parseInt(select.value);
-          await api.linkDishToMeal({ meal_template_id: mealId, dish_id: dishId, sort_order: 0 });
-          const dishIngredients = await api.getDishIngredients(dishId);
+          await safeCall(api.linkDishToMeal({ meal_template_id: mealId, dish_id: dishId, sort_order: 0 }), null);
+          const dishIngredients = await safeCall(api.getDishIngredients(dishId), []);
           for (const ing of dishIngredients) {
-            await api.saveDailyPlanEntry({
+            await safeCall(api.saveDailyPlanEntry({
               date,
               meal_component_id: 0,
               food_item_id: ing.food_item_id,
               grams: ing.grams,
-            });
+            }), null);
           }
           select.value = '';
           loadDailyPlan(date);
@@ -736,13 +738,13 @@ export async function init() {
     for (const [mealId, mt] of Object.entries(mealTotals)) {
       const el = document.getElementById(`meal-total-${mealId}`);
       if (el) {
-        el.textContent = `${mt.kcal.toFixed(0)} kcal | P:${mt.protein.toFixed(1)} C:${mt.carbs.toFixed(1)} G:${mt.fat.toFixed(1)}`;
+        el.textContent = `${mt.kcal.toFixed(0)} ${strings.diet.kcal} | ${strings.diet.proteinShort}:${mt.protein.toFixed(1)} ${strings.diet.carbsShort}:${mt.carbs.toFixed(1)} ${strings.diet.fatShort}:${mt.fat.toFixed(1)}`;
       }
     }
   }
 
   async function loadFoods() {
-    const foods = await api.getFoodItems(false);
+    const foods = await safeCall(api.getFoodItems(false), []);
     const activeCat = document.querySelector('#food-category-pills .filter-btn.active');
     const category = activeCat ? activeCat.dataset.cat : '';
     const search = document.getElementById('food-search').value.toLowerCase();
@@ -803,7 +805,7 @@ export async function init() {
 
     list.querySelectorAll('[data-hide-food-id]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await api.hideFoodItem(parseInt(btn.dataset.hideFoodId));
+        await safeCall(api.hideFoodItem(parseInt(btn.dataset.hideFoodId)), null);
         loadFoods();
         loadHiddenFoods();
       });
@@ -811,7 +813,7 @@ export async function init() {
   }
 
   async function loadHiddenFoods() {
-    const foods = await api.getFoodItems(true);
+    const foods = await safeCall(api.getFoodItems(true), []);
     const hidden = foods.filter(f => f.is_hidden);
     const el = document.getElementById('hidden-foods');
     if (hidden.length === 0) {
@@ -834,7 +836,7 @@ export async function init() {
 
     el.querySelectorAll('[data-show-food-id]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await api.unhideFoodItem(parseInt(btn.dataset.showFoodId));
+        await safeCall(api.unhideFoodItem(parseInt(btn.dataset.showFoodId)), null);
         loadFoods();
         loadHiddenFoods();
       });
