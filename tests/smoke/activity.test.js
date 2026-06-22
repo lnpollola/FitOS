@@ -31,4 +31,19 @@ describe('Activity view smoke test', () => {
     const { init } = await import('../../src/renderer/views/activity.js');
     await expect(init()).resolves.not.toThrow();
   });
+
+  it('renders session-comparison element', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const compEl = document.getElementById('session-comparison');
+    expect(compEl).toBeTruthy();
+  });
+
+  it('preserves weekly-chart canvas after init', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const canvas = document.getElementById('weekly-chart');
+    expect(canvas).toBeTruthy();
+    expect(canvas.tagName).toBe('CANVAS');
+  });
 });

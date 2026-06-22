@@ -12,7 +12,7 @@ function renderNavIcons() {
   document.querySelectorAll('.nav-icon').forEach(el => {
     const name = el.dataset.icon;
     const iconMap = {
-      dashboard: 'activity', activity: 'activity', diet: 'heart',
+      dashboard: 'layout-dashboard', activity: 'activity', diet: 'heart',
       energy: 'trending-up', measurements: 'scale', training: 'dumbbell',
       analytics: 'trending-up', profile: 'heart',
     };

@@ -1,4 +1,4 @@
-import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu } from 'lucide';
+import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu, LayoutDashboard } from 'lucide';
 
 const iconRegistry = {
   check: Check, 'arrow-up': ArrowUp, 'arrow-down': ArrowDown,
@@ -8,7 +8,7 @@ const iconRegistry = {
   'trending-up': TrendingUp, 'trending-down': TrendingDown,
   'alert-circle': AlertCircle, 'refresh-cw': RefreshCw,
   plus: Plus, download: Download, upload: Upload,
-  menu: Menu,
+  menu: Menu, 'layout-dashboard': LayoutDashboard,
 };
 
 function renderAttributes(attrs) {

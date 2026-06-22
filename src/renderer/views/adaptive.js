@@ -3,7 +3,7 @@ import { calculateBodyFat } from '../utils/body-fat.js';
 import { calculateBMR } from '../utils/bmr.js';
 import Chart from 'chart.js/auto';
 import { safeCall } from '../utils/safe-call.js';
-import { chartColors } from '../utils/chart-theme.js';
+import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 
 export async function init() {
@@ -275,7 +275,7 @@ export async function init() {
               label: strings.measurements.weight,
               data: chartData.map(s => s.weight_kg),
               borderColor: chartColors.danger,
-              backgroundColor: 'rgba(239,68,68,0.1)',
+              backgroundColor: chartColorWithAlpha(chartColors.danger, 0.1),
               yAxisID: 'y',
               tension: 0.3,
               pointRadius: 0,
@@ -284,8 +284,8 @@ export async function init() {
             {
               label: strings.measurements.waist,
               data: chartData.map(s => s.waist_cm),
-              borderColor: '#3b82f6',
-              backgroundColor: 'rgba(59,130,246,0.1)',
+              borderColor: chartColors.warning,
+              backgroundColor: chartColorWithAlpha(chartColors.warning, 0.1),
               yAxisID: 'y1',
               tension: 0.3,
               pointRadius: 0,

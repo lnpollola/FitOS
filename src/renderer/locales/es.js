@@ -10,6 +10,8 @@ export const strings = {
     profile: 'Perfil y Ajustes',
   },
   appTitle: 'FitOS - Salud y Rendimiento',
+  appName: 'FitOS',
+  profileName: 'Leandro Pollola',
 
   // Dashboard
   dashboard: {
@@ -18,7 +20,13 @@ export const strings = {
     offline: 'Sin conexión',
     offlineSub: 'Ejecutándose fuera de Electron',
     weekBalance: 'Balance Semanal',
-    avgDay: 'Promedio/día',
+    avgDay: 'Promedio diario',
+    noBalanceData: 'Sin balance todavía',
+    daysActive: 'Activo',
+    daysLow: 'Bajo',
+    surplus: 'Excedente',
+    deficit: 'Déficit',
+    days: 'días',
     latestWeight: 'Último Peso',
     measurementDelta: 'Delta de Mediciones',
     nextWorkout: 'Próximo Entrenamiento',
@@ -35,6 +43,7 @@ export const strings = {
     dateRange7d: '7d',
     dateRange15d: '15d',
     dateRange1m: '1m',
+    dateRange3m: '3m',
     activityKcalTitle: 'Actividad por tipo',
     sessions: 'Sesiones',
     avgKcal: 'kcal/sesión',

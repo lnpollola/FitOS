@@ -9,7 +9,9 @@
   <script type="module">
     import { strings } from './locales/es.js';
     document.title = strings.appTitle;
-    document.querySelector('.sidebar-header h1').textContent = strings.appTitle;
+    document.querySelector('.sidebar-header h1').textContent = strings.appName;
+    const subtitleEl = document.querySelector('.sidebar-subtitle');
+    if (subtitleEl) subtitleEl.textContent = strings.profileName;
     document.querySelectorAll('.nav-list .nav-item').forEach(btn => {
       const view = btn.dataset.view;
       const label = strings.nav[view];
@@ -21,12 +23,12 @@
     });
   </script>
 </head>
-<body>
+<body class="organic">
   <div id="app">
     <nav id="sidebar" role="navigation" aria-label="Navegación principal">
       <div class="sidebar-header">
         <h1>FitOS</h1>
-        <div class="sidebar-subtitle">Salud y rendimiento</div>
+        <div class="sidebar-subtitle">Leandro Pollola</div>
       </div>
       <ul class="nav-list">
         <li><button class="nav-item" data-view="dashboard" aria-label="Panel"><span class="nav-icon" data-icon="dashboard"></span><span class="nav-text">Panel</span></button></li>

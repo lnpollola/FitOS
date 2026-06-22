@@ -3,12 +3,10 @@
 ## Purpose
 
 Establish a unified token-based design system with CSS custom properties for spacing, elevation, z-index, and a CSS-to-JS color bridge for Chart.js. Provide utility classes and component classes so views can replace inline styles with semantic references.
-
 ## Requirements
-
 ### Requirement: Design token system for spacing, elevation, and z-index
 
-The system SHALL define a unified set of CSS custom properties for spacing (`--space-1` through `--space-8`), elevation (`--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`), and z-index layering (`--z-1`, `--z-10`, `--z-100`) in the `:root` selector of `src/renderer/styles/main.css`. All views and components SHALL reference these tokens instead of hardcoded pixel values.
+The system SHALL define a unified set of CSS custom properties for spacing (`--space-1` through `--space-8`), elevation (`--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`), and z-index layering (`--z-1`, `--z-10`, `--z-100`) in the `:root` selector of `src/renderer/styles/main.css`. All views and components SHALL reference these tokens instead of hardcoded pixel values. Under `body.organic`, the elevation tokens (`--shadow`, `--shadow-md`, `--shadow-lg`) SHALL be overridden with moss-tinted rgba shadows to read as a "diffused light" rather than a neutral drop.
 
 #### Scenario: Spacing scale defined
 - **WHEN** a developer opens `src/renderer/styles/main.css`
@@ -18,6 +16,11 @@ The system SHALL define a unified set of CSS custom properties for spacing (`--s
 #### Scenario: Elevation tokens defined
 - **WHEN** a developer opens `src/renderer/styles/main.css`
 - **THEN** the `:root` selector SHALL contain `--shadow-lg` in addition to the existing `--shadow-sm`, `--shadow`, `--shadow-md`
+
+#### Scenario: Organic elevation override
+- **WHEN** `body.organic` is active
+- **THEN** `--shadow` SHALL include at least one rgba color in the green/brown family (e.g. `rgba(78, 93, 63, 0.04)`) instead of pure `rgba(0,0,0,...)`
+- **THEN** shadow blur radius SHALL be larger than the `:root` value to reinforce the soft "diffused light" feel
 
 #### Scenario: Z-index scale defined
 - **WHEN** a developer opens `src/renderer/styles/main.css`
@@ -68,3 +71,66 @@ The system SHALL define component CSS classes for card patterns that appear mult
 #### Scenario: Compliance badge classes replace inline styles
 - **WHEN** a view renders a compliance indicator (checkmark with green or amber color)
 - **THEN** the view SHALL use `<span class="compliance-ok">` or `<span class="compliance-warn">` instead of `style="font-size:11px;color:var(--success)"`
+
+### Requirement: Organic token override block behind `body.organic`
+
+The system SHALL declare an organic token override block scoped to `body.organic` in `src/renderer/styles/main.css`. The block SHALL re-point existing semantic variables (`--bg-primary`, `--bg-secondary`, `--bg-tertiary`, `--text-primary`, `--text-secondary`, `--accent`, `--accent-hover`, `--accent-light`, `--danger`, `--success`, `--border`) to organic values; introduce new named variables (`--bone`, `--smoke`, `--paper`, `--moss`, `--moss-ink`, `--moss-mist`, `--ember`, `--ink`, `--lichen`); introduce `--font-display` (Fraunces) and `--font-body` (Source Sans 3) and `--ease-organic` cubic-bezier; raise `--radius` to 14px and `--radius-sm` to 10px under the override; and re-define elevation shadows with moss-tinted rgba. The `:root` defaults SHALL remain so removing `class="organic"` from `<body>` reverts the cascade.
+
+#### Scenario: Override block present once
+- **WHEN** a developer searches `src/renderer/styles/main.css` for `body.organic`
+- **THEN** exactly one selector block SHALL match
+- **THEN** that block SHALL contain all semantic variable redefinitions plus the 9 named palette variables plus `--font-display`, `--font-body`, `--ease-organic`
+
+#### Scenario: Override is invertible
+- **WHEN** `<body>` has `class="organic"` removed
+- **THEN** all `var(--accent)` references SHALL resolve to the `:root` value (slate/teal)
+- **THEN** all `.dashboard-card` h3 text SHALL render in Inter, not Fraunces
+
+#### Scenario: Typography tokens declared
+- **WHEN** `body.organic` is active
+- **THEN** `--font-display` SHALL resolve to `'Fraunces', Georgia, serif`
+- **THEN** `--font-body` SHALL resolve to `'Source Sans 3', 'Inter', sans-serif`
+- **THEN** `--ease-organic` SHALL resolve to `cubic-bezier(.2, .85, .25, 1)`
+
+### Requirement: Pill radius token
+
+The system SHALL introduce `--radius-pill: 100px` in `:root` so existing `.tag` rules (and future pill-styled elements) reference a token instead of a literal `100px`.
+
+#### Scenario: Tag uses pill token
+- **WHEN** `.tag` declares its `border-radius`
+- **THEN** the value SHALL be `var(--radius-pill)`
+- **THEN** no literal `100px` SHALL remain in the `.tag` rule
+
+### Requirement: Dashboard cards adjust to content without blank gaps
+
+The system SHALL style dashboard grid rows so that cards size to their content without leaving large empty grid tracks. The `.dashboard-grid` SHALL use `grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))` but rows SHALL be structured so that the last row fills completely or the remaining tracks are eliminated. Cards SHALL NOT stretch to fill empty tracks when their content is shorter. The kcal/día trend chart SHALL be the last full-width element on the dashboard.
+
+#### Scenario: No empty grid tracks between sections
+- **WHEN** the dashboard renders with a mix of full-width and auto-fill cards
+- **THEN** no visible blank space SHALL appear between the last auto-fill card in a row and the next section
+- **THEN** the grid SHALL not leave empty tracks wider than 0px beside the last card in a partial row
+
+#### Scenario: Cards size to content
+- **WHEN** a dashboard card has less content than its row siblings
+- **THEN** the card height SHALL be determined by its own content
+- **THEN** the card SHALL NOT stretch to match the tallest sibling unless they share the same grid row
+
+### Requirement: Sidebar header typography for app name and user name
+
+The system SHALL style the sidebar header to display the app name and user profile name with appropriate visual hierarchy. The app name (`<h1>`) SHALL be the primary typographic element, and the user name subtitle SHALL be secondary. Under `body.organic`, the sidebar header SHALL use the organic font pair (Fraunces for the app name, Source Sans 3 for the user name) to match the rest of the organic design system.
+
+#### Scenario: App name is visually primary
+- **WHEN** the sidebar header renders
+- **THEN** the `<h1>` app name SHALL have a larger font size and heavier weight than the subtitle
+- **THEN** the app name SHALL use the display font under `body.organic`
+
+#### Scenario: User name is visually secondary
+- **WHEN** the sidebar header renders
+- **THEN** the user name subtitle SHALL have a smaller font size and lighter weight than the `<h1>`
+- **THEN** the user name SHALL use the body font under `body.organic`
+
+#### Scenario: Collapsed sidebar hides user name
+- **WHEN** the sidebar is in collapsed mode (below 900px)
+- **THEN** the user name subtitle SHALL be hidden (`display: none`)
+- **THEN** the app name `<h1>` SHALL remain visible at a reduced size
+

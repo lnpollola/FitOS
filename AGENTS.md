@@ -126,7 +126,8 @@ openspec/
     ├── 2026-06-20-feedback-v2/
     ├── 2026-06-20-feedback-v3/
     ├── 2026-06-20-feedback-v4/
-    └── 2026-06-20-feedback-v5/
+    ├── 2026-06-20-feedback-v5/
+    └── 2026-06-22-organic-redesign-all-views/
 ```
 
 Ciclo de vida:
@@ -154,3 +155,17 @@ Los comandos están en `.opencode/commands/opsx-*.md`. Skills en `.opencode/skil
 - Validación de forms en `src/renderer/validation.js`
 - Todos los datos son **local-first**: 0 dependencia cloud, 0 APIs externas
 - HealthSync es un CLI Go que se descarga e instala bajo demanda
+
+## Sesión — organic-redesign-all-views (22 Jun 2026)
+
+### Estado: Archivo — `openspec/changes/archive/2026-06-22-organic-redesign-all-views/`
+- **45/45 tareas** implementadas (aplicación de diseño orgánico "libreta de campo" a las 8 vistas)
+- 7 specs nuevas/actualizadas: `organic-aesthetic` (nueva), `temporal-microcharts` (nueva), `design-system`, `dashboard-health-metrics`, `ui-polish`, `accessibility`, `spanish-ui`
+- Tokens orgánicos promovidos de `#view-dashboard` a `body.organic` global
+- `sparkline()` y `growthRing()` extraídos a `utils/` como módulos reutilizables
+- Anillo de crecimiento corregido: gap=0 para N≤14, gap=0.6° para N>14
+- Hero card colapsa a compacto cuando faltan datos de pasos
+- 6 vistas (activity, diet, energy, measurements, training, profile) y 2 vistas especiales (analytics, adaptive) ahora usan Fraunces/Source Sans 3 con paleta moss/bone/ember
+- Gradiente top-bar eliminado globalmente bajo `body.organic`
+- 14 tests nuevos (7 sparkline, 4 growth-ring, 2 smoke organic-tokens, 1 dashboard compact hero)
+- **52/52 tests pasan**
