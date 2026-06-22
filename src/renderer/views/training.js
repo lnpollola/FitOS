@@ -1,7 +1,7 @@
 import Chart from 'chart.js/auto';
 import { strings } from '../locales/es.js';
 import { safeCall } from '../utils/safe-call.js';
-import { chartColors } from '../utils/chart-theme.js';
+import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 import { skeletonCard, skeletonRow } from '../utils/skeleton.js';
 
 export async function init() {
@@ -566,7 +566,7 @@ export async function init() {
           label: strings.training.volumeLoad,
           data: volumes,
           borderColor: chartColors.accent,
-          backgroundColor: 'rgba(13, 148, 136, 0.08)',
+          backgroundColor: chartColorWithAlpha(chartColors.accent, 0.08),
           fill: true,
           tension: 0.3,
           pointRadius: 0,

@@ -51,4 +51,35 @@ describe('Dashboard view smoke test', () => {
     const emojiRegex = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{2700}-\u{27BF}]/u;
     expect(html).not.toMatch(emojiRegex);
   });
+
+  it('hero renders compact (no .hero-ring-wrap) when ring data absent', async () => {
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).not.toContain('hero-ring-wrap');
+  });
+
+  it('date selector shows 15d 1m 3m buttons', async () => {
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).toContain('data-range="15d"');
+    expect(html).toContain('data-range="1m"');
+    expect(html).toContain('data-range="3m"');
+    expect(html).not.toContain('data-range="7d"');
+  });
+
+  it('rows in correct order: metrics → activity → steps-extras → trend', async () => {
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    const html = document.getElementById('view-dashboard').innerHTML;
+    const metricsIdx = html.indexOf('id="row-metrics"');
+    const activityIdx = html.indexOf('id="row-activity"');
+    const stepsIdx = html.indexOf('id="row-steps-extras"');
+    const trendIdx = html.indexOf('id="row-trend"');
+    expect(metricsIdx).toBeGreaterThan(-1);
+    expect(activityIdx).toBeGreaterThan(metricsIdx);
+    expect(stepsIdx).toBeGreaterThan(activityIdx);
+    expect(trendIdx).toBeGreaterThan(stepsIdx);
+  });
 });

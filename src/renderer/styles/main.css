@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Source+Sans+3:wght@400;500;600&display=swap');
 
 * {
   margin: 0;
@@ -37,6 +37,174 @@
   --z-1: 1;
   --z-10: 10;
   --z-100: 100;
+  --radius-pill: 100px;
+}
+
+body.organic {
+  --bone: #F4EFE6;
+  --smoke: #E6E0D2;
+  --paper: #FBF7EE;
+  --moss: #4E5D3F;
+  --moss-ink: #2F3D26;
+  --moss-mist: #D7DAC7;
+  --ember: #C75B3B;
+  --ink: #1F1B17;
+  --lichen: #8A8870;
+
+  --bg-primary: var(--bone);
+  --bg-secondary: var(--paper);
+  --bg-tertiary: var(--smoke);
+  --text-primary: var(--ink);
+  --text-secondary: var(--lichen);
+  --accent: var(--moss);
+  --accent-hover: var(--moss-ink);
+  --accent-light: var(--moss-mist);
+  --danger: var(--ember);
+  --success: var(--moss);
+  --border: #D8D2C4;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', 'Inter', sans-serif;
+  --ease-organic: cubic-bezier(.2, .85, .25, 1);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+
+  --shadow: 0 1px 2px rgba(78, 93, 63, 0.04), 0 8px 24px -12px rgba(47, 61, 38, 0.18);
+  --shadow-md: 0 2px 6px rgba(78, 93, 63, 0.05), 0 12px 32px -10px rgba(47, 61, 38, 0.20);
+  --shadow-lg: 0 4px 10px rgba(78, 93, 63, 0.06), 0 18px 44px -12px rgba(47, 61, 38, 0.22);
+}
+
+body.organic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0 0.09  0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+body.organic > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.organic #sidebar {
+  --bg-secondary: var(--paper);
+  --text-secondary: var(--lichen);
+}
+
+body.organic #sidebar .nav-item.active {
+  background: var(--moss-mist);
+  color: var(--moss);
+  border-left-color: var(--accent);
+}
+
+body.organic #sidebar .nav-item.active::before {
+  background: var(--moss);
+}
+
+body.organic .sidebar-header h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+body.organic .sidebar-subtitle {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+@media (prefers-contrast: more) {
+  body.organic::before {
+    display: none;
+  }
+}
+
+body.organic .spark {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: var(--space-3);
+  overflow: visible;
+}
+
+body.organic .spark path.line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.organic .spark path.area {
+  opacity: 0.14;
+  stroke: none;
+}
+
+body.organic .spark .dot {
+  fill: var(--moss-ink);
+  stroke: var(--paper);
+  stroke-width: 1.4;
+}
+
+body.organic .dashboard-card .value + .spark {
+  margin-top: var(--space-2);
+}
+
+body.organic .view-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--moss-ink);
+}
+
+body.organic .dashboard-card h3,
+body.organic .card h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--moss-ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+body.organic .data-value-lg {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--moss);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+body.organic .analytics-kpi-card .kpi-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--lichen);
+}
+
+body.organic .analytics-kpi-card .kpi-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--moss);
+}
+
+body.organic .dashboard-card::before {
+  display: none;
+}
+
+body.organic .form-group label {
+  font-family: var(--font-body);
+  font-weight: 500;
 }
 
 :focus-visible {
@@ -210,6 +378,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: var(--space-4);
+  align-content: start;
 }
 
 .dashboard-card {
@@ -533,6 +702,15 @@ details summary:hover {
   .skeleton {
     animation: none;
   }
+  body.organic .hero-ring-wrap {
+    animation: none;
+  }
+  body.organic .dashboard-card,
+  body.organic .card,
+  body.organic .filter-btn,
+  body.organic .btn {
+    transition-duration: 0s;
+  }
   * {
     animation-duration: 0s !important;
     transition-duration: 0s !important;
@@ -566,7 +744,7 @@ details summary:hover {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 100px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 500;
   background: var(--accent-light);
@@ -909,4 +1087,393 @@ details summary:hover {
   .dashboard-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
+}
+
+/* ============================================================
+   ORGANIC SPIKE (dashboard only) — introducción de estilo
+   "libreta de campo de un cuerpo vivo"
+   Aplica via :is/#view-dashboard para que no afecte los 7
+   views restantes.
+   ============================================================ */
+
+#view-dashboard {
+  --bone: #F4EFE6;
+  --smoke: #E6E0D2;
+  --paper: #FBF7EE;
+  --moss: #4E5D3F;
+  --moss-ink: #2F3D26;
+  --moss-mist: #D7DAC7;
+  --ember: #C75B3B;
+  --ink: #1F1B17;
+  --lichen: #8A8870;
+
+  --bg-primary: var(--bone);
+  --bg-secondary: var(--paper);
+  --bg-tertiary: var(--smoke);
+  --text-primary: var(--ink);
+  --text-secondary: var(--lichen);
+  --accent: var(--moss);
+  --accent-hover: var(--moss-ink);
+  --accent-light: var(--moss-mist);
+  --danger: var(--ember);
+  --border: #D8D2C4;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(78, 93, 63, 0.04), 0 8px 24px -12px rgba(47, 61, 38, 0.18);
+  --shadow-md: 0 2px 6px rgba(78, 93, 63, 0.05), 0 12px 32px -10px rgba(47, 61, 38, 0.20);
+  --shadow-lg: 0 4px 10px rgba(78, 93, 63, 0.06), 0 18px 44px -12px rgba(47, 61, 38, 0.22);
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', 'Inter', sans-serif;
+  --ease-organic: cubic-bezier(.2, .85, .25, 1);
+
+  background: var(--bone);
+  border-radius: 0 0 0 0;
+  position: relative;
+  min-height: 100%;
+}
+
+/* paper grain: una sola textura sutil, blend-multiply con el bone.
+   Este es el "riesgo estético" de la spike. */
+#view-dashboard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0 0.09  0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+#view-dashboard > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- view-title: Fraunces en lugar de Plus Jakarta geométrico --- */
+#view-dashboard .view-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  color: var(--moss-ink);
+}
+
+/* --- eyebrow reemplaza el uppercase-letter-tracking SaaS stand-by --- */
+#view-dashboard .dashboard-card h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--moss-ink);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: var(--space-3);
+}
+
+#view-dashboard .dashboard-card h3 .nav-icon,
+#view-dashboard .dashboard-card h3 svg {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
+/* --- value: números "de libreta de campo" en Fraunces, no mono boxed --- */
+#view-dashboard .dashboard-card .value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 30px;
+  color: var(--moss);
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+#view-dashboard .dashboard-card .subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--lichen);
+  margin-top: var(--space-2);
+}
+
+#view-dashboard .dashboard-card .subtitle .compliance-ok,
+#view-dashboard .dashboard-card .subtitle .compliance-warn {
+  font-family: var(--font-body);
+}
+
+#view-dashboard .dashboard-card .metric-trend {
+  font-family: var(--font-body);
+}
+
+#view-dashboard .dashboard-card {
+  background: var(--paper);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  transition: box-shadow 0.3s var(--ease-organic), border-color 0.3s var(--ease-organic);
+}
+
+#view-dashboard .dashboard-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--moss-mist);
+  transform: none;
+}
+
+/* KILL del template top-bar gradient en dashboard (la firma reemplaza) */
+#view-dashboard .dashboard-card::before {
+  display: none;
+}
+
+/* --- filtros de rango: moss, no teal --- */
+#view-dashboard .filter-btn {
+  font-family: var(--font-body);
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--lichen);
+  border-radius: var(--radius-sm);
+}
+
+#view-dashboard .filter-btn:hover {
+  background: var(--smoke);
+  color: var(--moss-ink);
+}
+
+#view-dashboard .filter-btn.active {
+  background: var(--moss);
+  border-color: var(--moss-ink);
+  color: var(--bone);
+}
+
+/* --- card-accent (resumen de actividad): mantén propósito, orgánico --- */
+#view-dashboard .card-accent {
+  background: var(--moss);
+  color: var(--bone);
+  border-color: var(--moss-ink);
+}
+
+#view-dashboard .card-accent h3 {
+  color: rgba(244, 239, 230, 0.78);
+}
+
+#view-dashboard .card-accent .value {
+  color: var(--bone);
+}
+
+#view-dashboard .card-accent .subtitle {
+  color: rgba(244, 239, 230, 0.65);
+}
+
+/* --- tendencia de métricas (trend-up/down/hereda ember/moss) --- */
+#view-dashboard .trend-up { color: var(--ember); }
+#view-dashboard .trend-down { color: var(--moss); }
+#view-dashboard .trend-flat { color: var(--lichen); }
+
+#view-dashboard .data-value,
+#view-dashboard .data-value-lg {
+  color: var(--moss);
+}
+
+/* --- FIMRA: hero card con anillo de crecimiento.
+   Un solo card por Chanel: el resto queda disciplined. --- */
+#view-dashboard .card-hero {
+  grid-column: 1 / -1;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-7) var(--space-8);
+  box-shadow: var(--shadow-md);
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) 1fr;
+  gap: var(--space-8);
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#view-dashboard .card-hero--compact {
+  grid-template-columns: 1fr;
+}
+
+#view-dashboard .card-hero--compact .hero-text {
+  grid-column: 1;
+}
+
+#view-dashboard .card-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(78, 93, 63, 0.06), transparent 60%);
+  pointer-events: none;
+}
+
+#view-dashboard .card-hero .hero-ring-wrap {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  position: relative;
+  z-index: 1;
+  animation: breath 6.4s var(--ease-organic) infinite;
+}
+
+#view-dashboard .card-hero .hero-ring {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+#view-dashboard .card-hero .hero-text {
+  position: relative;
+  z-index: 1;
+}
+
+#view-dashboard .card-hero .hero-eyebrow {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--moss-ink);
+  margin-bottom: var(--space-2);
+  letter-spacing: 0;
+}
+
+#view-dashboard .card-hero .hero-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 46px;
+  color: var(--moss);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+#view-dashboard .card-hero .hero-unit {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--lichen);
+  margin-left: 6px;
+}
+
+#view-dashboard .card-hero .hero-sub {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--lichen);
+  margin-top: var(--space-3);
+  max-width: 38ch;
+  line-height: 1.5;
+}
+
+#view-dashboard .card-hero .hero-legend {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--lichen);
+}
+
+#view-dashboard .card-hero .legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 0;
+}
+
+#view-dashboard .card-hero .legend-dot.moss { background: var(--moss); }
+#view-dashboard .card-hero .legend-dot.ember { background: var(--ember); }
+
+@keyframes breath {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.018); }
+}
+
+/* --- sparklines orgánicos: curva viva, no números estáticos --- */
+#view-dashboard .dashboard-card .spark {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: var(--space-3);
+  overflow: visible;
+}
+
+#view-dashboard .dashboard-card .spark path.line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#view-dashboard .dashboard-card .spark path.area {
+  opacity: 0.14;
+  stroke: none;
+}
+
+#view-dashboard .dashboard-card .spark .dot {
+  fill: var(--moss-ink);
+  stroke: var(--paper);
+  stroke-width: 1.4;
+}
+
+#view-dashboard .dashboard-card .value + .spark {
+  margin-top: var(--space-2);
+}
+
+#view-dashboard .dashboard-card .value br + span {
+  display: inline-block;
+  margin-top: 2px;
+}
+
+/* sidebar header: organic override at line ~109 (Fraunces + Source Sans 3) */
+
+/* --- trend chart card: hereda paper bg, no toca estructura de Chart.js --- */
+#view-dashboard .card {
+  background: var(--paper);
+  border-color: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+#view-dashboard .card h2,
+#view-dashboard .card .card-header {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--moss-ink);
+  letter-spacing: -0.01em;
+}
+
+/* --- texto accent utilitario --- */
+#view-dashboard .text-accent { color: var(--moss); }
+#view-dashboard .text-danger { color: var(--ember); }
+#view-dashboard .text-success { color: var(--moss); }
+#view-dashboard .text-warning { color: var(--ember); }
+#view-dashboard .text-muted { color: var(--lichen); }
+
+#view-dashboard .compliance-ok { color: var(--moss); }
+#view-dashboard .compliance-warn { color: var(--ember); }
+
+#view-dashboard .tag { background: var(--moss-mist); color: var(--moss-ink); }
+#view-dashboard .tag-success { background: #DCE5CC; color: var(--moss); }
+#view-dashboard .tag-warning { background: #F2E2D6; color: var(--ember); }
+#view-dashboard .tag-danger  { background: #F2E2D6; color: var(--ember); }
+
+/* responsive: colapsa hero en pantallas chicas */
+@media (max-width: 900px) {
+  #view-dashboard .card-hero {
+    grid-template-columns: 1fr;
+    padding: var(--space-5);
+    gap: var(--space-4);
+    text-align: left;
+  }
+  #view-dashboard .card-hero .hero-ring { max-width: 150px; margin: 0; }
+  #view-dashboard .card-hero .hero-value { font-size: 38px; }
+}
+
+/* reduced motion: matar el breath, no la personalidad tipográfica */
+@media (prefers-reduced-motion: reduce) {
+  #view-dashboard .card-hero .hero-ring { animation: none; }
+  #view-dashboard .dashboard-card { transition: none; }
 }

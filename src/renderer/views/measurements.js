@@ -12,12 +12,12 @@ const METRIC_COLUMNS = [
 ];
 
 const CHART_COLORS = [
-  '#0D9488', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#84CC16',
-  '#F43F5E', '#A855F7', '#0EA5E9',
+  chartColors.accent, chartColors.accentHover, chartColors.warning, chartColors.danger, chartColors.success,
+  '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#06B6D4',
+  '#84CC16', '#F43F5E', '#A855F7',
 ];
 
-const CNS_COLORS = { chest: '#0D9488', neck: '#F59E0B', shoulders: '#6366F1' };
+const CNS_COLORS = { chest: chartColors.accent, neck: chartColors.warning, shoulders: chartColors.accentHover };
 
 function formatDelta(delta, metricKey) {
   const sign = delta > 0 ? '+' : '';

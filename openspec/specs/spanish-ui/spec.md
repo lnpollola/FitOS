@@ -3,9 +3,7 @@
 ## Purpose
 
 Translate all user-facing frontend strings to Spanish while keeping backend/main process code in English. The README.md is also translated to Spanish.
-
 ## Requirements
-
 ### Requirement: All frontend strings translated to Spanish
 
 The system SHALL display all UI text — navigation labels, view titles, form labels, button text, chart labels, tooltips, error messages, confirmation dialogs, empty-state placeholders, loading-state text, and error-state text — in Spanish.
@@ -119,3 +117,55 @@ The system SHALL provide Spanish locale keys for all loading-state, empty-state,
 - **WHEN** a developer opens `src/renderer/locales/es.js`
 - **THEN** a `states` domain SHALL exist under `strings` with keys: `loading`, `noData`, `noDataPeriod`, `errorLoading`, `retry`, `addMeasurement`, `importActivity`, `addFood`, `addTrainingSession`
 - **THEN** no view SHALL hardcode Spanish text for these states (all via locale keys)
+
+### Requirement: Dashboard hero legend Spanish strings
+
+The system SHALL provide Spanish locale keys for the dashboard hero card's legend and supporting copy in the `strings.dashboard` domain of `src/renderer/locales/es.js`. The keys SHALL be: `dashboard.avgDay` ("Promedio diario"), `dashboard.noBalanceData` ("Sin balance todavía"), `dashboard.daysActive` ("Activo"), `dashboard.daysLow` ("Bajo"), `dashboard.days` ("días"). Views SHALL reference these keys directly without inline `strings.dashboard.X || 'fallback'` defensive `||` operators.
+
+#### Scenario: Hero legend keys present
+- **WHEN** a developer opens `src/renderer/locales/es.js`
+- **THEN** the `dashboard` object SHALL contain `avgDay`, `noBalanceData`, `daysActive`, `daysLow`, and `days` keys
+- **THEN** the values SHALL be Spanish strings
+
+#### Scenario: Hero legend renders Spanish
+- **WHEN** the dashboard hero card renders its legend
+- **THEN** the moss dot legend entry SHALL read "Activo" via `strings.dashboard.daysActive`
+- **THEN** the ember dot legend entry SHALL read "Bajo" via `strings.dashboard.daysLow`
+- **THEN** the hero subtitle day count SHALL use `strings.dashboard.days` as the unit suffix
+
+#### Scenario: No fallback strings in dashboard.js
+- **WHEN** a developer searches `src/renderer/views/dashboard.js` for `|| 'fallback'` or `|| "fallback"` patterns
+- **THEN** zero matches SHALL exist for hero-related strings (`avgDay`, `noBalanceData`, `daysActive`, `daysLow`, `days`)
+- **THEN** all such references SHALL be direct `strings.dashboard.X` lookups
+
+### Requirement: App name and user profile name locale strings
+
+The system SHALL provide Spanish locale keys for the app name and the user's profile name in `src/renderer/locales/es.js`. The key `strings.appName` SHALL be "FitOS". The key `strings.profileName` SHALL be "Leandro Pollola". These keys SHALL be used in the sidebar header. The profile name SHALL be hardcoded in the locale for now, structured so it can be replaced by profile-driven data in the future.
+
+#### Scenario: App name key present
+- **WHEN** a developer opens `src/renderer/locales/es.js`
+- **THEN** the `strings` object SHALL contain `appName` with the value "FitOS"
+- **THEN** the value SHALL be a plain string without the suffix " - Salud y Rendimiento"
+
+#### Scenario: Profile name key present
+- **WHEN** a developer opens `src/renderer/locales/es.js`
+- **THEN** the `strings` object SHALL contain `profileName` with the value "Leandro Pollola"
+
+#### Scenario: Sidebar header uses locale keys
+- **WHEN** the sidebar header renders
+- **THEN** the `<h1>` text SHALL reference `strings.appName`
+- **THEN** the subtitle text SHALL reference `strings.profileName`
+
+### Requirement: Dashboard date range labels in Spanish
+
+The system SHALL provide Spanish locale keys for the three dashboard date range options in the `strings.dashboard` domain: `dateRange15d` ("15d"), `dateRange1m` ("1m"), `dateRange3m` ("3m"). The activity view's weekly sport summary SHALL also use these keys for its 7d/15d/1m range buttons where applicable.
+
+#### Scenario: Date range keys present
+- **WHEN** a developer opens `src/renderer/locales/es.js`
+- **THEN** the `dashboard` object SHALL contain `dateRange15d`, `dateRange1m`, and `dateRange3m` keys with Spanish string values
+
+#### Scenario: Dashboard filter buttons use locale keys
+- **WHEN** the dashboard renders date filter buttons
+- **THEN** each button label SHALL reference a `strings.dashboard.dateRange*` key
+- **THEN** no button label SHALL be hardcoded outside the locale module
+

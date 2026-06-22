@@ -6,6 +6,8 @@ import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 import { getRangeDates } from '../utils/date-range.js';
 import Chart from 'chart.js/auto';
 import { safeCall } from '../utils/safe-call.js';
+import { sparkline } from '../utils/sparkline.js';
+import { growthRing } from '../utils/growth-ring.js';
 
 export async function init() {
   if (window._loadingDashboard) return;
@@ -13,22 +15,22 @@ export async function init() {
   const container = document.getElementById('view-dashboard');
   const api = window.electronAPI;
 
-  let _range = '7d';
+  let _range = '15d';
 
   container.innerHTML = `
     <h2 class="view-title">${strings.dashboard.title}</h2>
     <div class="analytics-filters" id="dashboard-filters">
-      <button class="filter-btn active" data-range="7d">${strings.dashboard.dateRange7d}</button>
-      <button class="filter-btn" data-range="15d">${strings.dashboard.dateRange15d}</button>
+      <button class="filter-btn active" data-range="15d">${strings.dashboard.dateRange15d}</button>
       <button class="filter-btn" data-range="1m">${strings.dashboard.dateRange1m}</button>
+      <button class="filter-btn" data-range="3m">${strings.dashboard.dateRange3m}</button>
     </div>
     <div id="last-update" class="text-xs text-muted" style="margin-bottom:var(--space-3)" aria-live="polite"></div>
     <div class="dashboard-grid" id="row-metrics" aria-live="polite"></div>
+    <div class="dashboard-grid" id="row-activity" aria-live="polite" style="margin-top:var(--space-4)"></div>
     <div class="dashboard-grid" id="row-steps-extras" aria-live="polite"></div>
     <div class="dashboard-chart-row" id="row-trend" style="margin-top:var(--space-4);display:none">
       <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.kcalDaily}</h3><div class="chart-container" style="height:200px"><canvas id="trend-chart"></canvas></div></div>
     </div>
-    <div class="dashboard-grid" id="row-activity" aria-live="polite" style="margin-top:var(--space-4)"></div>
   `;
 
   if (!api) {
@@ -80,6 +82,14 @@ export async function init() {
     const weightStatsPromise = api.getWeightStats(from, to).catch(() => ({ first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 }));
     const healthSummaryPromise = api.getHealthDailySummary ? api.getHealthDailySummary(from, to).catch(() => null) : Promise.resolve(null);
 
+    const steps30Promise = api.getHealthDailySummary ? (() => {
+      const now = new Date();
+      const d = new Date(now); d.setDate(d.getDate() - 30);
+      const stepsFrom = d.toISOString().split('T')[0];
+      const stepsTo = now.toISOString().split('T')[0];
+      return safeCall(api.getHealthDailySummary(stepsFrom, stepsTo), null);
+    })() : Promise.resolve(null);
+
     const results = await Promise.allSettled([
       appDataPromise,
       healthMetricsPromise,
@@ -87,6 +97,7 @@ export async function init() {
       sleepDataPromise,
       activityKcalPromise,
       healthSummaryPromise,
+      steps30Promise,
     ]);
 
     const appData = results[0].status === 'fulfilled' ? results[0].value : null;
@@ -95,10 +106,12 @@ export async function init() {
     const sleepData = results[3].status === 'fulfilled' ? results[3].value : { ok: false, data: [], avg7d: null };
     const activityKcal = results[4].status === 'fulfilled' ? results[4].value : [];
     const healthSummary = results[5].status === 'fulfilled' ? results[5].value : null;
+    const steps30Result = results[6].status === 'fulfilled' ? results[6].value : null;
 
     await lastImportPromise;
 
     const dailyData = healthSummary?.ok ? healthSummary.data : [];
+    const steps30Data = steps30Result?.ok ? steps30Result.data : [];
 
     const metrics = healthMetrics?.ok ? healthMetrics.data : null;
 
@@ -109,6 +122,38 @@ export async function init() {
     const avgBalance = appData?.weekBalance != null && daysInPeriod > 0
       ? Math.round(appData.weekBalance / daysInPeriod)
       : null;
+
+    // Series para sparklines (filtramos a daysInPeriod más recientes)
+    const tail = arr => arr ? arr.slice(-daysInPeriod) : [];
+    const sleepSeries = sleepData?.ok && sleepData.data ? tail(sleepData.data).map(d => d.sleep_hours) : [];
+    const hrvSeries = metrics?.hrv ? tail(metrics.hrv).map(d => d.hrv_ms) : [];
+    const rhrSeries = metrics?.resting_hr ? tail(metrics.resting_hr).map(d => d.rhr_bpm) : [];
+    const standSeries = metrics?.standing_hours ? tail(metrics.standing_hours).map(d => d.hours) : [];
+    const walkSeries = metrics?.walking_distance ? tail(metrics.walking_distance).map(d => d.km) : [];
+    const exerSeries = metrics?.exercise_time ? tail(metrics.exercise_time).map(d => d.minutes) : [];
+    const spo2Series = metrics?.spo2 ? tail(metrics.spo2).map(d => d.spo2_percent) : [];
+    const stepsSeries = dailyData && dailyData.length ? tail(dailyData).map(d => d.steps) : [];
+
+    // Peso serie (getWeightEntries retorna todos los registros, filtramos al rango)
+    let weightSeries = [];
+    if (api.getWeightEntries) {
+      const allWeight = await safeCall(api.getWeightEntries(), []);
+      if (Array.isArray(allWeight)) {
+        const fromStr = from, toStr = to;
+        weightSeries = allWeight
+          .filter(w => w.date >= fromStr && w.date <= toStr)
+          .sort((a, b) => a.date < b.date ? -1 : 1)
+          .map(w => w.weight_kg);
+      }
+    }
+
+    // Hero card (firma): anillo de crecimiento + balance semanal grande
+    const kcalSeries = dailyData && dailyData.length ? dailyData.map(d => (d.kcal_activas || 0) + (d.kcal_basales || 0)) : [];
+    const ringValues = kcalSeries.length ? kcalSeries : [];
+    const heroValue = avgBalance != null ? `${avgBalance > 0 ? '+' : ''}${avgBalance}` : '--';
+    const heroSub = avgBalance != null
+      ? `${strings.dashboard.avgDay} · ${ringValues.length} ${strings.dashboard.days}`
+      : strings.dashboard.noBalanceData;
 
     let weightDisplay = '--';
     let weightTrendSpan = '';
@@ -174,27 +219,68 @@ export async function init() {
     const coreCards = [
       { title: strings.dashboard.sessionCount, value: `${totalSessions}`, subtitle: `${totalKcal.toLocaleString()} ${strings.dashboard.kcalTotal}` },
       { title: strings.dashboard.weekBalance, value: avgBalance != null ? `${avgBalance > 0 ? '+' : ''}${avgBalance} kcal` : '--', subtitle: balanceDetail },
-      { title: strings.dashboard.latestWeight, valueHtml: `${weightDisplay} ${weightTrendSpan}` },
-      { title: strings.dashboard.hrvComposite, valueHtml: `<span>${strings.dashboard.hrvLabel}: ${hrvDisplay}</span><br><span class="metric-value-sm">${strings.dashboard.restingHr}: ${rhrDisplay}</span>${hrvTrend ? `<br>${hrvTrend}` : ''}` },
-      { title: strings.dashboard.standingHours, value: standDisplay, subtitle: standCompliance },
-      { title: strings.dashboard.walkingDistance, value: walkDisplay, subtitle: strings.dashboard.avgDay },
-      { title: strings.dashboard.sleepTitle, valueHtml: sleepDisplay, subtitle: sleepCompliance },
+      { title: strings.dashboard.latestWeight, valueHtml: `${weightDisplay} ${weightTrendSpan}`, spark: weightSeries, sparkColor: 'var(--moss)' },
+      { title: strings.dashboard.hrvComposite, valueHtml: `<span>${strings.dashboard.hrvLabel}: ${hrvDisplay}</span><br><span class="metric-value-sm">${strings.dashboard.restingHr}: ${rhrDisplay}</span>${hrvTrend ? `<br>${hrvTrend}` : ''}`, spark: hrvSeries, sparkColor: 'var(--moss)' },
+      { title: strings.dashboard.standingHours, value: standDisplay, subtitle: standCompliance, spark: standSeries, sparkColor: 'var(--moss)' },
+      { title: strings.dashboard.walkingDistance, value: walkDisplay, subtitle: strings.dashboard.avgDay, spark: walkSeries, sparkColor: 'var(--moss)' },
+      { title: strings.dashboard.sleepTitle, valueHtml: sleepDisplay, subtitle: sleepCompliance, spark: sleepSeries, sparkColor: 'var(--moss)' },
     ];
 
-    metricsRow.innerHTML = coreCards.map(c => `
+    const compact = ringValues.length === 0;
+    const heroHtml = `
+      <div class="card-hero${compact ? ' card-hero--compact' : ''}">
+        ${compact ? '' : `<div class="hero-ring-wrap">
+          ${growthRing(ringValues)}
+        </div>`}
+        <div class="hero-text">
+          <div class="hero-eyebrow">${strings.dashboard.weekBalance}</div>
+          <div><span class="hero-value">${heroValue}</span><span class="hero-unit">kcal</span></div>
+          <div class="hero-sub">${heroSub}</div>
+          ${compact ? '' : `<div class="hero-legend">
+            <span><span class="legend-dot moss"></span>${strings.dashboard.surplus}</span>
+            <span><span class="legend-dot ember"></span>${strings.dashboard.deficit}</span>
+          </div>`}
+        </div>
+      </div>`;
+
+    metricsRow.innerHTML = heroHtml + coreCards.map(c => `
       <div class="dashboard-card">
         <h3>${c.title}</h3>
         <div class="value">${c.valueHtml || c.value || '--'}</div>
+        ${c.spark && c.spark.length >= 2 ? sparkline(c.spark, { stroke: c.sparkColor }) : ''}
         ${c.subtitle ? `<div class="subtitle">${c.subtitle}</div>` : ''}
       </div>
     `).join('');
 
-    // --- Row 2: Steps + extra health metrics ---
-    const steps7dData = dailyData.slice(-7);
-    const steps15dData = dailyData.slice(-15);
-    const steps7d = steps7dData.length ? Math.round(steps7dData.reduce((a, d) => a + d.steps, 0) / steps7dData.length) : null;
-    const steps15d = steps15dData.length ? Math.round(steps15dData.reduce((a, d) => a + d.steps, 0) / steps15dData.length) : null;
-    const steps1m = dailyData.length ? Math.round(dailyData.reduce((a, d) => a + d.steps, 0) / dailyData.length) : null;
+    // --- Row 2: Activity per-sport ---
+    if (activityKcal && activityKcal.length > 0) {
+      const sorted = [...activityKcal].sort((a, b) => b.count - a.count);
+      const avgKcalSession = totalSessions > 0 ? Math.round(totalKcal / totalSessions) : 0;
+      const uniqueTypes = activityKcal.length;
+
+      activityRow.innerHTML = `
+        <div class="dashboard-card card-accent">
+          <h3>${strings.dashboard.activitySummary}</h3>
+          <div class="flex-gap-md" style="margin-top:var(--space-1)">
+            <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
+            <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
+            <div><span class="value" style="color:#fff;font-size:20px">${uniqueTypes}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.uniqueTypes}</div></div>
+            <div><span class="value" style="color:#fff;font-size:20px">${avgKcalSession}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalPerSession}</div></div>
+          </div>
+        </div>` +
+        sorted.map(a => `<div class="dashboard-card">
+            <h3>${sportIcon(a.sport_type, 14)} ${getSportDisplayName(a.sport_type)}</h3>
+            <div class="value">${a.total_kcal.toLocaleString()} kcal</div>
+            <div class="subtitle">${a.count} ${strings.dashboard.sessions} · ${a.avg_kcal} ${strings.dashboard.avgKcal}</div>
+          </div>`).join('');
+    } else {
+      activityRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
+    }
+
+    // --- Row 3: Steps + extra health metrics ---
+    const steps7d = steps30Data.length >= 7 ? Math.round(steps30Data.slice(-7).reduce((a, d) => a + d.steps, 0) / 7) : null;
+    const steps15d = steps30Data.length >= 15 ? Math.round(steps30Data.slice(-15).reduce((a, d) => a + d.steps, 0) / 15) : null;
+    const steps1m = steps30Data.length ? Math.round(steps30Data.reduce((a, d) => a + d.steps, 0) / steps30Data.length) : null;
 
     let exerciseDisplay = '--', exerciseCompliance = '';
     if (metrics?.exercise_time?.length) {
@@ -220,38 +306,37 @@ export async function init() {
 
     stepsExtrasRow.innerHTML = `
       <div class="dashboard-card">
-        <h3>${strings.dashboard.dailySteps} 7d</h3>
-        <div class="value">${steps7d?.toLocaleString() || '--'}</div>
-        <div class="subtitle">${strings.dashboard.lastUpdate}</div>
-      </div>
-      <div class="dashboard-card">
-        <h3>${strings.dashboard.dailySteps} 15d</h3>
-        <div class="value">${steps15d?.toLocaleString() || '--'}</div>
-        <div class="subtitle">${strings.dashboard.lastUpdate}</div>
-      </div>
-      <div class="dashboard-card">
-        <h3>${strings.dashboard.dailySteps} 1m</h3>
-        <div class="value">${steps1m?.toLocaleString() || '--'}</div>
-        <div class="subtitle">${strings.dashboard.lastUpdate}</div>
+        <h3>${strings.dashboard.dailySteps}</h3>
+        <div class="value">${stepsSeries.length ? stepsSeries[stepsSeries.length - 1].toLocaleString() : '--'}</div>
+        ${sparkline(stepsSeries, { stroke: 'var(--moss)' })}
+        <div class="subtitle">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || '--'} · 15d ${steps15d?.toLocaleString() || '--'} · 1m ${steps1m?.toLocaleString() || '--'}</div>
       </div>
       <div class="dashboard-card">
         <h3>${strings.dashboard.exerciseTime}</h3>
         <div class="value">${exerciseDisplay}</div>
+        ${sparkline(exerSeries, { stroke: 'var(--moss)' })}
         <div class="subtitle">${exerciseCompliance || strings.dashboard.avgDay}</div>
+      </div>
+      <div class="dashboard-card">
+        <h3>${strings.dashboard.restingHr}</h3>
+        <div class="value">${rhrSeries.length ? rhrSeries[rhrSeries.length - 1].toLocaleString() + ' ' + strings.dashboard.unitBpm : '--'}</div>
+        ${sparkline(rhrSeries, { stroke: 'var(--moss)' })}
+        <div class="subtitle">${strings.dashboard.avgDay}</div>
       </div>
       <div class="dashboard-card">
         <h3>${strings.dashboard.spo2}</h3>
         <div class="value">${spo2Display}</div>
+        ${sparkline(spo2Series, { stroke: 'var(--moss)' })}
         <div class="subtitle">${spo2Compliance || strings.dashboard.lastUpdate}</div>
       </div>
-      <div class="dashboard-card" style="opacity:0.7">
+      <div class="dashboard-card" style="opacity:0.75">
         <h3>${strings.dashboard.bloodPressure}</h3>
         <div class="value">${bpDisplay}</div>
-        <div class="subtitle">${bpNote}</div>
+        <div class="subtitle">${bpNote || strings.dashboard.lastUpdate}</div>
       </div>
     `;
 
-    // --- Row 3: Trend chart ---
+    // --- Row 4: Trend chart ---
     if (dailyData.length > 1) {
       trendRow.style.display = 'block';
       const ctx = document.getElementById('trend-chart')?.getContext('2d');
@@ -287,31 +372,6 @@ export async function init() {
       }
     } else {
       trendRow.style.display = 'none';
-    }
-
-    // --- Row 4: Activity per-sport ---
-    if (activityKcal && activityKcal.length > 0) {
-      const sorted = [...activityKcal].sort((a, b) => b.count - a.count);
-      const avgKcalSession = totalSessions > 0 ? Math.round(totalKcal / totalSessions) : 0;
-      const uniqueTypes = activityKcal.length;
-
-      activityRow.innerHTML = `
-        <div class="dashboard-card card-accent">
-          <h3>${strings.dashboard.activitySummary}</h3>
-          <div class="flex-gap-md" style="margin-top:var(--space-1)">
-            <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
-            <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
-            <div><span class="value" style="color:#fff;font-size:20px">${uniqueTypes}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.uniqueTypes}</div></div>
-            <div><span class="value" style="color:#fff;font-size:20px">${avgKcalSession}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalPerSession}</div></div>
-          </div>
-        </div>` +
-        sorted.map(a => `<div class="dashboard-card">
-            <h3>${sportIcon(a.sport_type, 14)} ${getSportDisplayName(a.sport_type)}</h3>
-            <div class="value">${a.total_kcal.toLocaleString()} kcal</div>
-            <div class="subtitle">${a.count} ${strings.dashboard.sessions} · ${a.avg_kcal} ${strings.dashboard.avgKcal}</div>
-          </div>`).join('');
-    } else {
-      activityRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
     }
   }
 

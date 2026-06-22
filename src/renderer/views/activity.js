@@ -47,6 +47,7 @@ export async function init() {
         <button class="filter-btn" data-range="15d">15d</button>
         <button class="filter-btn" data-range="1m">1m</button>
       </div>
+      <div id="session-comparison" class="analytics-kpis" style="margin-bottom:8px;display:none"></div>
       <div class="chart-container" style="height:250px" aria-live="polite"><canvas id="weekly-chart"></canvas></div>
     </div>
     <div class="card" id="recognition-table-card" style="display:none">
@@ -163,9 +164,7 @@ export async function init() {
       }
 
       const tlEl = document.getElementById('activity-timeline');
-      const ccEl = document.querySelector('.chart-container');
       if (tlEl) tlEl.innerHTML = skeletonCard();
-      if (ccEl) ccEl.innerHTML = skeletonCard();
       const importResults = await Promise.allSettled([loadTimeline(), loadChart(), loadLastImport()]);
       importResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity import load failed:', r.reason));
     } finally {
@@ -269,7 +268,7 @@ export async function init() {
         }
       }
 
-      const sparklineColor = '#0D9488';
+      const sparklineColor = chartColors.accent;
       const header = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <button class="btn btn-secondary" id="timeline-prev" style="padding:4px 10px;font-size:12px">${strings.activity.prevMonth}</button>
@@ -507,8 +506,40 @@ export async function init() {
   async function loadChart() {
     const { from, to } = getRangeDates(_chartRange);
     const summary = await safeCall(api.getSportSummaryByRange(from, to), []);
-    const canvas = document.getElementById('weekly-chart');
-    const chartContainer = canvas?.parentElement;
+
+    // Session count comparison strip
+    const comparison = await safeCall(api.getActivityComparison(from, to), null);
+    const currentSessions = summary.reduce((s, x) => s + x.count, 0);
+    const prevSessions = comparison?.previous ? comparison.previous.reduce((s, x) => s + x.count, 0) : null;
+    const compEl = document.getElementById('session-comparison');
+    if (currentSessions > 0 && compEl) {
+      let trendArrow = icon('minus', 12), trendCls = 'text-muted';
+      if (prevSessions != null && prevSessions > 0) {
+        const pct = ((currentSessions - prevSessions) / prevSessions) * 100;
+        if (pct > 5) { trendArrow = icon('arrow-up', 12); trendCls = 'text-success'; }
+        else if (pct < -5) { trendArrow = icon('arrow-down', 12); trendCls = 'text-danger'; }
+      }
+      const arrowHtml = prevSessions != null ? `<span class="${trendCls}" style="font-size:12px;margin-left:4px" title="${strings.activity.periodComparison}">${trendArrow}</span>` : '';
+      compEl.style.display = 'flex';
+      compEl.innerHTML = `
+        <div class="analytics-kpi-card">
+          <div class="kpi-label">${strings.dashboard.sessions}</div>
+          <div class="kpi-value">${currentSessions}${arrowHtml}</div>
+          <div class="kpi-sub">${prevSessions != null ? `${strings.activity.periodComparison}` : strings.dashboard.avgDay}</div>
+        </div>`;
+    } else if (compEl) {
+      compEl.style.display = 'none';
+    }
+
+    let canvas = document.getElementById('weekly-chart');
+    const chartContainer = canvas?.parentElement || document.querySelector('.chart-container');
+    if (!canvas && chartContainer) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'weekly-chart';
+      chartContainer.innerHTML = '';
+      chartContainer.appendChild(canvas);
+    }
+
     if (!canvas || !summary || summary.length === 0) {
       if (chartContainer) chartContainer.style.display = 'none';
       return;
@@ -570,9 +601,7 @@ export async function init() {
   }
 
   const tlEl = document.getElementById('activity-timeline');
-  const ccEl = document.querySelector('.chart-container');
   if (tlEl) tlEl.innerHTML = skeletonCard();
-  if (ccEl) ccEl.innerHTML = skeletonCard();
   const initResults = await Promise.allSettled([loadTimeline(), loadChart()]);
   initResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity init failed:', r.reason));
   window._loadingActivity = false;
