@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog } = require('electron');
+const { app, BrowserWindow, Menu, dialog, screen } = require('electron');
 const path = require('path');
 const { initDatabase } = require('../db/database');
 const { exportAllData, importAllData } = require('../db/import-export');
@@ -12,11 +12,24 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    useContentSize: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  mainWindow.on('maximize', () => {
+    setTimeout(() => {
+      const bounds = screen.getPrimaryDisplay().workArea;
+      mainWindow.setBounds(bounds);
+    }, 50);
   });
 
   const isDev = !app.isPackaged;
