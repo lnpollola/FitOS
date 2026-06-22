@@ -1,5 +1,6 @@
 import { strings } from '../locales/es.js';
 import { safeCall } from '../utils/safe-call.js';
+import { skeletonCard } from '../utils/skeleton.js';
 
 export async function init() {
   const container = document.getElementById('view-profile');
@@ -12,11 +13,11 @@ export async function init() {
       <form id="profile-form">
         <div class="form-group">
           <label>${strings.profile.age}</label>
-          <input type="number" name="age" min="10" max="120" required />
+          <input type="number" name="age" min="10" max="120" required aria-label="${strings.profile.age}" />
         </div>
         <div class="form-group">
           <label>${strings.profile.sex}</label>
-          <select name="sex" required>
+          <select name="sex" required aria-label="${strings.profile.sex}">
             <option value="">${strings.profile.select}</option>
             <option value="male">${strings.profile.male}</option>
             <option value="female">${strings.profile.female}</option>
@@ -24,15 +25,15 @@ export async function init() {
         </div>
         <div class="form-group">
           <label>${strings.profile.height}</label>
-          <input type="number" name="height_cm" min="100" max="250" step="0.1" required />
+          <input type="number" name="height_cm" min="100" max="250" step="0.1" required aria-label="${strings.profile.height}" />
         </div>
         <div class="form-group">
           <label>${strings.profile.weight}</label>
-          <input type="number" name="weight_kg" min="20" max="300" step="0.1" required />
+          <input type="number" name="weight_kg" min="20" max="300" step="0.1" required aria-label="${strings.profile.weight}" />
         </div>
         <div class="form-group">
           <label>${strings.profile.activityBaseline}</label>
-          <select name="activity_baseline" required>
+          <select name="activity_baseline" required aria-label="${strings.profile.activityBaseline}">
             <option value="">${strings.profile.select}</option>
             <option value="sedentary">${strings.profile.sedentary}</option>
             <option value="light">${strings.profile.light}</option>
@@ -46,11 +47,11 @@ export async function init() {
     </div>
     <div class="card">
       <h2>${strings.profile.dataManagement}</h2>
-      <p style="margin-bottom:12px">${strings.profile.dataManagementDesc}</p>
-      <button class="btn btn-secondary" id="btn-export" style="margin-right:8px">${strings.profile.exportData}</button>
+      <p class="mb-3">${strings.profile.dataManagementDesc}</p>
+      <button class="btn btn-secondary" id="btn-export" style="margin-right:var(--space-2)">${strings.profile.exportData}</button>
       <button class="btn btn-secondary" id="btn-import">${strings.profile.importData}</button>
     </div>
-    <div class="card" id="profile-display" style="display:none">
+    <div class="card" id="profile-display" style="display:none" aria-live="polite">
       <h2>${strings.profile.currentProfile}</h2>
       <div id="profile-info"></div>
     </div>
@@ -72,7 +73,7 @@ export async function init() {
   const metricsHtml = `
     <div class="card">
       <h2>📊 ${strings.profile.availableMetrics}</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+      <p class="text-sm text-muted mb-3">
         ${strings.profile.availableMetricsDesc}
       </p>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
@@ -80,9 +81,9 @@ export async function init() {
           <div style="padding:8px;background:var(--bg-secondary);border-radius:6px;border:1px solid var(--border)">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
               <span>${m.icon}</span>
-              <strong style="font-size:13px">${m.name}</strong>
+              <strong class="text-sm">${m.name}</strong>
             </div>
-            <div style="font-size:11px;color:var(--text-secondary)">${m.note}</div>
+            <div class="text-xs text-muted">${m.note}</div>
           </div>
         `).join('')}
       </div>
@@ -104,13 +105,30 @@ export async function init() {
     loadProfile();
   });
 
-  document.getElementById('btn-export').addEventListener('click', () => safeCall(api.exportData(), null));
-  document.getElementById('btn-import').addEventListener('click', () => safeCall(api.importData(), null));
+  document.getElementById('btn-export').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-export');
+    btn.dataset.loading = 'true';
+    try {
+      await safeCall(api.exportData(), null);
+    } finally {
+      btn.dataset.loading = 'false';
+    }
+  });
+  document.getElementById('btn-import').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-import');
+    btn.dataset.loading = 'true';
+    try {
+      await safeCall(api.importData(), null);
+    } finally {
+      btn.dataset.loading = 'false';
+    }
+  });
 
   async function loadProfile() {
+    const info = document.getElementById('profile-info');
+    info.innerHTML = skeletonCard();
     const profile = await safeCall(api.getProfile(), null);
     const display = document.getElementById('profile-display');
-    const info = document.getElementById('profile-info');
     if (profile) {
       display.style.display = 'block';
       info.innerHTML = `

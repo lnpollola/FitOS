@@ -25,11 +25,16 @@ renderer/   →  preload/   →  main/   →  db/
 ```
 
 ### `src/renderer/` — Frontend SPA
-- **`app.js`**: Router manual, mapea `data-view` → función `init()`, CSS class `active-view`
+- **`app.js`**: Router manual, mapea `data-view` → función `init()`, CSS class `active-view`, `aria-current` nav, sidebar collapse on resize
 - **`views/*.js`**: Cada view exporta `init()`, importa `strings` de `locales/es.js`
-- **`locales/es.js`**: 355 líneas con todos los strings en español. Objeto `strings` anidado por dominio
-- **`styles/main.css`**: 545 líneas, design system con CSS custom properties (variables `--bg-primary`, `--accent`, etc.)
-- **`index.html`**: Shell con sidebar + 7 divs `.view` como `#view-dashboard`
+- **`locales/es.js`**: ~650 líneas con todos los strings en español. Objeto `strings` anidado por dominio, incluye `strings.states.*` para estados UI
+- **`styles/main.css`**: ~880 líneas, design system con CSS custom properties, espacio/escala z, utilidades (`.text-xs`, `.flex-gap-md`), componentes (`.card-accent`, `.compliance-ok`), skeleton, responsive breakpoints
+- **`index.html`**: Shell con sidebar (`<nav>` con `role="navigation"`), `<button class="nav-item" data-view="...">` en cada item, `.nav-icon` + `.nav-text` para colapsado
+- **`utils/icons.js`**: SVG icon system via Lucide, exporta `icon(name, size=16)` → SVG string
+- **`utils/sport-icons.js`**: Mapea `sport_type` → Lucide icon, exporta `sportIcon(type, size)` → SVG, `sportIconHtml(type, size)` → SVG + nombre
+- **`utils/chart-theme.js`**: Lee CSS custom properties via `getComputedStyle`, exporta `chartColors` (accent, warning, danger, success, textSecondary, textPrimary, grid, accentHover) y `chartColorWithAlpha(hex, alpha)`
+- **`utils/skeleton.js`**: Exporta `skeletonCard()`, `skeletonRow(count)`, `skeletonChart()` que devuelven HTML con `.skeleton` + `strings.states.loading` sr-only text
+- **`utils/state-card.js`**: Exporta `renderStateCard(container, { title, state, valueHtml, subtitle, onRetry })` con estados `loading`/`empty`/`error`/`data`, usa `role="alert"` en error
 
 Patrón de view:
 ```js

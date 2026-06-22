@@ -1,5 +1,8 @@
 import { strings, getSportDisplayName } from '../locales/es.js';
-import { SPORT_ICONS } from '../utils/sport-icons.js';
+import { sportIcon } from '../utils/sport-icons.js';
+import { icon } from '../utils/icons.js';
+import { chartColors } from '../utils/chart-theme.js';
+import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 import { getRangeDates } from '../utils/date-range.js';
 import Chart from 'chart.js/auto';
 import { safeCall } from '../utils/safe-call.js';
@@ -19,13 +22,13 @@ export async function init() {
       <button class="filter-btn" data-range="15d">${strings.dashboard.dateRange15d}</button>
       <button class="filter-btn" data-range="1m">${strings.dashboard.dateRange1m}</button>
     </div>
-    <div id="last-update" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px"></div>
-    <div class="dashboard-grid" id="row-metrics"></div>
-    <div class="dashboard-grid" id="row-steps-extras"></div>
-    <div class="dashboard-chart-row" id="row-trend" style="margin-top:16px;display:none">
-      <div class="card"><h3 style="font-size:14px;margin-bottom:8px">${strings.dashboard.kcalDaily}</h3><div class="chart-container" style="height:200px"><canvas id="trend-chart"></canvas></div></div>
+    <div id="last-update" class="text-xs text-muted" style="margin-bottom:var(--space-3)" aria-live="polite"></div>
+    <div class="dashboard-grid" id="row-metrics" aria-live="polite"></div>
+    <div class="dashboard-grid" id="row-steps-extras" aria-live="polite"></div>
+    <div class="dashboard-chart-row" id="row-trend" style="margin-top:var(--space-4);display:none">
+      <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.kcalDaily}</h3><div class="chart-container" style="height:200px"><canvas id="trend-chart"></canvas></div></div>
     </div>
-    <div class="dashboard-grid" id="row-activity" style="margin-top:16px"></div>
+    <div class="dashboard-grid" id="row-activity" aria-live="polite" style="margin-top:var(--space-4)"></div>
   `;
 
   if (!api) {
@@ -50,44 +53,63 @@ export async function init() {
     const { from, to } = getRangeDates(_range);
     const daysInPeriod = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
 
-    const [appData, healthMetrics, activityKcal, lastImport, sleepData] = await Promise.all([
-      safeCall(api.getDashboardData(), null),
-      api.getHealthDashboardMetrics(from, to).catch(() => ({ ok: false })),
-      api.getActivityKcalByType(from, to).catch(() => []),
-      api.getLastImportTimestamp().catch(() => null),
-      api.getSleepData ? api.getSleepData(from, to).catch(() => ({ ok: false, data: [], avg7d: null })) : { ok: false, data: [], avg7d: null },
+    metricsRow.innerHTML = skeletonCard().repeat(7);
+    stepsExtrasRow.innerHTML = skeletonCard().repeat(6);
+    activityRow.innerHTML = skeletonCard();
+
+    function trendSkeleton() {
+      trendRow.style.display = 'block';
+      trendRow.innerHTML = skeletonChart();
+    }
+    trendSkeleton();
+
+    const lastImportPromise = safeCall(api.getLastImportTimestamp(), null).then(data => {
+      const updateEl = document.getElementById('last-update');
+      if (data) {
+        const d = new Date(data);
+        updateEl.textContent = `${strings.dashboard.lastUpdate}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        updateEl.textContent = strings.dashboard.noImportData;
+      }
+    });
+
+    const appDataPromise = safeCall(api.getDashboardData(), null);
+    const healthMetricsPromise = api.getHealthDashboardMetrics(from, to).catch(() => ({ ok: false }));
+    const activityKcalPromise = api.getActivityKcalByType(from, to).catch(() => []);
+    const sleepDataPromise = api.getSleepData ? api.getSleepData(from, to).catch(() => ({ ok: false, data: [], avg7d: null })) : Promise.resolve({ ok: false, data: [], avg7d: null });
+    const weightStatsPromise = api.getWeightStats(from, to).catch(() => ({ first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 }));
+    const healthSummaryPromise = api.getHealthDailySummary ? api.getHealthDailySummary(from, to).catch(() => null) : Promise.resolve(null);
+
+    const results = await Promise.allSettled([
+      appDataPromise,
+      healthMetricsPromise,
+      weightStatsPromise,
+      sleepDataPromise,
+      activityKcalPromise,
+      healthSummaryPromise,
     ]);
 
-    const [weightStats, healthSummary] = await Promise.all([
-      api.getWeightStats(from, to).catch(() => ({ first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 })),
-      api.getHealthDailySummary ? api.getHealthDailySummary(from, to).catch(() => null) : null,
-    ]);
+    const appData = results[0].status === 'fulfilled' ? results[0].value : null;
+    const healthMetrics = results[1].status === 'fulfilled' && results[1].value?.ok ? results[1].value : { ok: false, data: null };
+    const weightStats = results[2].status === 'fulfilled' ? results[2].value : { first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 };
+    const sleepData = results[3].status === 'fulfilled' ? results[3].value : { ok: false, data: [], avg7d: null };
+    const activityKcal = results[4].status === 'fulfilled' ? results[4].value : [];
+    const healthSummary = results[5].status === 'fulfilled' ? results[5].value : null;
+
+    await lastImportPromise;
 
     const dailyData = healthSummary?.ok ? healthSummary.data : [];
 
-    // Last update display
-    const updateEl = document.getElementById('last-update');
-    if (lastImport) {
-      const d = new Date(lastImport);
-      updateEl.textContent = `${strings.dashboard.lastUpdate}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-      updateEl.textContent = strings.dashboard.noImportData;
-    }
-
     const metrics = healthMetrics?.ok ? healthMetrics.data : null;
 
-    // --- Row 1: 6 core metric cards ---
-
-    // Sessions count
+    // --- Row 1: Core metric cards ---
     const totalSessions = activityKcal.reduce((s, a) => s + a.count, 0);
     const totalKcal = activityKcal.reduce((s, a) => s + a.total_kcal, 0);
 
-    // Weekly balance as avg/day
     const avgBalance = appData?.weekBalance != null && daysInPeriod > 0
       ? Math.round(appData.weekBalance / daysInPeriod)
       : null;
 
-    // Weight variation
     let weightDisplay = '--';
     let weightTrendSpan = '';
     if (weightStats.last != null) {
@@ -95,13 +117,12 @@ export async function init() {
       if (weightStats.count >= 2 && weightStats.first != null) {
         const variation = (weightStats.last - weightStats.first);
         const sign = variation > 0 ? '+' : '';
-        const arrow = weightStats.trend > 0.01 ? strings.dashboard.trendUp : weightStats.trend < -0.01 ? strings.dashboard.trendDown : strings.dashboard.trendFlat;
-        const arrowColor = weightStats.trend > 0.01 ? 'var(--danger)' : weightStats.trend < -0.01 ? 'var(--success)' : 'var(--text-secondary)';
-        weightTrendSpan = `<span style="font-size:12px;color:${arrowColor};margin-left:4px">${sign}${variation.toFixed(1)} ${strings.dashboard.unitKg} ${arrow}</span>`;
+        const trendClass = weightStats.trend > 0.01 ? 'trend-up' : weightStats.trend < -0.01 ? 'trend-down' : 'trend-flat';
+        const trendIcon = weightStats.trend > 0.01 ? icon('trending-up', 12) : weightStats.trend < -0.01 ? icon('trending-down', 12) : icon('minus', 12);
+        weightTrendSpan = `<span class="metric-trend ${trendClass}">${sign}${variation.toFixed(1)} ${strings.dashboard.unitKg} ${trendIcon}</span>`;
       }
     }
 
-    // HRV + resting HR composite
     let hrvDisplay = '--', rhrDisplay = '--', hrvTrend = '';
     if (metrics) {
       const hrvData = metrics.hrv || [];
@@ -110,54 +131,51 @@ export async function init() {
         const latestHrv = hrvData[hrvData.length - 1].hrv_ms;
         const avgHrv = (hrvData.reduce((s, d) => s + d.hrv_ms, 0) / hrvData.length).toFixed(1);
         hrvDisplay = `${latestHrv} ${strings.dashboard.unitMs}`;
-        hrvTrend = `<span style="font-size:11px;color:var(--text-secondary)">${strings.dashboard.avg7d}: ${avgHrv} ${strings.dashboard.unitMs}</span>`;
+        hrvTrend = `<span class="text-xs text-muted">${strings.dashboard.avg7d}: ${avgHrv} ${strings.dashboard.unitMs}</span>`;
       }
       if (rhrData.length > 0) {
         const latestRhr = rhrData[rhrData.length - 1].rhr_bpm;
-        const avgRhr = (rhrData.reduce((s, d) => s + d.rhr_bpm, 0) / rhrData.length).toFixed(1);
         rhrDisplay = `${Math.round(latestRhr)} ${strings.dashboard.unitBpm}`;
       }
     }
 
-    // Standing hours
     let standDisplay = '--', standCompliance = '';
     if (metrics?.standing_hours?.length) {
       const avgStand = metrics.standing_hours.reduce((s, d) => s + d.hours, 0) / metrics.standing_hours.length;
       standDisplay = `${avgStand.toFixed(1)} ${strings.dashboard.unitH}`;
-      standCompliance = avgStand >= 8 ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.standingCompliant}</span>` : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.standingBelow}</span>`;
+      standCompliance = avgStand >= 8
+        ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.standingCompliant}</span>`
+        : `<span class="compliance-warn">${strings.dashboard.standingBelow}</span>`;
     }
 
-    // Walking distance
     let walkDisplay = '--';
     if (metrics?.walking_distance?.length) {
       const avgWalk = metrics.walking_distance.reduce((s, d) => s + d.km, 0) / metrics.walking_distance.length;
       walkDisplay = `${avgWalk.toFixed(2)} ${strings.dashboard.unitKm}`;
     }
 
-    // Sleep
     let sleepDisplay = '--', sleepCompliance = '';
     if (sleepData?.ok && sleepData.data?.length) {
       const avgSleep = sleepData.data.reduce((s, d) => s + d.sleep_hours, 0) / sleepData.data.length;
       sleepDisplay = `${avgSleep.toFixed(1)} ${strings.dashboard.unitH}`;
       if (sleepData.avg7d) {
-        sleepDisplay += ` <span style="font-size:11px;color:var(--text-secondary)">(${strings.dashboard.sleepAvg7d}: ${sleepData.avg7d.toFixed(1)}${strings.dashboard.unitH})</span>`;
+        sleepDisplay += ` <span class="text-xs text-muted">(${strings.dashboard.sleepAvg7d}: ${sleepData.avg7d.toFixed(1)}${strings.dashboard.unitH})</span>`;
       }
       sleepCompliance = (avgSleep >= 7 && avgSleep <= 9)
-        ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.sleepOptimal}</span>`
-        : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.sleepAdjust}</span>`;
+        ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.sleepOptimal}</span>`
+        : `<span class="compliance-warn">${strings.dashboard.sleepAdjust}</span>`;
     }
 
-    // Balance split: basal vs activity + diet target
     let balanceDetail = '';
     if (appData?.weekBalance != null) {
-      balanceDetail = `<span style="font-size:11px;color:var(--text-secondary)">${strings.dashboard.avgDay}</span>`;
+      balanceDetail = `<span class="text-xs text-muted">${strings.dashboard.avgDay}</span>`;
     }
 
     const coreCards = [
       { title: strings.dashboard.sessionCount, value: `${totalSessions}`, subtitle: `${totalKcal.toLocaleString()} ${strings.dashboard.kcalTotal}` },
       { title: strings.dashboard.weekBalance, value: avgBalance != null ? `${avgBalance > 0 ? '+' : ''}${avgBalance} kcal` : '--', subtitle: balanceDetail },
       { title: strings.dashboard.latestWeight, valueHtml: `${weightDisplay} ${weightTrendSpan}` },
-      { title: strings.dashboard.hrvComposite, valueHtml: `<span>${strings.dashboard.hrvLabel}: ${hrvDisplay}</span><br><span style="font-size:12px">${strings.dashboard.restingHr}: ${rhrDisplay}</span>${hrvTrend ? `<br>${hrvTrend}` : ''}` },
+      { title: strings.dashboard.hrvComposite, valueHtml: `<span>${strings.dashboard.hrvLabel}: ${hrvDisplay}</span><br><span class="metric-value-sm">${strings.dashboard.restingHr}: ${rhrDisplay}</span>${hrvTrend ? `<br>${hrvTrend}` : ''}` },
       { title: strings.dashboard.standingHours, value: standDisplay, subtitle: standCompliance },
       { title: strings.dashboard.walkingDistance, value: walkDisplay, subtitle: strings.dashboard.avgDay },
       { title: strings.dashboard.sleepTitle, valueHtml: sleepDisplay, subtitle: sleepCompliance },
@@ -171,48 +189,47 @@ export async function init() {
       </div>
     `).join('');
 
-    // --- Row 2: Steps period cards + extra health metrics ---
-
-    // Steps averages over correct sub-ranges
+    // --- Row 2: Steps + extra health metrics ---
     const steps7dData = dailyData.slice(-7);
     const steps15dData = dailyData.slice(-15);
     const steps7d = steps7dData.length ? Math.round(steps7dData.reduce((a, d) => a + d.steps, 0) / steps7dData.length) : null;
     const steps15d = steps15dData.length ? Math.round(steps15dData.reduce((a, d) => a + d.steps, 0) / steps15dData.length) : null;
     const steps1m = dailyData.length ? Math.round(dailyData.reduce((a, d) => a + d.steps, 0) / dailyData.length) : null;
 
-    // Exercise time
     let exerciseDisplay = '--', exerciseCompliance = '';
     if (metrics?.exercise_time?.length) {
       const avgEx = metrics.exercise_time.reduce((s, d) => s + d.minutes, 0) / metrics.exercise_time.length;
       exerciseDisplay = `${avgEx.toFixed(0)} ${strings.dashboard.unitMin}`;
-      exerciseCompliance = avgEx >= 30 ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.exerciseCompliant}</span>` : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.exerciseBelow}</span>`;
+      exerciseCompliance = avgEx >= 30
+        ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.exerciseCompliant}</span>`
+        : `<span class="compliance-warn">${strings.dashboard.exerciseBelow}</span>`;
     }
 
-    // SpO2
     let spo2Display = '--', spo2Compliance = '';
     if (metrics?.spo2?.length) {
       const latestSpO2 = metrics.spo2[0].spo2_percent;
       spo2Display = `${latestSpO2}${strings.dashboard.unitPercent}`;
-      spo2Compliance = latestSpO2 >= 95 ? `<span style="font-size:11px;color:var(--success)">✓ ${strings.dashboard.spo2Normal}</span>` : `<span style="font-size:11px;color:var(--warning)">${strings.dashboard.spo2Low}</span>`;
+      spo2Compliance = latestSpO2 >= 95
+        ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.spo2Normal}</span>`
+        : `<span class="compliance-warn">${strings.dashboard.spo2Low}</span>`;
     }
 
-    // Blood pressure (always empty)
     const bpHasData = metrics?.blood_pressure?.length > 0;
     const bpDisplay = bpHasData ? `${metrics.blood_pressure[0].systolic}/${metrics.blood_pressure[0].diastolic}` : strings.dashboard.bpEmpty;
-    const bpNote = bpHasData ? '' : `<span style="font-size:11px;color:var(--text-secondary)">${strings.dashboard.bpExternalNote}</span>`;
+    const bpNote = bpHasData ? '' : `<span class="text-xs text-muted">${strings.dashboard.bpExternalNote}</span>`;
 
     stepsExtrasRow.innerHTML = `
-      <div class="dashboard-card" style="background:var(--bg-secondary)">
+      <div class="dashboard-card">
         <h3>${strings.dashboard.dailySteps} 7d</h3>
         <div class="value">${steps7d?.toLocaleString() || '--'}</div>
         <div class="subtitle">${strings.dashboard.lastUpdate}</div>
       </div>
-      <div class="dashboard-card" style="background:var(--bg-secondary)">
+      <div class="dashboard-card">
         <h3>${strings.dashboard.dailySteps} 15d</h3>
         <div class="value">${steps15d?.toLocaleString() || '--'}</div>
         <div class="subtitle">${strings.dashboard.lastUpdate}</div>
       </div>
-      <div class="dashboard-card" style="background:var(--bg-secondary)">
+      <div class="dashboard-card">
         <h3>${strings.dashboard.dailySteps} 1m</h3>
         <div class="value">${steps1m?.toLocaleString() || '--'}</div>
         <div class="subtitle">${strings.dashboard.lastUpdate}</div>
@@ -251,16 +268,19 @@ export async function init() {
           data: {
             labels,
             datasets: [
-              { label: strings.dashboard.kcalDaily, data: kcalData, borderColor: '#0D9488', backgroundColor: 'rgba(13,148,136,0.1)', fill: true, tension: 0.3, pointRadius: 3 },
-              { label: strings.dashboard.ma7, data: ma7, borderColor: '#F59E0B', borderDash: [5, 5], pointRadius: 0, tension: 0.3 },
+              { label: strings.dashboard.kcalDaily, data: kcalData, borderColor: chartColors.accent, backgroundColor: chartColors.accent + '1a', fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 5 },
+              { label: strings.dashboard.ma7, data: ma7, borderColor: chartColors.warning, borderDash: [5, 5], pointRadius: 0, pointHoverRadius: 5, tension: 0.3 },
             ],
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#64748B', boxWidth: 12, padding: 8 } } },
+            plugins: {
+              legend: { labels: { color: chartColors.textSecondary, boxWidth: 12, padding: 8 } },
+              tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
+            },
             scales: {
-              y: { beginAtZero: true, ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-              x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
+              y: { beginAtZero: true, ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
+              x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10 }, grid: { display: false } },
             },
           },
         });
@@ -269,32 +289,27 @@ export async function init() {
       trendRow.style.display = 'none';
     }
 
-    // --- Row 4: Activity per-sport (session-first) ---
+    // --- Row 4: Activity per-sport ---
     if (activityKcal && activityKcal.length > 0) {
       const sorted = [...activityKcal].sort((a, b) => b.count - a.count);
-      const totalHours = activityKcal.reduce((s, a) => s + (a.total_kcal ? a.total_kcal / 250 : 0), 0);
       const avgKcalSession = totalSessions > 0 ? Math.round(totalKcal / totalSessions) : 0;
       const uniqueTypes = activityKcal.length;
 
       activityRow.innerHTML = `
-        <div class="dashboard-card" style="background:var(--accent);color:#fff;grid-column:1/-1">
-          <h3 style="color:rgba(255,255,255,0.8)">${strings.dashboard.activitySummary}</h3>
-          <div style="display:flex;gap:24px;margin-top:6px">
+        <div class="dashboard-card card-accent">
+          <h3>${strings.dashboard.activitySummary}</h3>
+          <div class="flex-gap-md" style="margin-top:var(--space-1)">
             <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
             <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
             <div><span class="value" style="color:#fff;font-size:20px">${uniqueTypes}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.uniqueTypes}</div></div>
             <div><span class="value" style="color:#fff;font-size:20px">${avgKcalSession}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalPerSession}</div></div>
           </div>
         </div>` +
-        sorted.map(a => {
-          const icon = SPORT_ICONS[a.sport_type] || '🏅';
-          return `
-          <div class="dashboard-card">
-            <h3>${icon} ${getSportDisplayName(a.sport_type)}</h3>
+        sorted.map(a => `<div class="dashboard-card">
+            <h3>${sportIcon(a.sport_type, 14)} ${getSportDisplayName(a.sport_type)}</h3>
             <div class="value">${a.total_kcal.toLocaleString()} kcal</div>
             <div class="subtitle">${a.count} ${strings.dashboard.sessions} · ${a.avg_kcal} ${strings.dashboard.avgKcal}</div>
-          </div>`;
-        }).join('');
+          </div>`).join('');
     } else {
       activityRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
     }

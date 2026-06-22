@@ -3,6 +3,8 @@ import { calculateBodyFat } from '../utils/body-fat.js';
 import { calculateBMR } from '../utils/bmr.js';
 import Chart from 'chart.js/auto';
 import { safeCall } from '../utils/safe-call.js';
+import { chartColors } from '../utils/chart-theme.js';
+import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 
 export async function init() {
   const container = document.getElementById('view-energy');
@@ -14,32 +16,32 @@ export async function init() {
         <label>${strings.adaptive.targetPace}: <span id="pace-value">0.5</span> ${strings.adaptive.kgPerWeek}</label>
         <input type="range" id="target-pace" min="0.25" max="1.0" step="0.05" value="0.5" style="width:100%" />
       </div>
-      <p style="font-size:13px;color:var(--text-secondary)">${strings.adaptive.targetPaceDesc}</p>
+      <p class="text-sm text-muted">${strings.adaptive.targetPaceDesc}</p>
       <button class="btn btn-primary" id="btn-calc-deficit">${strings.adaptive.calculateDeficit}</button>
     </div>
     <div class="card">
       <h2>${strings.adaptive.currentStatus}</h2>
-      <div id="current-status"><div class="empty-state"><p>${strings.adaptive.statusEmpty}</p></div></div>
+      <div id="current-status" aria-live="polite"><div class="empty-state"><p>${strings.adaptive.statusEmpty}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.adaptive.adherenceEval}</h2>
-      <div id="adherence-eval"><div class="empty-state"><p>${strings.adaptive.adherenceEmpty}</p></div></div>
+      <div id="adherence-eval" aria-live="polite"><div class="empty-state"><p>${strings.adaptive.adherenceEmpty}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.adaptive.recompDetection}</h2>
-      <div id="recomp-detection"><div class="empty-state"><p>${strings.adaptive.recompEmpty}</p></div></div>
+      <div id="recomp-detection" aria-live="polite"><div class="empty-state"><p>${strings.adaptive.recompEmpty}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.adaptive.slotAdjustments}</h2>
-      <div id="adjustment-recs"><div class="empty-state"><p>${strings.adaptive.slotEmpty}</p></div></div>
+      <div id="adjustment-recs" aria-live="polite"><div class="empty-state"><p>${strings.adaptive.slotEmpty}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.adaptive.deficitImpact}</h2>
-      <div id="deficit-impact"><div class="empty-state"><p>${strings.adaptive.deficitImpactEmpty}</p></div></div>
+      <div id="deficit-impact" aria-live="polite"><div class="empty-state"><p>${strings.adaptive.deficitImpactEmpty}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.adaptive.adjustmentHistory}</h2>
-      <div id="adjustment-history"><div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div></div>
+      <div id="adjustment-history" aria-live="polite"><div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div></div>
     </div>
   `;
 
@@ -53,18 +55,21 @@ export async function init() {
   document.getElementById('btn-calc-deficit').addEventListener('click', loadAll);
 
   async function loadAll() {
-    loadStatus();
-    loadAdherence();
-    loadRecomp();
-    loadAdjustments();
-    loadDeficitImpact();
-    loadHistory();
+    await Promise.allSettled([
+      loadStatus(),
+      loadAdherence(),
+      loadRecomp(),
+      loadAdjustments(),
+      loadDeficitImpact(),
+      loadHistory()
+    ]);
   }
 
   async function loadStatus() {
+    const el = document.getElementById('current-status');
+    el.innerHTML = skeletonCard();
     const profile = await safeCall(api.getProfile(), null);
     const pace = parseFloat(document.getElementById('target-pace').value);
-    const el = document.getElementById('current-status');
 
     if (!profile) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.completeProfileFirst}</p></div>`;
@@ -94,8 +99,8 @@ export async function init() {
 
     if (balance) {
       html += `
-        <hr style="margin:12px 0;border-color:var(--border)">
-        <div style="padding-left:12px;font-size:13px">
+        <hr class="mt-3 mb-3" style="border-color:var(--border)">
+        <div class="text-sm" style="padding-left:12px">
           <p style="margin:4px 0"><strong>${strings.energy.tdeeBreakdown}</strong></p>
           <p style="margin:2px 0">${strings.energy.bmr}: ${balance.bmr?.toFixed(0) || '--'} kcal</p>
           <p style="margin:2px 0">${strings.energy.sportCalories}: ${balance.sport_calories?.toFixed(0) || '--'} kcal</p>
@@ -107,16 +112,17 @@ export async function init() {
     if (targetIntake < safeMin) {
       const maxDeficit = maintenance - safeMin;
       const maxPace = (maxDeficit * 7) / deficitPerKg;
-      html += `<p style="color:var(--danger);margin-top:8px">${strings.adaptive.suggestedMaxPace}: ${Math.max(0, maxPace).toFixed(2)} ${strings.adaptive.kgPerWeek}</p>`;
+      html += `<p class="text-danger mt-2">${strings.adaptive.suggestedMaxPace}: ${Math.max(0, maxPace).toFixed(2)} ${strings.adaptive.kgPerWeek}</p>`;
     }
 
     el.innerHTML = html;
   }
 
   async function loadAdherence() {
+    const el = document.getElementById('adherence-eval');
+    el.innerHTML = skeletonCard();
     const profile = await safeCall(api.getProfile(), null);
     const pace = parseFloat(document.getElementById('target-pace').value);
-    const el = document.getElementById('adherence-eval');
     if (!profile) return;
 
     const weights = await safeCall(api.getWeightEntries(), []);
@@ -162,33 +168,34 @@ export async function init() {
           <p>${strings.adaptive.target}: <strong>${pace} ${strings.adaptive.kgPerWeek}</strong></p>
         </div>
         <div style="text-align:center">
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">${strings.adaptive.adherenceGauge}</div>
+          <div class="text-xs text-muted" style="margin-bottom:4px">${strings.adaptive.adherenceGauge}</div>
           <div style="width:100%;height:24px;background:var(--bg-tertiary);border-radius:12px;overflow:hidden;position:relative">
             <div style="width:${pctOfTarget}%;height:100%;background:${gaugeColor};border-radius:12px;transition:width 0.5s"></div>
           </div>
           <div style="font-size:24px;font-weight:700;margin-top:6px;color:${gaugeColor}">${pctOfTarget}%</div>
         </div>
       </div>
-      <hr style="margin:12px 0;border-color:var(--border)">
-      <div style="display:flex;gap:16px;align-items:center">
+      <hr class="mt-3 mb-3" style="border-color:var(--border)">
+      <div class="flex-gap-md">
         <div>
-          <span style="font-size:12px;color:var(--text-secondary)">${strings.adaptive.consistencyScore}</span>
+          <span class="text-xs text-muted">${strings.adaptive.consistencyScore}</span>
           <div style="font-size:20px;font-weight:700">${consistencyPct}%</div>
-          <div style="font-size:11px;color:var(--text-secondary)">${consistentWeeks} ${strings.adaptive.weeksOnTrack}</div>
+          <span class="text-xs text-muted">${consistentWeeks} ${strings.adaptive.weeksOnTrack}</span>
         </div>
         <div style="flex:1;padding:8px 12px;background:var(--bg-tertiary);border-radius:8px">
           ${!onTrack ? `<span style="color:var(--warning)">⚠ ${strings.adaptive.needsAdjustment}</span>` : `<span style="color:var(--success)">✓ ${strings.adaptive.onTrack}</span>`}
-          ${!onTrack && Math.abs(actualRate) < pace ? `<p style="font-size:12px;margin-top:4px">${strings.adaptive.increaseDeficit} ${Math.round((pace - Math.abs(actualRate)) * 7700 / 7)} ${strings.adaptive.kcalPerDay}</p>` : ''}
-          ${onTrack ? `<p style="font-size:12px;margin-top:4px">${strings.adaptive.maintainPace}</p>` : ''}
+          ${!onTrack && Math.abs(actualRate) < pace ? `<p class="text-xs" style="margin-top:4px">${strings.adaptive.increaseDeficit} ${Math.round((pace - Math.abs(actualRate)) * 7700 / 7)} ${strings.adaptive.kcalPerDay}</p>` : ''}
+          ${onTrack ? `<p class="text-xs" style="margin-top:4px">${strings.adaptive.maintainPace}</p>` : ''}
         </div>
       </div>
     `;
   }
 
   async function loadRecomp() {
+    const el = document.getElementById('recomp-detection');
+    el.innerHTML = skeletonChart();
     const sets = await safeCall(api.getMeasurementSets(), []);
     const profile = await safeCall(api.getProfile(), null);
-    const el = document.getElementById('recomp-detection');
 
     if (!sets || sets.length < 2 || !profile) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.recompMissingData}</p></div>`;
@@ -208,7 +215,7 @@ export async function init() {
         <div class="empty-state">
           <p>${strings.adaptive.recompMissingData}</p>
           <div class="sub">${sorted.length}/4 ${strings.general.created}</div>
-          ${missingMetrics.length > 0 ? `<div class="sub" style="margin-top:6px">${strings.adaptive.recompMissingMetrics} ${missingMetrics.join(', ')}</div>` : ''}
+          ${missingMetrics.length > 0 ? `<div class="sub mt-2">${strings.adaptive.recompMissingMetrics} ${missingMetrics.join(', ')}</div>` : ''}
         </div>
       `;
       return;
@@ -217,7 +224,7 @@ export async function init() {
     if (missingMetrics.length > 0) {
       el.innerHTML = `
         <div class="empty-state">
-          <p style="color:var(--warning)">⚠ ${strings.adaptive.recompMissingMetrics} ${missingMetrics.join(', ')}</p>
+          <p class="text-warning">⚠ ${strings.adaptive.recompMissingMetrics} ${missingMetrics.join(', ')}</p>
           <div class="sub">${strings.adaptive.recompMissingData}</div>
         </div>
       `;
@@ -267,10 +274,12 @@ export async function init() {
             {
               label: strings.measurements.weight,
               data: chartData.map(s => s.weight_kg),
-              borderColor: '#ef4444',
+              borderColor: chartColors.danger,
               backgroundColor: 'rgba(239,68,68,0.1)',
               yAxisID: 'y',
               tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
             },
             {
               label: strings.measurements.waist,
@@ -279,6 +288,8 @@ export async function init() {
               backgroundColor: 'rgba(59,130,246,0.1)',
               yAxisID: 'y1',
               tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
             },
           ],
         },
@@ -288,17 +299,19 @@ export async function init() {
           scales: {
             y: { type: 'linear', position: 'left', title: { display: true, text: 'kg' } },
             y1: { type: 'linear', position: 'right', title: { display: true, text: 'cm' }, grid: { drawOnChartArea: false } },
+            x: { grid: { display: false } },
           },
-          plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } },
+          plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         },
       });
     }
   }
 
   async function loadAdjustments() {
+    const el = document.getElementById('adjustment-recs');
+    el.innerHTML = skeletonCard();
     const profile = await safeCall(api.getProfile(), null);
     const pace = parseFloat(document.getElementById('target-pace').value);
-    const el = document.getElementById('adjustment-recs');
 
     if (!profile) return;
 
@@ -325,20 +338,20 @@ export async function init() {
       const cappedFatAdjust = Math.abs(fatAdjust);
 
       html += `
-        <p style="margin-top:12px;font-weight:bold">${strings.adaptive.slotAdjustments}:</p>
+        <p class="mt-3" style="font-weight:bold">${strings.adaptive.slotAdjustments}:</p>
         <p>${strings.adaptive.reduceCarbs}: <strong>~${cappedCarbAdjust.toFixed(0)}g</strong></p>
         <p>${strings.adaptive.reduceFats}: <strong>~${cappedFatAdjust.toFixed(0)}g</strong></p>
-        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">${strings.adaptive.maxAdjustment}</p>
+        <p class="text-xs text-muted" style="margin-top:4px">${strings.adaptive.maxAdjustment}</p>
       `;
 
       html += `
-        <div style="margin-top:16px;display:flex;gap:8px">
+        <div class="mt-4 flex-gap-sm">
           <button class="btn btn-primary" id="btn-accept-adjustment">${strings.adaptive.applyRecommendation}</button>
           <button class="btn btn-secondary" id="btn-dismiss-adjustment">${strings.adaptive.dismiss}</button>
         </div>
       `;
     } else {
-      html += `<p style="color:var(--success);margin-top:8px">${strings.adaptive.adjustmentApplied}</p>`;
+      html += `<p class="text-success mt-2">${strings.adaptive.adjustmentApplied}</p>`;
     }
 
     el.innerHTML = html;
@@ -356,7 +369,7 @@ export async function init() {
           deficitGap,
         })), null);
         loadHistory();
-        el.innerHTML = `<p style="color:var(--success)">${strings.adaptive.adjustmentApplied}</p>`;
+        el.innerHTML = `<p class="text-success">${strings.adaptive.adjustmentApplied}</p>`;
       });
     }
 
@@ -369,6 +382,7 @@ export async function init() {
 
   async function loadDeficitImpact() {
     const el = document.getElementById('deficit-impact');
+    el.innerHTML = skeletonCard();
     const profile = await safeCall(api.getProfile(), null);
     if (!profile) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.completeProfileFirst}</p></div>`;
@@ -405,9 +419,9 @@ export async function init() {
       <p>${strings.adaptive.currentIntake} (hoy): <strong>${currentIntakeKcal > 0 ? currentIntakeKcal.toFixed(0) + ' kcal' : strings.general.noData}</strong></p>
       ${currentIntakeKcal > 0 ? `
         <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
-          <span style="font-size:13px">${strings.adaptive.difference}:</span>
+          <span class="text-sm">${strings.adaptive.difference}:</span>
           <span style="font-weight:700;color:${diff < 0 ? 'var(--success)' : 'var(--danger)'}">${diff > 0 ? '+' : ''}${diff.toFixed(0)} kcal</span>
-          <span style="font-size:12px;color:var(--text-secondary)">(${diffPct > 0 ? '+' : ''}${diffPct}%)</span>
+          <span class="text-xs text-muted">(${diffPct > 0 ? '+' : ''}${diffPct}%)</span>
         </div>
         <div style="width:100%;height:12px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden;margin-top:6px">
           <div style="width:${Math.min(100, Math.abs(diffPct) * 3)}%;height:100%;background:${diff < 0 ? 'var(--success)' : 'var(--danger)'};border-radius:6px"></div>
@@ -418,6 +432,7 @@ export async function init() {
 
   async function loadHistory() {
     const el = document.getElementById('adjustment-history');
+    el.innerHTML = skeletonCard();
     const lastAdj = await safeCall(api.getSetting('last_adjustment'), null);
     if (!lastAdj) {
       el.innerHTML = `<div class="empty-state"><p>${strings.adaptive.historyEmpty}</p></div>`;

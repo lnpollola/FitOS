@@ -1,6 +1,8 @@
 import Chart from 'chart.js/auto';
 import { strings } from '../locales/es.js';
 import { safeCall } from '../utils/safe-call.js';
+import { chartColors } from '../utils/chart-theme.js';
+import { skeletonCard, skeletonRow } from '../utils/skeleton.js';
 
 export async function init() {
   if (window._loadingTraining) return;
@@ -14,7 +16,7 @@ export async function init() {
       <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:12px">
         <div class="form-group">
           <label>${strings.training.frequency || 'Frecuencia'}</label>
-          <select id="frequency-select" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+          <select id="frequency-select" style="padding:6px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.training.frequency}">
             <option value="">${strings.training.daysPerWeek}</option>
             <option value="2">2 ${strings.training.daysPerWeek}</option>
             <option value="3">3 ${strings.training.daysPerWeek}</option>
@@ -25,67 +27,67 @@ export async function init() {
         </div>
         <button class="btn btn-primary" id="btn-generate-plan">${strings.training.frequency}</button>
       </div>
-      <div id="workout-plan-display"></div>
-      <div id="plan-day-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px"></div>
+      <div id="workout-plan-display" aria-live="polite"></div>
+      <div id="plan-day-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px" aria-live="polite"></div>
     </div>
     <div class="card">
       <h2>${strings.training.exerciseLibrary}</h2>
       <form id="exercise-form" class="form-row-3" style="margin-bottom:16px">
         <div class="form-group">
           <label>${strings.training.exerciseName}</label>
-          <input type="text" name="name" required />
+          <input type="text" name="name" required aria-label="${strings.training.exerciseName}" />
         </div>
         <div class="form-group">
           <label>${strings.training.muscleGroup}</label>
-          <input type="text" name="muscle_group" />
+          <input type="text" name="muscle_group" aria-label="${strings.training.muscleGroup}" />
         </div>
         <div class="form-group">
           <label>${strings.training.equipment}</label>
-          <input type="text" name="equipment" />
+          <input type="text" name="equipment" aria-label="${strings.training.equipment}" />
         </div>
         <div class="form-group form-row-full">
           <label>${strings.training.movementPattern}</label>
-          <input type="text" name="movement_pattern" />
+          <input type="text" name="movement_pattern" aria-label="${strings.training.movementPattern}" />
         </div>
         <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.training.addExercise}</button>
         </div>
       </form>
-      <div id="exercise-list"><div class="empty-state"><p>${strings.training.noExercises}</p></div></div>
+      <div id="exercise-list" aria-live="polite"><div class="empty-state"><p>${strings.training.noExercises}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.training.trainingRoutines}</h2>
       <form id="routine-form" class="flex-row" style="align-items:end;margin-bottom:16px">
         <div class="form-group">
           <label>${strings.training.routineName}</label>
-          <input type="text" name="name" required />
+          <input type="text" name="name" required aria-label="${strings.training.routineName}" />
         </div>
         <button type="submit" class="btn btn-primary">${strings.training.createRoutine}</button>
       </form>
-      <div id="routine-list"><div class="empty-state"><p>${strings.training.noRoutines}</p></div></div>
+      <div id="routine-list" aria-live="polite"><div class="empty-state"><p>${strings.training.noRoutines}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.training.sessionLogging}</h2>
       <form id="session-form" class="form-row" style="margin-bottom:16px">
         <div class="form-group">
           <label>${strings.measurements.date}</label>
-          <input type="date" name="date" required />
+          <input type="date" name="date" required aria-label="${strings.measurements.date}" />
         </div>
         <div class="form-group">
           <label>${strings.training.routine}</label>
-          <select name="routine_id" id="routine-select">
+          <select name="routine_id" id="routine-select" aria-label="${strings.training.routine}">
             <option value="">${strings.training.none}</option>
           </select>
         </div>
         <div class="form-group" style="grid-column:span 2">
           <label>${strings.training.notes}</label>
-          <input type="text" name="notes" />
+          <input type="text" name="notes" aria-label="${strings.training.notes}" />
         </div>
         <div style="grid-column:span 2">
           <button type="submit" class="btn btn-primary">${strings.training.logSession}</button>
         </div>
       </form>
-      <div id="session-list"><div class="empty-state"><p>${strings.training.noSessions}</p></div></div>
+      <div id="session-list" aria-live="polite"><div class="empty-state"><p>${strings.training.noSessions}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.training.progressionChart}</h2>
@@ -93,11 +95,11 @@ export async function init() {
     </div>
     <div class="card">
       <h2>${strings.training.sessionDeltas}</h2>
-      <div id="session-deltas"><div class="empty-state"><p>${strings.training.deltasEmpty}</p></div></div>
+      <div id="session-deltas" aria-live="polite"><div class="empty-state"><p>${strings.training.deltasEmpty}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.training.strengthStatus}</h2>
-      <div id="strength-status"><div class="empty-state"><p>${strings.training.strengthStatusEmpty}</p></div></div>
+      <div id="strength-status" aria-live="polite"><div class="empty-state"><p>${strings.training.strengthStatusEmpty}</p></div></div>
     </div>
   `;
 
@@ -154,7 +156,7 @@ export async function init() {
     const exMap = {};
     for (const ex of exercises) exMap[ex.id] = ex;
 
-    let html = '<p style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">Planes disponibles:</p>';
+    let html = '<p class="text-sm text-muted" style="margin-bottom:8px">Planes disponibles:</p>';
     for (const plan of matching) {
       html += `<div style="padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
         <span><strong>${plan.name}</strong> (${plan.min_sessions}-${plan.max_sessions} ${strings.training.daysPerWeek})</span>
@@ -179,7 +181,7 @@ export async function init() {
                 <strong>${strings.training.routine} ${day.day_number}</strong>
                 <span class="tag">${day.focus_area}</span>
               </div>
-              <div style="font-size:12px;color:var(--text-secondary)">
+              <div class="text-xs text-muted">
                 ${dayExercises.map(ex => `
                   <div style="padding:2px 0">
                     <span>${ex.name}</span>
@@ -249,8 +251,8 @@ export async function init() {
                 <div style="background:var(--bg-primary);border-radius:12px;padding:20px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
                    <h3 style="margin-bottom:12px">${strings.training.addExercise_} — ${strings.training.routine} ${dayNum}</h3>
                    <div style="display:flex;gap:8px;margin-bottom:12px">
-                     <input type="text" id="picker-search" placeholder="${strings.diet.search}..." style="flex:1;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" />
-                    <select id="picker-muscle-filter" style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+                     <input type="text" id="picker-search" placeholder="${strings.diet.search}..." style="flex:1;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.diet.search}" />
+                    <select id="picker-muscle-filter" style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.training.muscleGroup}">
                       <option value="">${strings.training.muscleGroup}</option>
                       ${[...new Set(allExercises.map(e => e.muscle_group).filter(Boolean))].map(m => `<option value="${m}">${m}</option>`).join('')}
                     </select>
@@ -339,7 +341,7 @@ export async function init() {
                 <strong>${strings.training.routine} ${day.day_number}</strong>
                 <span class="tag">${day.focus_area}</span>
               </div>
-              <div style="font-size:12px;color:var(--text-secondary)">
+              <div class="text-xs text-muted">
                 ${dayExercises.map(ex => `<div style="padding:2px 0"><span>${ex.name}</span>${ex.practical_examples ? `<span class="text-warning" style="font-size:11px"> — ${ex.practical_examples}</span>` : ''}<span class="text-muted" style="font-size:11px"> (${ex.muscle_group || ''}${ex.equipment ? `, ${ex.equipment}` : ''})</span></div>`).join('')}
               </div>
               <div style="margin-top:8px;display:flex;gap:6px">
@@ -349,7 +351,7 @@ export async function init() {
             </div>`;
         }
         planDayCards.innerHTML = cardsHtml;
-        planDisplay.innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">Plan activo: <strong>${plan.name}</strong></p>`;
+        planDisplay.innerHTML = `<p class="text-sm text-muted">Plan activo: <strong>${plan.name}</strong></p>`;
       }
     }
   })();
@@ -422,21 +424,21 @@ export async function init() {
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:end">
           <div class="form-group" style="margin-bottom:0">
             <label style="font-size:11px">${strings.training.muscleGroup}</label>
-            <select id="ex-filter-muscle" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+            <select id="ex-filter-muscle" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.training.muscleGroup}">
               <option value="">${strings.training.all || 'Todos'}</option>
               ${muscleGroups.map(m => `<option value="${m}" ${_filterMuscle === m ? 'selected' : ''}>${m}</option>`).join('')}
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label style="font-size:11px">${strings.training.equipment}</label>
-            <select id="ex-filter-equipment" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+            <select id="ex-filter-equipment" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.training.equipment}">
               <option value="">${strings.training.all || 'Todos'}</option>
               ${equipment.map(e => `<option value="${e}" ${_filterEquipment === e ? 'selected' : ''}>${e}</option>`).join('')}
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label style="font-size:11px">${strings.general.sort || 'Ordenar'}</label>
-            <select id="ex-sort-by" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">
+            <select id="ex-sort-by" style="padding:4px 8px;font-size:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.general.sort || 'Ordenar'}">
               <option value="name" ${_sortBy === 'name' ? 'selected' : ''}>${strings.training.exerciseName}</option>
               <option value="muscle_group" ${_sortBy === 'muscle_group' ? 'selected' : ''}>${strings.training.muscleGroup}</option>
               <option value="equipment" ${_sortBy === 'equipment' ? 'selected' : ''}>${strings.training.equipment}</option>
@@ -445,10 +447,10 @@ export async function init() {
           <button class="btn btn-secondary" id="ex-sort-dir" style="padding:4px 10px;font-size:12px">${_sortAsc ? '▲' : '▼'}</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:12px;color:var(--text-secondary)">${filtered.length} ${strings.training.exercises || 'ejercicios'}</span>
+          <span class="text-xs text-muted">${filtered.length} ${strings.training.exercises || 'ejercicios'}</span>
           <div style="display:flex;gap:4px;align-items:center">
             <button class="btn btn-secondary" id="ex-prev" style="padding:2px 8px;font-size:12px" ${_page === 0 ? 'disabled' : ''}>‹</button>
-            <span style="font-size:12px;color:var(--text-secondary)">${_page + 1}/${totalPages}</span>
+            <span class="text-xs text-muted">${_page + 1}/${totalPages}</span>
             <button class="btn btn-secondary" id="ex-next" style="padding:2px 8px;font-size:12px" ${_page >= totalPages - 1 ? 'disabled' : ''}>›</button>
           </div>
         </div>
@@ -563,19 +565,21 @@ export async function init() {
         datasets: [{
           label: strings.training.volumeLoad,
           data: volumes,
-          borderColor: '#0D9488',
+          borderColor: chartColors.accent,
           backgroundColor: 'rgba(13, 148, 136, 0.08)',
           fill: true,
           tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 5,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#64748B' } } },
+        plugins: { legend: { labels: { color: chartColors.textSecondary } }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         scales: {
-          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
+          y: { ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10 }, grid: { display: false } },
         },
       },
     });
@@ -615,7 +619,7 @@ export async function init() {
     const sessions = await safeCall(api.getTrainingSessions(), []);
     const el = document.getElementById('strength-status');
 
-    if (!profile || !sessions || sessions.length < 2) return;
+    if (!profile || !sessions || sessions.length < 2) { el.innerHTML = ''; return; }
 
     const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
     const last = sorted[sorted.length - 1];
@@ -640,11 +644,17 @@ export async function init() {
       </strong></p>
     `;
     if (!maintaining) {
-      html += `<p style="font-size:12px;color:var(--text-secondary);margin-top:4px">${strings.training.volumeDropWarning}</p>`;
+      html += `<p class="text-xs text-muted" style="margin-top:4px">${strings.training.volumeDropWarning}</p>`;
     }
 
     el.innerHTML = html;
   }
+
+  document.getElementById('exercise-list').innerHTML = skeletonRow();
+  document.getElementById('routine-list').innerHTML = skeletonRow(2);
+  document.getElementById('session-list').innerHTML = skeletonRow();
+  document.getElementById('session-deltas').innerHTML = skeletonCard();
+  document.getElementById('strength-status').innerHTML = skeletonCard();
 
   await Promise.allSettled([loadExercises(), loadRoutines(), loadSessions(), loadProgression(), loadDeltas(), loadStrengthStatus()]);
   } finally {

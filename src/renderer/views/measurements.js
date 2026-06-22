@@ -2,6 +2,8 @@ import Chart from 'chart.js/auto';
 import { strings, getMeasurementLabel } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
 import { safeCall } from '../utils/safe-call.js';
+import { skeletonCard, skeletonRow, skeletonChart } from '../utils/skeleton.js';
+import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 
 const METRIC_COLUMNS = [
   'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
@@ -33,7 +35,7 @@ export async function init() {
   const formFields = METRIC_COLUMNS.map(m => `
     <div class="form-group">
       <label>${getMeasurementLabel(m)} (cm)</label>
-      <input type="number" name="${m}" min="0" max="200" step="0.1" />
+      <input type="number" name="${m}" min="0" max="200" step="0.1" aria-label="${getMeasurementLabel(m)}" />
     </div>
   `).join('');
 
@@ -44,12 +46,12 @@ export async function init() {
       <form id="measurement-form" class="form-row-3">
         <div class="form-group form-row-full">
           <label>${strings.measurements.date}</label>
-          <input type="date" name="date" required />
+          <input type="date" name="date" required aria-label="${strings.measurements.date}" />
         </div>
         ${formFields}
         <div class="form-group">
           <label>${strings.measurements.weight}</label>
-          <input type="number" name="weight_kg" min="20" max="300" step="0.1" />
+          <input type="number" name="weight_kg" min="20" max="300" step="0.1" aria-label="${strings.measurements.weight}" />
         </div>
         <div class="form-row-full">
           <button type="submit" class="btn btn-primary">${strings.measurements.saveMeasurement}</button>
@@ -61,11 +63,11 @@ export async function init() {
       <form id="weight-form" class="flex-row" style="align-items:end">
         <div class="form-group">
           <label>${strings.measurements.date}</label>
-          <input type="date" name="date" required />
+          <input type="date" name="date" required aria-label="${strings.measurements.date}" />
         </div>
         <div class="form-group">
           <label>${strings.measurements.weight}</label>
-          <input type="number" name="weight_kg" min="20" max="300" step="0.1" required />
+          <input type="number" name="weight_kg" min="20" max="300" step="0.1" required aria-label="${strings.measurements.weight}" />
         </div>
         <button type="submit" class="btn btn-primary">${strings.measurements.saveWeight}</button>
       </form>
@@ -76,14 +78,14 @@ export async function init() {
     </div>
     <div class="card">
       <h2>${strings.measurements.measurementHistory}</h2>
-      <div id="measurement-history"><div class="empty-state"><p>${strings.measurements.noMeasurements}</p></div></div>
+      <div id="measurement-history" aria-live="polite"><div class="empty-state"><p>${strings.measurements.noMeasurements}</p></div></div>
     </div>
     <div class="card">
       <h2>${strings.measurements.weightTrend}</h2>
       <div class="chart-container"><canvas id="weight-chart"></canvas></div>
-      <div id="weight-monthly-summary" style="margin-top:12px"></div>
+      <div id="weight-monthly-summary" class="mt-3"></div>
     </div>
-    <div id="measurement-charts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+    <div id="measurement-charts-grid" aria-live="polite" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     <div class="card">
       <h2>${strings.measurements.bodyFatTrend}</h2>
       <div class="chart-container"><canvas id="bodyfat-chart"></canvas></div>
@@ -97,15 +99,15 @@ export async function init() {
       <div style="display:flex;gap:12px;align-items:end;margin-bottom:16px;flex-wrap:wrap">
         <div class="form-group">
           <label>${strings.measurements.beforeDate}</label>
-          <input type="date" id="before-date" />
+          <input type="date" id="before-date" aria-label="${strings.measurements.beforeDate}" />
         </div>
         <div class="form-group">
           <label>${strings.measurements.afterDate}</label>
-          <input type="date" id="after-date" />
+          <input type="date" id="after-date" aria-label="${strings.measurements.afterDate}" />
         </div>
         <button class="btn btn-primary" id="btn-compare">${strings.measurements.compare}</button>
       </div>
-      <div id="comparison-result" style="overflow-x:auto"></div>
+      <div id="comparison-result" style="overflow-x:auto" aria-live="polite"></div>
     </div>
   `;
 
@@ -147,7 +149,11 @@ export async function init() {
   document.getElementById('btn-compare').addEventListener('click', loadComparison);
 
   async function loadAll() {
-    await Promise.all([
+    document.getElementById('measurement-history').innerHTML = skeletonRow();
+    document.getElementById('measurement-charts-grid').innerHTML = skeletonCard().repeat(6);
+    document.getElementById('body-fat-estimate').innerHTML = skeletonCard();
+
+    await Promise.allSettled([
       loadHistory(),
       loadWeightChart(),
       loadMeasurementCharts(),
@@ -174,7 +180,7 @@ export async function init() {
     if (bf !== null) {
       el.innerHTML = `
         <p>${strings.measurements.estimatedBodyFat}: <strong>${bf.toFixed(1)}%</strong></p>
-        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">${strings.measurements.navyMethod}</p>
+        <p class="text-xs text-muted mt-1">${strings.measurements.navyMethod}</p>
       `;
     }
   }
@@ -200,12 +206,12 @@ export async function init() {
         const val = s[col];
         html += `<td>${val != null ? val.toFixed(1) : '--'}</td>`;
       }
-      html += `<td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-measurement="${s.id}">${strings.general.delete}</button></td>`;
+      html += `<td><button class="btn btn-secondary" style="padding:2px 6px" data-delete-measurement="${s.id}">${strings.general.delete}</button></td>`;
       html += '</tr>';
     }
     html += '</tbody></table></div>';
     if (sets.length > 5) {
-      html += `<button class="btn btn-secondary" id="toggle-history" style="margin-top:8px">${showAll ? strings.measurements.showLess : strings.measurements.showAll}</button>`;
+      html += `<button class="btn btn-secondary mt-2" id="toggle-history">${showAll ? strings.measurements.showLess : strings.measurements.showAll}</button>`;
     }
     el.innerHTML = html;
 
@@ -261,19 +267,21 @@ export async function init() {
           {
             label: strings.measurements.weight,
             data,
-            borderColor: '#0D9488',
+            borderColor: chartColors.accent,
             backgroundColor: 'transparent',
             pointRadius: 3,
-            pointBackgroundColor: '#0D9488',
+            pointHoverRadius: 5,
+            pointBackgroundColor: chartColors.accent,
             tension: 0.3,
           },
           {
             label: strings.measurements.sevenDayMa,
             data: movingAvg,
-            borderColor: '#14B8A6',
-            backgroundColor: 'rgba(20, 184, 166, 0.05)',
+            borderColor: chartColors.success,
+            backgroundColor: chartColorWithAlpha(chartColors.success, 0.05),
             borderDash: [5, 5],
             pointRadius: 0,
+            pointHoverRadius: 5,
             tension: 0.3,
           },
         ],
@@ -281,10 +289,10 @@ export async function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#64748B' } } },
+        plugins: { legend: { labels: { color: chartColors.textSecondary } }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         scales: {
-          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
+          y: { ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10 }, grid: { display: false } },
         },
       },
     });
@@ -332,15 +340,15 @@ export async function init() {
       const latest = vals[vals.length - 1];
       let kpiHtml = '';
       if (latest != null) {
-        kpiHtml += `<span style="font-size:20px;font-weight:700">${latest.toFixed(1)}</span> <span style="font-size:12px;color:var(--text-secondary)">cm</span>`;
+        kpiHtml += `<span style="font-size:20px;font-weight:700">${latest.toFixed(1)}</span> <span class="text-xs text-muted">cm</span>`;
         if (vals.length >= 2) {
           const delta = latest - vals[vals.length - 2];
-          kpiHtml += `<span style="font-size:12px;margin-left:8px">${formatDelta(delta, col)}</span>`;
+          kpiHtml += `<span class="text-xs" style="margin-left:8px">${formatDelta(delta, col)}</span>`;
         }
       }
       return `
         <div class="card" style="padding:14px;position:relative">
-          <h3 style="font-size:13px;margin-bottom:4px">${getMeasurementLabel(col)}</h3>
+          <h3 class="text-sm" style="margin-bottom:4px">${getMeasurementLabel(col)}</h3>
           <div style="margin-bottom:4px">${kpiHtml}</div>
           <div class="chart-container" style="height:140px"><canvas id="chart-${col}"></canvas></div>
         </div>
@@ -374,15 +382,16 @@ export async function init() {
             backgroundColor: 'transparent',
             tension: 0.3,
             pointRadius: 3,
+            pointHoverRadius: 5,
           }],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
           scales: {
-            y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-            x: { ticks: { color: '#64748B', maxTicksLimit: 8 } },
+            y: { ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
+            x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 8 }, grid: { display: false } },
           },
         },
       });
@@ -429,19 +438,21 @@ export async function init() {
         datasets: [{
           label: strings.measurements.bodyFatPercent,
           data: bfData,
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245, 158, 11, 0.08)',
+          borderColor: chartColors.warning,
+          backgroundColor: chartColorWithAlpha(chartColors.warning, 0.08),
           fill: true,
           tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 5,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#64748B' } } },
+        plugins: { legend: { labels: { color: chartColors.textSecondary } }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         scales: {
-          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10 } },
+          y: { ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10 }, grid: { display: false } },
         },
       },
     });
@@ -493,6 +504,7 @@ export async function init() {
         backgroundColor: 'transparent',
         tension: 0.3,
         pointRadius: 3,
+        pointHoverRadius: 5,
       });
       datasets.push({
         label: `${getMeasurementLabel(col)} (tendencia)`,
@@ -500,9 +512,10 @@ export async function init() {
         borderColor: color,
         borderDash: [4, 4],
         pointRadius: 0,
+        pointHoverRadius: 5,
         borderWidth: 1.5,
       });
-      kpis.push(`<span style="font-size:12px;margin-right:12px"><span style="color:${color};font-weight:700">${getMeasurementLabel(col)}</span>: ${data[data.length - 1].toFixed(1)}</span>`);
+      kpis.push(`<span class="text-xs" style="margin-right:12px"><span style="color:${color};font-weight:700">${getMeasurementLabel(col)}</span>: ${data[data.length - 1].toFixed(1)}</span>`);
     }
 
     if (datasets.length === 0) {
@@ -515,8 +528,8 @@ export async function init() {
       const existingKpi = card.querySelector('.cns-kpi');
       if (existingKpi) existingKpi.remove();
       const kpiDiv = document.createElement('div');
-      kpiDiv.className = 'cns-kpi';
-      kpiDiv.style.cssText = 'margin-bottom:8px;font-size:13px';
+      kpiDiv.className = 'cns-kpi text-sm';
+      kpiDiv.style.cssText = 'margin-bottom:8px';
       kpiDiv.innerHTML = kpis.join('');
       kpiContainer.parentElement.insertBefore(kpiDiv, kpiContainer.nextSibling);
     }
@@ -527,10 +540,10 @@ export async function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#64748B', font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: chartColors.textSecondary, font: { size: 11 } } }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         scales: {
-          y: { ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' } },
-          x: { ticks: { color: '#64748B', maxTicksLimit: 8 } },
+          y: { ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 8 }, grid: { display: false } },
         },
       },
     });
