@@ -10,28 +10,33 @@
     import { strings } from './locales/es.js';
     document.title = strings.appTitle;
     document.querySelector('.sidebar-header h1').textContent = strings.appTitle;
-    document.querySelectorAll('.nav-list li').forEach(li => {
-      const view = li.dataset.view;
-      if (strings.nav[view]) li.textContent = strings.nav[view];
+    document.querySelectorAll('.nav-list .nav-item').forEach(btn => {
+      const view = btn.dataset.view;
+      const label = strings.nav[view];
+      if (label) {
+        const textSpan = btn.querySelector('.nav-text');
+        if (textSpan) textSpan.textContent = label;
+        btn.setAttribute('aria-label', label);
+      }
     });
   </script>
 </head>
 <body>
   <div id="app">
-    <nav id="sidebar">
+    <nav id="sidebar" role="navigation" aria-label="Navegación principal">
       <div class="sidebar-header">
         <h1>FitOS</h1>
         <div class="sidebar-subtitle">Salud y rendimiento</div>
       </div>
       <ul class="nav-list">
-        <li data-view="dashboard" class="active">Panel</li>
-        <li data-view="activity">Actividad</li>
-        <li data-view="diet">Plan de Dieta</li>
-        <li data-view="energy">Balance Energético</li>
-        <li data-view="measurements">Mediciones Corporales</li>
-        <li data-view="training">Entrenamiento de Fuerza</li>
-        <li data-view="analytics">Tendencias</li>
-        <li data-view="profile">Perfil y Ajustes</li>
+        <li><button class="nav-item" data-view="dashboard" aria-label="Panel"><span class="nav-icon" data-icon="dashboard"></span><span class="nav-text">Panel</span></button></li>
+        <li><button class="nav-item" data-view="activity" aria-label="Actividad"><span class="nav-icon" data-icon="activity"></span><span class="nav-text">Actividad</span></button></li>
+        <li><button class="nav-item" data-view="diet" aria-label="Plan de Dieta"><span class="nav-icon" data-icon="diet"></span><span class="nav-text">Plan de Dieta</span></button></li>
+        <li><button class="nav-item" data-view="energy" aria-label="Balance Energético"><span class="nav-icon" data-icon="energy"></span><span class="nav-text">Balance Energético</span></button></li>
+        <li><button class="nav-item" data-view="measurements" aria-label="Mediciones Corporales"><span class="nav-icon" data-icon="measurements"></span><span class="nav-text">Mediciones Corporales</span></button></li>
+        <li><button class="nav-item" data-view="training" aria-label="Entrenamiento de Fuerza"><span class="nav-icon" data-icon="training"></span><span class="nav-text">Entrenamiento de Fuerza</span></button></li>
+        <li><button class="nav-item" data-view="analytics" aria-label="Tendencias"><span class="nav-icon" data-icon="analytics"></span><span class="nav-text">Tendencias</span></button></li>
+        <li><button class="nav-item" data-view="profile" aria-label="Perfil y Ajustes"><span class="nav-icon" data-icon="profile"></span><span class="nav-text">Perfil y Ajustes</span></button></li>
       </ul>
     </nav>
     <main id="content">

@@ -1,7 +1,9 @@
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
-import { SPORT_ICONS } from '../utils/sport-icons.js';
+import { sportIcon } from '../utils/sport-icons.js';
 import { getRangeDates } from '../utils/date-range.js';
+import { chartColors } from '../utils/chart-theme.js';
+import { skeletonCard, skeletonChart, skeletonRow } from '../utils/skeleton.js';
 
 const RANGES = {
   '7d': { label: 'last7d', days: 7 },
@@ -56,24 +58,24 @@ export async function init() {
       <button class="filter-btn" data-range="3m">${s.last3m}</button>
       <button class="filter-btn" data-range="year">${s.thisYear}</button>
       <div class="filter-divider"></div>
-      <label style="font-size:13px;color:var(--text-secondary)">${s.from}</label>
+      <label class="text-sm text-muted">${s.from}</label>
       <input type="date" class="filter-date-input" id="filter-from" />
-      <label style="font-size:13px;color:var(--text-secondary)">${s.to}</label>
+      <label class="text-sm text-muted">${s.to}</label>
       <input type="date" class="filter-date-input" id="filter-to" />
       <button class="filter-btn" id="filter-apply" style="display:none">${s.custom}</button>
     </div>
-    <div class="analytics-kpis" id="analytics-kpis"></div>
-    <div class="analytics-grid" id="analytics-chart-grid"></div>
+    <div class="analytics-kpis" id="analytics-kpis" aria-live="polite"></div>
+    <div class="analytics-grid" id="analytics-chart-grid" aria-live="polite"></div>
     <div class="card" id="analytics-ranking">
       <h2>${s.activityRanking}</h2>
-      <div id="ranking-content"></div>
+      <div id="ranking-content" aria-live="polite"></div>
     </div>
     <div class="secondary-section" id="secondary-section">
       <button class="secondary-toggle" id="secondary-toggle">
         <span class="arrow">▶</span> ${s.secondaryMetrics}
       </button>
       <div class="secondary-content" id="secondary-content">
-        <div class="secondary-metrics-grid" id="secondary-metrics-grid"></div>
+        <div class="secondary-metrics-grid" id="secondary-metrics-grid" aria-live="polite"></div>
       </div>
     </div>
   `;
@@ -144,25 +146,32 @@ export async function init() {
 
     const prevRange = getPrevRangeDates(from, to);
 
+    document.getElementById('analytics-kpis').innerHTML = skeletonCard().repeat(5);
+    document.getElementById('analytics-chart-grid').innerHTML = skeletonChart().repeat(6);
+    document.getElementById('ranking-content').innerHTML = skeletonCard();
+    document.getElementById('secondary-metrics-grid').innerHTML = skeletonCard().repeat(6);
+
+    const results = await Promise.allSettled([
+      api.getHealthDailySummary?.(from, to),
+      api.getHealthHeartRateRange?.(from, to),
+      api.getHealthHRVRange?.(from, to),
+      api.getHealthSleepRange?.(from, to),
+      api.getHealthWorkoutRange?.(from, to),
+      api.getHealthWorkoutRanking?.(from, to),
+      api.getHealthWorkoutRanking?.(prevRange.from, prevRange.to),
+      api.getHealthRestingHeartRateRange?.(from, to),
+      api.getHealthVO2MaxRange?.(from, to),
+      api.getHealthExerciseTimeRange?.(from, to),
+      api.getHealthDistanceSummary?.(from, to),
+      api.getHealthWalkingSpeedRange?.(from, to),
+      api.getHealthFlightsClimbedRange?.(from, to),
+    ]);
+    const values = results.map(r => r.status === 'fulfilled' ? r.value : null);
     const [
       dailyRes, hrRes, hrvRes, sleepRes,
       workoutRes, rankingRes, prevRankingRes,
       rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes,
-    ] = await Promise.all([
-      api.getHealthDailySummary?.(from, to).catch(() => null),
-      api.getHealthHeartRateRange?.(from, to).catch(() => null),
-      api.getHealthHRVRange?.(from, to).catch(() => null),
-      api.getHealthSleepRange?.(from, to).catch(() => null),
-      api.getHealthWorkoutRange?.(from, to).catch(() => null),
-      api.getHealthWorkoutRanking?.(from, to).catch(() => null),
-      api.getHealthWorkoutRanking?.(prevRange.from, prevRange.to).catch(() => null),
-      api.getHealthRestingHeartRateRange?.(from, to).catch(() => null),
-      api.getHealthVO2MaxRange?.(from, to).catch(() => null),
-      api.getHealthExerciseTimeRange?.(from, to).catch(() => null),
-      api.getHealthDistanceSummary?.(from, to).catch(() => null),
-      api.getHealthWalkingSpeedRange?.(from, to).catch(() => null),
-      api.getHealthFlightsClimbedRange?.(from, to).catch(() => null),
-    ]);
+    ] = values;
 
     const prevRankingData = prevRankingRes?.ok ? prevRankingRes.data : [];
 
@@ -247,7 +256,7 @@ export async function init() {
           {
             label: strings.analytics.steps,
             data: steps,
-            borderColor: '#0D9488',
+            borderColor: chartColors.accent,
             backgroundColor: 'rgba(13, 148, 136, 0.08)',
             fill: true,
             tension: 0.3,
@@ -257,10 +266,11 @@ export async function init() {
           {
             label: strings.analytics.ma7,
             data: ma7,
-            borderColor: '#64748B',
+            borderColor: chartColors.textSecondary,
             borderDash: [5, 3],
             borderWidth: 2,
             pointRadius: 0,
+            pointHoverRadius: 5,
             tension: 0.3,
             fill: false,
           },
@@ -271,10 +281,11 @@ export async function init() {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+          tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
         },
         scales: {
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#F1F5F9' } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
         },
       },
     });
@@ -307,6 +318,7 @@ export async function init() {
             borderColor: 'rgba(239, 68, 68, 0.3)',
             backgroundColor: 'transparent',
             pointRadius: 0,
+            pointHoverRadius: 5,
             tension: 0.3,
             fill: '+1',
           },
@@ -316,13 +328,14 @@ export async function init() {
             borderColor: 'rgba(239, 68, 68, 0.3)',
             backgroundColor: 'rgba(239, 68, 68, 0.06)',
             pointRadius: 0,
+            pointHoverRadius: 5,
             tension: 0.3,
             fill: false,
           },
           {
             label: strings.analytics.avg,
             data: avg,
-            borderColor: '#0D9488',
+            borderColor: chartColors.accent,
             backgroundColor: 'transparent',
             pointRadius: 2,
             pointHoverRadius: 5,
@@ -336,10 +349,11 @@ export async function init() {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+          tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
         },
         scales: {
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { beginAtZero: false, ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#F1F5F9' } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: false, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
         },
       },
     });
@@ -368,13 +382,13 @@ export async function init() {
           {
             label: strings.analytics.active,
             data: active,
-            backgroundColor: '#0D9488',
+            backgroundColor: chartColors.accent,
             borderRadius: 3,
           },
           {
             label: strings.analytics.basal,
             data: basal,
-            backgroundColor: '#94A3B8',
+            backgroundColor: chartColors.textSecondary,
             borderRadius: 3,
           },
         ],
@@ -384,10 +398,11 @@ export async function init() {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+          tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
         },
         scales: {
-          x: { stacked: true, ticks: { color: '#64748B', maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true, ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#F1F5F9' } },
+          x: { stacked: true, ticks: { color: chartColors.textSecondary, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
         },
       },
     });
@@ -427,10 +442,11 @@ export async function init() {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
+          tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
         },
         scales: {
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#F1F5F9' } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
         },
       },
     });
@@ -468,9 +484,10 @@ export async function init() {
             label: strings.analytics.ma7,
             data: ma7,
             type: 'line',
-            borderColor: '#F59E0B',
+            borderColor: chartColors.warning,
             borderWidth: 2,
             pointRadius: 0,
+            pointHoverRadius: 5,
             tension: 0.3,
             fill: false,
             order: 1,
@@ -482,10 +499,11 @@ export async function init() {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+          tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
         },
         scales: {
-          x: { ticks: { color: '#64748B', maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#F1F5F9' } },
+          x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
         },
       },
     });
@@ -502,7 +520,7 @@ export async function init() {
       return;
     }
 
-    const labels = data.map(d => `${SPORT_ICONS[d.activity_type] || ''} ${getSportDisplayName(d.activity_type)}`);
+    const labels = data.map(d => `${getSportDisplayName(d.activity_type)}`);
     const kcal = data.map(d => d.total_kcal);
     const colors = labels.map((_, i) => ACTIVITY_COLORS[i % ACTIVITY_COLORS.length]);
 
@@ -524,10 +542,11 @@ export async function init() {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
+          tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
         },
         scales: {
-          x: { beginAtZero: true, ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#F1F5F9' } },
-          y: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { display: false } },
+          x: { beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
+          y: { ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { display: false } },
         },
       },
     });
@@ -569,7 +588,7 @@ export async function init() {
               const trend = getTypeTrend(r.activity_type);
               return `
                 <tr>
-                  <td><strong>${SPORT_ICONS[r.activity_type] || ''} ${getSportDisplayName(r.activity_type)}</strong></td>
+                  <td><strong>${sportIcon(r.activity_type, 14)} ${getSportDisplayName(r.activity_type)}</strong></td>
                   <td>${r.count}</td>
                   <td>${r.total_hours}</td>
                   <td>${r.total_kcal.toLocaleString()}</td>
@@ -616,7 +635,7 @@ export async function init() {
         <div class="mini-chart-card">
           <h4>${m.title}</h4>
           ${kpi ? `
-            <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px">
+            <div class="flex-gap-sm text-xs" style="margin-bottom:8px">
               <span><strong>${s.current}:</strong> ${kpi.current != null ? kpi.current.toFixed(1) + m.unit : '--'}</span>
               <span><strong>${s.avg}:</strong> ${kpi.avg.toFixed(1) + m.unit}</span>
               <span><strong>${s.min}:</strong> ${kpi.min.toFixed(1) + m.unit}</span>
@@ -674,10 +693,10 @@ export async function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         scales: {
-          x: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 6 } },
-          y: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: '#F1F5F9' } },
+          x: { display: true, ticks: { color: chartColors.textSecondary, font: { size: 9 }, maxTicksLimit: 6 }, grid: { display: false } },
+          y: { display: true, ticks: { color: chartColors.textSecondary, font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: chartColors.grid } },
         },
       },
     });
@@ -715,10 +734,10 @@ export async function init() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary } },
         scales: {
-          x: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 6 } },
-          y: { display: true, ticks: { color: '#94A3B8', font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: '#F1F5F9' } },
+          x: { display: true, ticks: { color: chartColors.textSecondary, font: { size: 9 }, maxTicksLimit: 6 }, grid: { display: false } },
+          y: { display: true, ticks: { color: chartColors.textSecondary, font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: chartColors.grid } },
         },
       },
     });

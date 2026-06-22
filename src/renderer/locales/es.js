@@ -620,6 +620,19 @@ export const strings = {
     periodAvg: 'Media del período',
   },
 
+  // UI States
+  states: {
+    loading: 'Cargando...',
+    noData: 'Sin datos',
+    noDataPeriod: 'Sin datos para este período',
+    errorLoading: 'Error al cargar los datos',
+    retry: 'Reintentar',
+    addMeasurement: 'Añadir medición',
+    importActivity: 'Importar actividad',
+    addFood: 'Añadir alimento',
+    addTrainingSession: 'Añadir sesión',
+  },
+
   // Import/Export
   importExport: {
     exportTitle: 'Exportar Datos',

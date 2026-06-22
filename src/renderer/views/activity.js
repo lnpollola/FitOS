@@ -1,8 +1,11 @@
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
-import { SPORT_ICONS } from '../utils/sport-icons.js';
+import { sportIcon } from '../utils/sport-icons.js';
 import { getRangeDates } from '../utils/date-range.js';
 import { safeCall } from '../utils/safe-call.js';
+import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
+import { skeletonCard } from '../utils/skeleton.js';
+import { icon } from '../utils/icons.js';
 
 export async function init() {
   if (window._loadingActivity) return;
@@ -12,13 +15,13 @@ export async function init() {
     <h2 class="view-title">${strings.activity.title}</h2>
     <div class="card">
       <h2>${strings.activity.importAppleHealth}</h2>
-      <p style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">${strings.activity.importReference}</p>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <p class="text-sm text-muted" style="margin-bottom:8px">${strings.activity.importReference}</p>
+      <div class="flex-gap-sm" style="flex-wrap:wrap">
         <button class="btn btn-primary" id="btn-import-health">${strings.activity.importAppleHealth}</button>
         <button class="btn btn-secondary" id="btn-install-healthsync" style="display:none">${strings.activity.installHealthsync}</button>
-        <span id="healthsync-status" style="font-size:13px;color:var(--text-secondary)"></span>
+        <span id="healthsync-status" class="text-sm text-muted"></span>
       </div>
-      <div id="last-import-info" style="margin-top:8px;font-size:13px;color:var(--text-secondary)"></div>
+      <div id="last-import-info" class="text-sm text-muted" style="margin-top:8px"></div>
       <div style="margin-top:8px;display:none" id="reimport-section">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
           <input type="checkbox" id="reimport-checkbox" />
@@ -29,13 +32,13 @@ export async function init() {
         <div style="background:var(--bg-tertiary);border-radius:4px;height:20px;overflow:hidden">
           <div id="health-progress-bar" style="width:0%;height:100%;background:var(--accent);transition:width 0.3s"></div>
         </div>
-        <p id="health-progress-text" style="font-size:13px;color:var(--text-secondary);margin-top:4px"></p>
+        <p id="health-progress-text" class="text-sm text-muted" style="margin-top:4px"></p>
       </div>
       <div id="health-import-result" style="display:none;margin-top:8px"></div>
     </div>
     <div class="card">
       <h2>${strings.activity.activityTimeline}</h2>
-      <div id="activity-timeline"><div class="empty-state"><p>${strings.activity.noActivities}</p><div class="sub">${strings.activity.noActivitiesSub}</div></div></div>
+      <div id="activity-timeline" aria-live="polite"><div class="empty-state"><p>${strings.activity.noActivities}</p><div class="sub">${strings.activity.noActivitiesSub}</div></div></div>
     </div>
     <div class="card">
       <h2>${strings.activity.weeklySportSummary}</h2>
@@ -44,7 +47,7 @@ export async function init() {
         <button class="filter-btn" data-range="15d">15d</button>
         <button class="filter-btn" data-range="1m">1m</button>
       </div>
-      <div class="chart-container" style="height:250px"><canvas id="weekly-chart"></canvas></div>
+      <div class="chart-container" style="height:250px" aria-live="polite"><canvas id="weekly-chart"></canvas></div>
     </div>
     <div class="card" id="recognition-table-card" style="display:none">
       <h2>${strings.activity.sport} — ${strings.activity.rankingType}</h2>
@@ -53,7 +56,7 @@ export async function init() {
         <button class="filter-btn" data-period="1m">${strings.activity.period1m}</button>
         <button class="filter-btn" data-period="3m">${strings.activity.period3m}</button>
       </div>
-      <div id="recognition-table"></div>
+      <div id="recognition-table" aria-live="polite"></div>
     </div>
   `;
 
@@ -124,40 +127,50 @@ export async function init() {
   }
 
   healthImportBtn.addEventListener('click', async () => {
-    const hasHealthsync = await safeCall(api.checkHealthsync(), false);
-    if (!hasHealthsync) {
+    healthImportBtn.dataset.loading = 'true';
+    try {
+      const hasHealthsync = await safeCall(api.checkHealthsync(), false);
+      if (!hasHealthsync) {
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = `<p style="color:var(--danger)">${strings.activity.healthsyncImportError}</p>`;
+        return;
+      }
+
+      const xmlPath = 'apple-health-export/exportar.xml';
+      progressEl.style.display = 'block';
+      progressBar.style.width = '50%';
+      progressText.textContent = strings.activity.importingData;
+      healthImportBtn.disabled = true;
+
+      const result = await safeCall(api.importAppleHealthXML(xmlPath), { created: 0, skipped: 0, errors: ['Error de comunicación'] });
+      progressBar.style.width = '100%';
+
+      const now = new Date().toISOString();
+      await safeCall(api.setLastImportTimestamp(now));
+
+      reimportCheckbox.checked = false;
+      healthImportBtn.disabled = true;
+      healthImportBtn.style.opacity = '0.5';
+
       resultEl.style.display = 'block';
-      resultEl.innerHTML = `<p style="color:var(--danger)">${strings.activity.healthsyncImportError}</p>`;
-      return;
+      if (result.errors && result.errors.length > 0) {
+        resultEl.innerHTML = `<p style="color:var(--danger)">${result.errors.join(', ')}</p>`;
+      } else {
+        resultEl.innerHTML = `
+          <p style="color:var(--success)">${strings.activity.importComplete}</p>
+          <p style="font-size:13px">${strings.activity.recordsCreated}: ${result.created} | ${strings.activity.recordsSkipped}: ${result.skipped}</p>
+        `;
+      }
+
+      const tlEl = document.getElementById('activity-timeline');
+      const ccEl = document.querySelector('.chart-container');
+      if (tlEl) tlEl.innerHTML = skeletonCard();
+      if (ccEl) ccEl.innerHTML = skeletonCard();
+      const importResults = await Promise.allSettled([loadTimeline(), loadChart(), loadLastImport()]);
+      importResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity import load failed:', r.reason));
+    } finally {
+      healthImportBtn.dataset.loading = 'false';
     }
-
-    const xmlPath = 'apple-health-export/exportar.xml';
-    progressEl.style.display = 'block';
-    progressBar.style.width = '50%';
-    progressText.textContent = strings.activity.importingData;
-    healthImportBtn.disabled = true;
-
-    const result = await safeCall(api.importAppleHealthXML(xmlPath), { created: 0, skipped: 0, errors: ['Error de comunicación'] });
-    progressBar.style.width = '100%';
-
-    const now = new Date().toISOString();
-    await safeCall(api.setLastImportTimestamp(now));
-
-    reimportCheckbox.checked = false;
-    healthImportBtn.disabled = true;
-    healthImportBtn.style.opacity = '0.5';
-
-    resultEl.style.display = 'block';
-    if (result.errors && result.errors.length > 0) {
-      resultEl.innerHTML = `<p style="color:var(--danger)">${result.errors.join(', ')}</p>`;
-    } else {
-      resultEl.innerHTML = `
-        <p style="color:var(--success)">${strings.activity.importComplete}</p>
-        <p style="font-size:13px">${strings.activity.recordsCreated}: ${result.created} | ${strings.activity.recordsSkipped}: ${result.skipped}</p>
-      `;
-    }
-
-    await Promise.all([loadTimeline(), loadChart(), loadLastImport()]);
   });
 
   checkHealthsync();
@@ -189,10 +202,10 @@ export async function init() {
   }
 
   function dayArrow(current, previous) {
-    if (current == null || previous == null) return { arrow: '―', cls: 'text-muted' };
-    if (current > previous) return { arrow: '▲', cls: 'text-success' };
-    if (current < previous) return { arrow: '▼', cls: 'text-danger' };
-    return { arrow: '―', cls: 'text-muted' };
+    if (current == null || previous == null) return { arrow: icon('minus', 12), cls: 'text-muted' };
+    if (current > previous) return { arrow: icon('arrow-up', 12), cls: 'text-success' };
+    if (current < previous) return { arrow: icon('arrow-down', 12), cls: 'text-danger' };
+    return { arrow: icon('minus', 12), cls: 'text-muted' };
   }
 
   function drawSparkline(canvas, values, color) {
@@ -408,11 +421,11 @@ export async function init() {
     }
 
     function getTrendArrow(currentKcal, prevKcal) {
-      if (prevKcal == null || prevKcal === 0) return { arrow: '―', cls: 'text-muted' };
+      if (prevKcal == null || prevKcal === 0) return { arrow: icon('minus', 12), cls: 'text-muted' };
       const pct = ((currentKcal - prevKcal) / prevKcal) * 100;
-      if (pct > 5) return { arrow: '▲', cls: 'text-success' };
-      if (pct < -5) return { arrow: '▼', cls: 'text-danger' };
-      return { arrow: '―', cls: 'text-muted' };
+      if (pct > 5) return { arrow: icon('arrow-up', 12), cls: 'text-success' };
+      if (pct < -5) return { arrow: icon('arrow-down', 12), cls: 'text-danger' };
+      return { arrow: icon('minus', 12), cls: 'text-muted' };
     }
 
     const kpiHtml = `
@@ -456,18 +469,18 @@ export async function init() {
         <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
           <table>
             <thead><tr>
-              <th style="cursor:pointer" data-sort="name">${strings.activity.rankingType} ${sortCol === 'name' ? (sortAsc ? '▲' : '▼') : ''}</th>
-              <th style="cursor:pointer" data-sort="count">${strings.activity.rankingCount} ${sortCol === 'count' ? (sortAsc ? '▲' : '▼') : ''}</th>
-              <th style="cursor:pointer" data-sort="avgMin">${strings.activity.durationMin} ${sortCol === 'avgMin' ? (sortAsc ? '▲' : '▼') : ''}</th>
-              <th style="cursor:pointer" data-sort="avgKcal">${strings.activity.rankingAvgKcal} ${sortCol === 'avgKcal' ? (sortAsc ? '▲' : '▼') : ''}</th>
-              <th style="cursor:pointer" data-sort="totalKcal">${strings.activity.rankingTotalKcal} ${sortCol === 'totalKcal' ? (sortAsc ? '▲' : '▼') : ''}</th>
+              <th style="cursor:pointer" data-sort="name">${strings.activity.rankingType} ${sortCol === 'name' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
+              <th style="cursor:pointer" data-sort="count">${strings.activity.rankingCount} ${sortCol === 'count' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
+              <th style="cursor:pointer" data-sort="avgMin">${strings.activity.durationMin} ${sortCol === 'avgMin' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
+              <th style="cursor:pointer" data-sort="avgKcal">${strings.activity.rankingAvgKcal} ${sortCol === 'avgKcal' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
+              <th style="cursor:pointer" data-sort="totalKcal">${strings.activity.rankingTotalKcal} ${sortCol === 'totalKcal' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
               <th>${strings.activity.rankingDuration || 'Dur.'}</th>
             </tr></thead>
             <tbody>
               ${maxRows.map(([type, data]) => {
                 const trend = getTrendArrow(data.totalKcal, prevKcalByType[type]);
                 return `<tr>
-                  <td><strong>${SPORT_ICONS[type] || '🏅'} ${getSportDisplayName(type)}</strong></td>
+                  <td><strong>${sportIcon(type, 14)} ${getSportDisplayName(type)}</strong></td>
                   <td>${data.count}</td>
                   <td>${data.count ? Math.round(data.totalMin / data.count) : 0} min</td>
                   <td>${data.count ? Math.round(data.totalKcal / data.count) : 0}</td>
@@ -513,14 +526,14 @@ export async function init() {
           {
             label: strings.activity.calories,
             data: summary.map(s => s.total_kcal),
-            backgroundColor: '#0D9488',
+            backgroundColor: chartColors.accent,
             borderRadius: 6,
             order: 2,
           },
           {
             label: strings.activity.durationMin,
             data: summary.map(s => s.total_duration),
-            backgroundColor: '#F59E0B',
+            backgroundColor: chartColors.warning,
             borderRadius: 6,
             order: 1,
             yAxisID: 'y1',
@@ -531,8 +544,13 @@ export async function init() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: '#64748B', boxWidth: 12, padding: 8 } },
+          legend: { labels: { color: chartColors.textSecondary, boxWidth: 12, padding: 8 } },
           tooltip: {
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderRadius: 6,
+            padding: 10,
+            titleColor: chartColors.textPrimary,
+            bodyColor: chartColors.textSecondary,
             callbacks: {
               afterLabel: function(context) {
                 const i = context.dataIndex;
@@ -543,14 +561,19 @@ export async function init() {
           },
         },
         scales: {
-          y: { beginAtZero: true, ticks: { color: '#64748B' }, grid: { color: '#E2E8F0' }, position: 'left' },
-          y1: { beginAtZero: true, ticks: { color: '#F59E0B' }, grid: { display: false }, position: 'right' },
-          x: { ticks: { color: '#64748B' } },
+          y: { beginAtZero: true, ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid }, position: 'left' },
+          y1: { beginAtZero: true, ticks: { color: chartColors.warning }, grid: { display: false }, position: 'right' },
+          x: { ticks: { color: chartColors.textSecondary }, grid: { display: false } },
         },
       },
     });
   }
 
-  await Promise.all([loadTimeline(), loadChart()]);
+  const tlEl = document.getElementById('activity-timeline');
+  const ccEl = document.querySelector('.chart-container');
+  if (tlEl) tlEl.innerHTML = skeletonCard();
+  if (ccEl) ccEl.innerHTML = skeletonCard();
+  const initResults = await Promise.allSettled([loadTimeline(), loadChart()]);
+  initResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity init failed:', r.reason));
   window._loadingActivity = false;
 }
