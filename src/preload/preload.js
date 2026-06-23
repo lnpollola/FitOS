@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMealTemplates: () => ipcRenderer.invoke('db:getMealTemplates'),
   getDailyPlan: (date) => ipcRenderer.invoke('db:getDailyPlan', date),
   saveDailyPlanEntry: (entry) => ipcRenderer.invoke('db:saveDailyPlanEntry', entry),
+  deleteDailyPlanEntry: (id) => ipcRenderer.invoke('db:deleteDailyPlanEntry', id),
   deleteDailyPlanEntries: (date) => ipcRenderer.invoke('db:deleteDailyPlanEntries', date),
   updateDailyPlanEntry: (id, grams) => ipcRenderer.invoke('db:updateDailyPlanEntry', id, grams),
 

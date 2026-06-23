@@ -321,6 +321,12 @@ function registerIpcHandlers(mainWindow) {
     return true;
   });
 
+  ipcMain.handle('db:deleteDailyPlanEntry', (_event, id) => {
+    const db = getDb();
+    db.prepare('DELETE FROM daily_plan_entries WHERE id = ?').run(id);
+    return true;
+  });
+
   // Sleep data
   ipcMain.handle('db:getSleepData', (_event, from, to) => {
     const db = getDb();
