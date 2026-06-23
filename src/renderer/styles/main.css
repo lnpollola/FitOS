@@ -106,6 +106,35 @@ body.organic #sidebar .nav-item.active::before {
   background: var(--moss);
 }
 
+body.organic .nav-section {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 10px;
+  color: var(--lichen);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: var(--space-4) var(--space-5) var(--space-1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+body.organic .nav-section:hover {
+  color: var(--moss-ink);
+}
+
+body.organic .nav-section-chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+body.organic .nav-section.collapsed .nav-section-chevron {
+  transform: rotate(-90deg);
+}
+
 body.organic .sidebar-header h1 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -560,71 +589,113 @@ body {
   background: #FEE2E2;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+/* --- Data Table orgánico --- */
+.data-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
 }
 
-th, td {
+.data-table {
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 13px;
+  width: 100%;
+}
+
+body.organic .data-table thead th {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--moss-ink);
+  background: var(--moss-mist);
+  position: sticky;
+  top: 0;
   padding: 10px 14px;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
-th {
-  color: var(--text-secondary);
+body.organic .data-table tbody td {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--moss-ink);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+body.organic .data-table tbody tr:nth-child(even) td {
+  background: var(--smoke);
+}
+
+body.organic .data-table tbody tr:nth-child(odd) td {
+  background: var(--paper);
+}
+
+body.organic .data-table tbody tr:hover td {
+  background: var(--moss-mist);
+  transition: background 0.15s var(--ease-organic);
+}
+
+body.organic .data-table tfoot td {
+  font-family: var(--font-display);
+  font-style: italic;
   font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--bg-tertiary);
+  font-size: 13px;
+  color: var(--moss);
+  border-top: 2px solid var(--moss);
+  padding: 10px 14px;
 }
 
-th:first-child {
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-th:last-child {
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-
-td {
-  color: var(--text-primary);
-}
-
-tr:last-child td {
-  border-bottom: none;
-}
-
-tr:hover td {
-  background: var(--bg-tertiary);
-}
-
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.table-responsive table {
-  min-width: 100%;
-}
-.table-responsive th:first-child,
-.table-responsive td:first-child {
+body.organic .data-table--sticky-col th:first-child,
+body.organic .data-table--sticky-col td:first-child {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: var(--bg-secondary);
-}
-.table-responsive thead th:first-child {
-  z-index: 3;
-}
-.table-responsive tbody tr:nth-child(even) td {
-  background: var(--bg-tertiary);
-}
-.table-responsive tbody tr:hover td:first-child {
-  background: var(--bg-tertiary);
 }
 
+body.organic .data-table--sticky-col thead th:first-child {
+  z-index: 3;
+}
+
+body.organic .data-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--lichen);
+}
+
+body.organic .data-table-pagination button {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 14px;
+  border: 1px solid var(--moss);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--moss);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+body.organic .data-table-pagination button:hover:not(:disabled) {
+  background: var(--moss);
+  color: var(--bone);
+}
+
+body.organic .data-table-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--lichen);
+}
+
+/* --- Empty state --- */
 .empty-state {
   text-align: center;
   padding: 40px var(--space-5);
@@ -1005,10 +1076,6 @@ legend {
 .chart-card .chart-container {
   position: relative;
   height: 200px;
-}
-
-.ranking-table-wrap {
-  overflow-x: auto;
 }
 
 .secondary-section {
@@ -1553,6 +1620,11 @@ details.card > .card-content {
   margin-top: var(--space-2);
 }
 
+#view-dashboard .dashboard-card .subtitle strong {
+  font-weight: 600;
+  color: var(--moss-ink);
+}
+
 #view-dashboard .dashboard-card .subtitle .compliance-ok,
 #view-dashboard .dashboard-card .subtitle .compliance-warn {
   font-family: var(--font-body);
@@ -1833,4 +1905,121 @@ details.card > .card-content {
 @media (prefers-reduced-motion: reduce) {
   #view-dashboard .card-hero .hero-ring { animation: none; }
   #view-dashboard .dashboard-card { transition: none; }
+}
+
+/* --- Plantillas de comidas: grupos de macronutrientes --- */
+.macro-group {
+  margin-bottom: 6px;
+  padding: 6px;
+  border-radius: 4px;
+  background: var(--bg-primary);
+}
+.macro-header {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+}
+.food-option-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.3;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.food-option-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.food-option-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  font-weight: 600;
+}
+.food-option-btn .kcal-hint {
+  display: block;
+  font-weight: 400;
+  font-size: 9px;
+  color: var(--lichen);
+  margin-top: 1px;
+}
+
+/* --- Vista de Sueño --- */
+#view-sleep .sleep-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+#view-sleep .sleep-kpi-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+#view-sleep .sleep-kpi-label {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--lichen);
+  margin-bottom: var(--space-2);
+}
+#view-sleep .sleep-kpi-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--moss);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+#view-sleep .sleep-kpi-sub {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--lichen);
+  margin-top: var(--space-1);
+}
+#view-sleep .sleep-chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+#view-sleep .sleep-chart-row .card {
+  background: var(--paper);
+  border-color: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+#view-sleep .sleep-chart-row .card h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--moss-ink);
+  letter-spacing: -0.01em;
+}
+#view-sleep .trend-up { color: var(--moss); }
+#view-sleep .trend-down { color: var(--ember); }
+#view-sleep .trend-flat { color: var(--lichen); }
+
+/* --- Tabla responsive de historial --- */
+/* --- Paginación unificada (data-table-pagination) --- */
+
+/* --- Gestores colapsables consistentes --- */
+#view-diet details[open] summary .chevron {
+  transform: rotate(90deg);
+}
+#view-diet details summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

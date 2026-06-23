@@ -694,8 +694,8 @@ export async function init() {
       }
 
       el.innerHTML = `
-        <div class="ranking-table-wrap">
-          <table>
+        <div class="data-table-wrapper">
+          <table class="data-table">
             <thead><tr>
               <th>${s.type}</th>
               <th>${s.count}</th>

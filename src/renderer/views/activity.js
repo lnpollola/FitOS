@@ -294,7 +294,7 @@ export async function init() {
           return;
         }
 
-        let html = `<table><thead><tr><th>${strings.activity.timelineDate}</th><th>${strings.activity.timelineSteps}</th><th>${strings.activity.timelineActive}</th><th>${strings.activity.timelineResting}</th><th>${strings.activity.timelineHeartRate}</th><th>${strings.activity.timelineSleep}</th></tr></thead><tbody>`;
+        let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.activity.timelineDate}</th><th>${strings.activity.timelineSteps}</th><th>${strings.activity.timelineActive}</th><th>${strings.activity.timelineResting}</th><th>${strings.activity.timelineHeartRate}</th><th>${strings.activity.timelineSleep}</th></tr></thead><tbody>`;
 
         for (let i = 0; i < days.length; i++) {
           const d = days[i];
@@ -356,7 +356,7 @@ export async function init() {
           </td>
         </tr>`;
         }
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         timeline.innerHTML = header + html;
         wirePagination();
 
@@ -486,8 +486,8 @@ export async function init() {
         });
         const maxRows = sorted.slice(0, 30);
         recTable.innerHTML = kpiHtml + `
-        <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
-          <table>
+        <div class="data-table-wrapper" style="max-height:400px;overflow-y:auto">
+          <table class="data-table">
             <thead><tr>
               <th style="cursor:pointer" data-sort="name">${strings.activity.rankingType} ${sortCol === 'name' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
               <th style="cursor:pointer" data-sort="count">${strings.activity.rankingCount} ${sortCol === 'count' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>

@@ -117,17 +117,21 @@ export async function init() {
             <input type="text" id="food-search" placeholder="${strings.diet.search}" style="flex:1;padding:6px 10px;min-width:150px" aria-label="${strings.diet.search}" />
           </div>
           <div id="food-list" aria-live="polite"><div class="empty-state"><p>${strings.diet.noFoodItems}</p></div></div>
-          <div id="food-pagination" class="flex-gap-sm mt-2" style="display:none;justify-content:center">
-            <button class="btn btn-secondary text-xs" id="food-prev" style="padding:4px 10px">${strings.diet.prevPage}</button>
-            <span id="food-page-info" class="text-sm text-muted"></span>
-            <button class="btn btn-secondary text-xs" id="food-next" style="padding:4px 10px">${strings.diet.nextPage}</button>
+          <div id="food-pagination" class="data-table-pagination" style="display:none">
+            <button id="food-prev">${strings.general.prevPage}</button>
+            <span id="food-page-info" class="text-sm"></span>
+            <button id="food-next">${strings.general.nextPage}</button>
           </div>
         </div>
       </details>
     </div>
     <div class="card">
-      <h2>${strings.diet.hiddenFoodManager}</h2>
-      <div id="hidden-foods" aria-live="polite"><div class="empty-state"><p>${strings.diet.noHiddenFoods}</p></div></div>
+      <details>
+        <summary style="cursor:pointer;font-size:18px;font-weight:600;list-style:none">${strings.diet.hiddenFoodManager}</summary>
+        <div style="margin-top:12px">
+          <div id="hidden-foods" aria-live="polite"><div class="empty-state"><p>${strings.diet.noHiddenFoods}</p></div></div>
+        </div>
+      </details>
     </div>
   `;
 
@@ -168,6 +172,29 @@ export async function init() {
     }
     return null;
   }
+
+  const MACRO_MAP = {
+    breads: 'carbs',
+    proteins: 'proteins',
+    fats: 'fats',
+    fruits: 'carbs',
+    vegetables: 'carbs',
+    legumes: 'proteins',
+    drinks: null,
+    extras: null,
+  };
+
+  const MACRO_LABELS = {
+    carbs: strings.diet.macroCarbs,
+    proteins: strings.diet.macroProteins,
+    fats: strings.diet.macroFats,
+  };
+
+  const MACRO_STYLES = {
+    carbs: 'color:var(--ember)',
+    proteins: 'color:var(--moss)',
+    fats: 'color:#8A6F47',
+  };
 
   function gramRange(trainingGrams, restGrams) {
     const g1 = trainingGrams != null ? trainingGrams : 0;
@@ -305,7 +332,7 @@ export async function init() {
     function renderIngredients() {
       const el = document.getElementById('dish-ingredients-list');
       let totalKcal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
-      let html = `<table><thead><tr><th>${strings.diet.food}</th><th>${strings.diet.grams}</th><th>${strings.diet.kcal}</th><th>${strings.diet.proteinShort}</th><th>${strings.diet.carbsShort}</th><th>${strings.diet.fatShort}</th><th></th></tr></thead><tbody>`;
+      let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.diet.food}</th><th>${strings.diet.grams}</th><th>${strings.diet.kcal}</th><th>${strings.diet.proteinShort}</th><th>${strings.diet.carbsShort}</th><th>${strings.diet.fatShort}</th><th></th></tr></thead><tbody>`;
       ingredients.forEach((ing, i) => {
         const factor = ing.grams / 100;
         const kcal = ing.kcal_per_100g * factor;
@@ -315,7 +342,7 @@ export async function init() {
         totalKcal += kcal; totalProtein += protein; totalCarbs += carbs; totalFat += fat;
         html += `<tr><td>${ing.food_name}</td><td>${ing.grams}g</td><td>${kcal.toFixed(0)}</td><td>${protein.toFixed(1)}g</td><td>${carbs.toFixed(1)}g</td><td>${fat.toFixed(1)}g</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-remove-ingredient="${i}">✕</button></td></tr>`;
       });
-      html += `</tbody><tfoot><tr style="font-weight:bold"><td>${strings.diet.total}</td><td></td><td>${totalKcal.toFixed(0)}</td><td>${totalProtein.toFixed(1)}g</td><td>${totalCarbs.toFixed(1)}g</td><td>${totalFat.toFixed(1)}g</td><td></td></tr></tfoot></table>`;
+      html += `</tbody><tfoot><tr style="font-weight:bold"><td>${strings.diet.total}</td><td></td><td>${totalKcal.toFixed(0)}</td><td>${totalProtein.toFixed(1)}g</td><td>${totalCarbs.toFixed(1)}g</td><td>${totalFat.toFixed(1)}g</td><td></td></tr></tfoot></table></div>`;
       el.innerHTML = html;
 
       el.querySelectorAll('[data-remove-ingredient]').forEach(btn => {
@@ -445,6 +472,41 @@ export async function init() {
     }
 
     const date = document.getElementById('plan-date').value;
+    const allFoods = await safeCall(api.getFoodItems(false), []);
+
+    const FIXED_RECIPES = {
+      mid_morning: [
+        { name: 'bebida vegetal', grams: 300, unit: 'ml' },
+        { name: 'harina de avena', grams: 30, unit: 'g' },
+        { name: 'proteína', grams: 20, unit: 'g' },
+        { name: 'frutos secos', grams: 15, unit: 'g' },
+      ],
+      snack: [
+        { name: 'bebida vegetal', grams: 350, unit: 'ml' },
+        { name: 'harina de avena', grams: 50, unit: 'g' },
+        { name: 'proteína', grams: 30, unit: 'g' },
+        { name: 'fruta', grams: 150, unit: 'g' },
+      ],
+    };
+
+    function lookupKcal(name, fallbackKcal) {
+      const lower = name.toLowerCase();
+      const match = (allFoods || []).find(f => f.name.toLowerCase().includes(lower) || lower.includes(f.name.toLowerCase()));
+      return match ? match.kcal_per_100g : fallbackKcal;
+    }
+
+    function calcFixedKcal(recipe) {
+      let total = 0;
+      const details = recipe.map(ing => {
+        const kcalPer100g = lookupKcal(ing.name, 0);
+        const kcal = (ing.grams / 100) * kcalPer100g;
+        total += kcal;
+        return { ...ing, kcalPer100g, kcal: Math.round(kcal) };
+      });
+      return { total: Math.round(total), details };
+    }
+
+    const selections = {};
 
     let html = `<div class="meal-columns" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;overflow-x:auto">`;
     for (const tmpl of templates) {
@@ -452,47 +514,53 @@ export async function init() {
         <h3 style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--accent)">${tmpl.name}</h3>`;
 
       if (isFixedRecipeColumn(tmpl.name)) {
-        const recipeText = /media\s*mañana/i.test(tmpl.name)
-          ? strings.diet.fixedRecipeMidMorning
-          : strings.diet.fixedRecipeSnack;
-        html += `<div class="fixed-recipe" style="padding:8px;border-radius:6px;background:var(--bg-primary);font-size:12px;color:var(--text-secondary);line-height:1.4">${recipeText}</div>`;
+        const recipeKey = /media\s*mañana/i.test(tmpl.name) ? 'mid_morning' : 'snack';
+        const recipe = FIXED_RECIPES[recipeKey];
+        const { total, details } = calcFixedKcal(recipe);
+        html += `<div class="fixed-recipe" style="padding:8px;border-radius:6px;background:var(--bg-primary);font-size:12px;color:var(--text-secondary);line-height:1.4">`;
+        details.forEach(ing => {
+          const warning = ing.kcalPer100g === 0 && !lookupKcal(ing.name, null) ? ` <span style="color:var(--ember);font-size:10px" title="Alimento no encontrado en BD">⚠</span>` : '';
+          html += `<div style="display:flex;justify-content:space-between"><span>${ing.grams}${ing.unit} ${ing.name}${warning}</span><span>${ing.kcal} kcal</span></div>`;
+        });
+        html += `<div style="font-weight:600;margin-top:4px;border-top:1px solid var(--border);padding-top:4px">${strings.diet.total}: ${total} ${strings.diet.kcal}</div>`;
+        html += `</div>`;
       } else {
+        const macroGroups = { carbs: [], proteins: [], fats: [], others: [] };
         for (const comp of tmpl.components || []) {
-          const rangeText = gramRange(comp.default_grams, comp.restday_grams);
-          html += `<div class="text-xs" style="margin-bottom:6px;padding:6px;border-radius:4px;background:var(--bg-primary)">
-            <div style="font-weight:500;margin-bottom:2px">${comp.food_name}</div>
-            <div style="color:var(--text-secondary);font-size:11px">
-              ${comp.kcal_per_100g} ${strings.diet.kcal}/100g · ${strings.diet.gramMin}/${strings.diet.gramMax}: ${rangeText}
-            </div>
-            <div style="margin-top:4px">`;
-
-          const optionsByCategory = {};
-          for (const opt of comp.options || []) {
-            const cat = getFoodCategory(opt.food_name) || 'extras';
-            if (!optionsByCategory[cat]) optionsByCategory[cat] = [];
-            optionsByCategory[cat].push(opt);
+          const items = comp.options && comp.options.length > 0 ? comp.options : [{
+            food_item_id: comp.food_item_id,
+            food_name: comp.food_name,
+            kcal_per_100g: comp.kcal_per_100g,
+            protein_per_100g: comp.protein_per_100g,
+            carbs_per_100g: comp.carbs_per_100g,
+            fat_per_100g: comp.fat_per_100g,
+          }];
+          for (const item of items) {
+            const cat = getFoodCategory(item.food_name) || 'extras';
+            const macro = MACRO_MAP[cat];
+            const group = (macro && macroGroups[macro]) ? macro : 'others';
+            const optGrams = _dayType === 'rest' ? (comp.restday_grams || comp.default_grams) : comp.default_grams;
+            macroGroups[group].push({ ...item, compId: comp.id, grams: optGrams });
           }
+        }
 
-          const sortedCats = Object.keys(optionsByCategory).sort((a, b) => {
-            const order = ['breads', 'proteins', 'fats', 'legumes', 'vegetables', 'fruits', 'drinks', 'extras'];
-            return order.indexOf(a) - order.indexOf(b);
-          });
-
-          for (const cat of sortedCats) {
-            const opts = optionsByCategory[cat];
-            const catLabel = strings.diet.categories[cat] || strings.diet.categories.extras;
-            const catStyle = CATEGORY_STYLES[cat] || 'background:var(--bg-tertiary);color:var(--text-secondary)';
-            html += `<div style="margin-bottom:4px">
-              <span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:600;margin-bottom:2px;${catStyle}">${catLabel}</span>
-              <div style="display:flex;gap:4px;flex-wrap:wrap">`;
-            for (const opt of opts) {
-              const optGrams = _dayType === 'rest' ? (comp.restday_grams || comp.default_grams) : comp.default_grams;
-              html += `<button class="btn btn-secondary food-option-btn" style="padding:2px 6px;font-size:10px" data-comp-id="${comp.id}" data-food-id="${opt.food_item_id}" data-kcal="${opt.kcal_per_100g}" data-protein="${opt.protein_per_100g}" data-carbs="${opt.carbs_per_100g}" data-fat="${opt.fat_per_100g}" data-name="${opt.food_name}" data-grams="${optGrams}">${opt.food_name}</button>`;
-            }
-            html += `</div></div>`;
+        let hasAnyOption = false;
+        for (const [macro, items] of Object.entries(macroGroups)) {
+          if (items.length === 0) continue;
+          hasAnyOption = true;
+          const label = MACRO_LABELS[macro] || (macro === 'others' ? strings.diet.foodOptions : macro);
+          html += `<div class="macro-group"><div class="macro-header" style="${MACRO_STYLES[macro] || 'color:var(--lichen)'}">${label}</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">`;
+          for (const opt of items) {
+            const selKey = `${opt.compId}-${opt.food_item_id}`;
+            const isSel = selections[selKey];
+            html += `<button class="food-option-btn${isSel ? ' selected' : ''}" style="padding:2px 6px;font-size:10px;border:1px solid ${isSel ? 'var(--accent)' : 'var(--border)'};background:${isSel ? 'var(--accent-light)' : 'var(--bg-primary)'};border-radius:4px;cursor:pointer" data-sel-key="${selKey}" data-comp-id="${opt.compId}" data-food-id="${opt.food_item_id}" data-kcal="${opt.kcal_per_100g}" data-protein="${opt.protein_per_100g}" data-carbs="${opt.carbs_per_100g}" data-fat="${opt.fat_per_100g}" data-name="${opt.food_name}" data-grams="${opt.grams}">${opt.food_name}<br><span class="kcal-hint">${Math.round(opt.kcal_per_100g)} kcal/100g</span></button>`;
           }
-
           html += `</div></div>`;
+        }
+
+        if (!hasAnyOption) {
+          html += `<div class="text-xs text-muted">${strings.diet.noFoodAssigned}</div>`;
         }
       }
 
@@ -508,26 +576,30 @@ export async function init() {
 
     el.innerHTML = html;
 
-    const selections = {};
-
     el.querySelectorAll('.food-option-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        const selKey = btn.dataset.selKey;
         const compId = btn.dataset.compId;
-        btn.closest('.meal-column').querySelectorAll(`.food-option-btn[data-comp-id="${compId}"]`).forEach(b => {
-          b.style.borderColor = 'var(--border)';
-          b.style.background = 'var(--bg-primary)';
-        });
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.background = 'rgba(13,148,136,0.15)';
-        selections[compId] = {
-          food_item_id: parseInt(btn.dataset.foodId),
-          food_name: btn.dataset.name,
-          grams: parseFloat(btn.dataset.grams) || 0,
-          kcal_per_100g: parseFloat(btn.dataset.kcal),
-          protein_per_100g: parseFloat(btn.dataset.protein),
-          carbs_per_100g: parseFloat(btn.dataset.carbs),
-          fat_per_100g: parseFloat(btn.dataset.fat),
-        };
+        const isSelected = btn.classList.contains('selected');
+        if (isSelected) {
+          btn.classList.remove('selected');
+          btn.style.borderColor = 'var(--border)';
+          btn.style.background = 'var(--bg-primary)';
+          delete selections[selKey];
+        } else {
+          btn.classList.add('selected');
+          btn.style.borderColor = 'var(--accent)';
+          btn.style.background = 'var(--accent-light)';
+          selections[selKey] = {
+            food_item_id: parseInt(btn.dataset.foodId),
+            food_name: btn.dataset.name,
+            grams: parseFloat(btn.dataset.grams) || 0,
+            kcal_per_100g: parseFloat(btn.dataset.kcal),
+            protein_per_100g: parseFloat(btn.dataset.protein),
+            carbs_per_100g: parseFloat(btn.dataset.carbs),
+            fat_per_100g: parseFloat(btn.dataset.fat),
+          };
+        }
         updateColumnTotals();
       });
     });
@@ -537,15 +609,16 @@ export async function init() {
       for (const tmpl of templates) {
         let kcal = 0;
         if (isFixedRecipeColumn(tmpl.name)) {
-          kcal = 0;
+          const recipeKey = /media\s*mañana/i.test(tmpl.name) ? 'mid_morning' : 'snack';
+          kcal = calcFixedKcal(FIXED_RECIPES[recipeKey]).total;
         } else {
           for (const comp of tmpl.components || []) {
-            const sel = selections[comp.id];
-            if (sel) {
-              kcal += (sel.grams / 100) * sel.kcal_per_100g;
-            } else {
-              const baseGrams = _dayType === 'rest' ? (comp.restday_grams || comp.default_grams) : comp.default_grams;
-              kcal += (baseGrams / 100) * comp.kcal_per_100g;
+            for (const opt of comp.options || []) {
+              const selKey = `${comp.id}-${opt.food_item_id}`;
+              const sel = selections[selKey];
+              if (sel) {
+                kcal += (sel.grams / 100) * sel.kcal_per_100g;
+              }
             }
           }
         }
@@ -565,7 +638,8 @@ export async function init() {
       for (const tmpl of templates) {
         if (isFixedRecipeColumn(tmpl.name)) continue;
         for (const comp of tmpl.components || []) {
-          const sel = selections[comp.id];
+          const selKey = Object.keys(selections).find(k => k.startsWith(`${comp.id}-`));
+          const sel = selKey ? selections[selKey] : null;
           const foodId = sel ? sel.food_item_id : comp.food_item_id;
           const grams = sel ? sel.grams : (_dayType === 'rest' ? (comp.restday_grams || comp.default_grams) : comp.default_grams);
           await safeCall(api.saveDailyPlanEntry({
@@ -843,7 +917,7 @@ export async function init() {
                   <input type="number" value="${entry.grams}" step="5" min="0" ${inputDataAttr} data-meal-id="${tmpl.id}" data-kcal="${entry.kcal_per_100g}" data-protein="${entry.protein_per_100g}" data-carbs="${entry.carbs_per_100g}" data-fat="${entry.fat_per_100g}" class="gram-input meal-gram-input text-xs" style="width:60px;padding:2px 6px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)" aria-label="${strings.diet.grams} de ${entry.food_name}" />
                   <span class="data-value text-xs" style="width:50px;text-align:right">${kcal.toFixed(0)}</span>
                   <span style="font-size:11px;color:var(--text-secondary);width:80px;text-align:right">${strings.diet.proteinShort}:${protein.toFixed(1)} ${strings.diet.carbsShort}:${carbs.toFixed(1)} ${strings.diet.fatShort}:${fat.toFixed(1)}</span>
-                  ${!isPending ? `<button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-hide-food-id="${entry.food_item_id}">${strings.diet.hide}</button>` : ''}
+                  ${!isPending ? `<button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-entry-id="${entry.id}">✕</button>` : ''}
                 </div>
               `;
             }).join('')}
@@ -935,11 +1009,10 @@ export async function init() {
     });
 
     if (!isPending) {
-      mealsContainer.querySelectorAll('[data-hide-food-id]').forEach(btn => {
+      mealsContainer.querySelectorAll('[data-delete-entry-id]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          await safeCall(api.hideFoodItem(parseInt(btn.dataset.hideFoodId)), null);
-          loadFoods();
-          loadHiddenFoods();
+          await safeCall(api.deleteDailyPlanEntry(parseInt(btn.dataset.deleteEntryId)), null);
+          loadDailyPlan(date);
         });
       });
 
@@ -1100,7 +1173,7 @@ export async function init() {
     const page = Math.min(_foodPage, totalPages - 1);
     const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-    let html = `<table style="width:100%"><thead><tr><th>${strings.diet.name}</th><th>${strings.diet.kcal}</th><th>${strings.diet.proteinShort}</th><th>${strings.diet.carbsShort}</th><th>${strings.diet.fatShort}</th><th></th></tr></thead><tbody>`;
+    let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.diet.name}</th><th>${strings.diet.kcal}</th><th>${strings.diet.proteinShort}</th><th>${strings.diet.carbsShort}</th><th>${strings.diet.fatShort}</th><th></th></tr></thead><tbody>`;
     for (const f of pageItems) {
       html += `<tr>
         <td style="font-weight:500">${f.name}</td>
@@ -1111,7 +1184,7 @@ export async function init() {
         <td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-hide-food-id="${f.id}">${strings.diet.hide}</button></td>
       </tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     list.innerHTML = html;
 
     if (totalPages > 1) {
@@ -1120,9 +1193,7 @@ export async function init() {
       const prevBtn = document.getElementById('food-prev');
       const nextBtn = document.getElementById('food-next');
       prevBtn.disabled = page <= 0;
-      prevBtn.style.opacity = page <= 0 ? '0.5' : '1';
       nextBtn.disabled = page >= totalPages - 1;
-      nextBtn.style.opacity = page >= totalPages - 1 ? '0.5' : '1';
       prevBtn.onclick = () => { _foodPage = Math.max(0, _foodPage - 1); loadFoods(); };
       nextBtn.onclick = () => { _foodPage = Math.min(totalPages - 1, _foodPage + 1); loadFoods(); };
     } else {
@@ -1154,7 +1225,7 @@ export async function init() {
       el.innerHTML = `<div class="empty-state"><p>${strings.diet.noHiddenFoods}</p></div>`;
       return;
     }
-    let html = `<table><thead><tr><th>${strings.diet.name}</th><th>${strings.diet.kcal}</th><th>${strings.diet.protein}</th><th>${strings.diet.carbs}</th><th>${strings.diet.fat}</th><th></th></tr></thead><tbody>`;
+    let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.diet.name}</th><th>${strings.diet.kcal}</th><th>${strings.diet.protein}</th><th>${strings.diet.carbs}</th><th>${strings.diet.fat}</th><th></th></tr></thead><tbody>`;
     for (const f of hidden) {
       html += `<tr>
         <td>${f.name}</td>
@@ -1165,7 +1236,7 @@ export async function init() {
         <td><button class="btn btn-primary text-xs" style="padding:4px 8px" data-show-food-id="${f.id}">${strings.diet.reactivate}</button></td>
       </tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     el.innerHTML = html;
 
     el.querySelectorAll('[data-show-food-id]').forEach(btn => {

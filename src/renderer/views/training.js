@@ -596,11 +596,11 @@ export async function init() {
             <button class="btn btn-secondary" id="ex-next" style="padding:2px 8px;font-size:12px" ${_page >= totalPages - 1 ? 'disabled' : ''}>›</button>
           </div>
         </div>
-        <table><thead><tr><th>${strings.training.exerciseName}</th><th>${strings.training.muscleGroup}</th><th>${strings.training.equipment}</th><th>${strings.training.movementPattern}</th><th></th></tr></thead><tbody>`;
+        <div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.training.exerciseName}</th><th>${strings.training.muscleGroup}</th><th>${strings.training.equipment}</th><th>${strings.training.movementPattern}</th><th></th></tr></thead><tbody>`;
       for (const e of page) {
         html += `<tr><td>${getMuscleIcon(e.muscle_group)} ${e.name}</td><td>${e.muscle_group ?? '--'}</td><td>${e.equipment ?? '--'}</td><td>${e.movement_pattern ?? '--'}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-exercise="${e.id}">${strings.general.delete}</button></td></tr>`;
       }
-      html += '</tbody></table>';
+      html += '</tbody></table></div>';
       el.innerHTML = html;
 
       el.querySelectorAll('[data-delete-exercise]').forEach(btn => {
@@ -650,12 +650,12 @@ export async function init() {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noRoutines}</p></div>`;
       return;
     }
-    let html = `<table><thead><tr><th>${strings.general.name}</th><th>${strings.general.created}</th><th></th></tr></thead><tbody>`;
+    let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.general.name}</th><th>${strings.general.created}</th><th></th></tr></thead><tbody>`;
     for (const r of routines) {
       html += `<tr><td data-routine-name="${r.id}">${r.name}</td><td>${r.created_at}</td><td style="white-space:nowrap"><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-edit-routine="${r.id}">${strings.training.editRoutine}</button> <button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-routine="${r.id}">${strings.training.deleteRoutine}</button></td></tr>`;
       select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     el.innerHTML = html;
 
     el.querySelectorAll('[data-edit-routine]').forEach(btn => {
@@ -699,12 +699,12 @@ export async function init() {
       el.innerHTML = `<div class="empty-state"><p>${strings.training.noSessions}</p></div>`;
       return;
     }
-    let html = `<table><thead><tr><th>${strings.general.date}</th><th>${strings.general.routine}</th><th>${strings.general.notes}</th><th></th><th></th></tr></thead><tbody>`;
+    let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.general.date}</th><th>${strings.general.routine}</th><th>${strings.general.notes}</th><th></th><th></th></tr></thead><tbody>`;
     for (const s of sessions) {
       html += `<tr><td>${s.date}</td><td>${s.routine_name ?? '--'}</td><td>${s.notes ?? ''}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-toggle-sets="${s.id}" aria-label="${strings.training.addSet}">${icon('chevron-down', 12)}</button></td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-session="${s.id}">${strings.general.delete}</button></td></tr>`;
       html += `<tr data-sets-row="${s.id}" style="display:none"><td colspan="5"><div data-sets-container="${s.id}" style="padding:8px 12px;background:var(--bg-primary);border-radius:6px"></div></td></tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     el.innerHTML = html;
 
     el.querySelectorAll('[data-delete-session]').forEach(btn => {
@@ -748,7 +748,7 @@ export async function init() {
     const exMap = {};
     for (const ex of exercises) exMap[ex.id] = ex;
 
-    let html = `<table style="margin-bottom:12px"><thead><tr><th>${strings.training.setNumber}</th><th>${strings.training.exerciseName}</th><th>${strings.training.load}</th><th>${strings.training.reps}</th><th>${strings.training.rpe}</th><th></th></tr></thead><tbody>`;
+    let html = `<table class="data-table" style="margin-bottom:12px"><thead><tr><th>${strings.training.setNumber}</th><th>${strings.training.exerciseName}</th><th>${strings.training.load}</th><th>${strings.training.reps}</th><th>${strings.training.rpe}</th><th></th></tr></thead><tbody>`;
     if (sets && sets.length > 0) {
       for (const set of sets) {
         const ex = exMap[set.exercise_id];
@@ -908,7 +908,7 @@ export async function init() {
     const last = sorted[sorted.length - 1];
     const prev = sorted[sorted.length - 2];
 
-    let html = `<table><thead><tr><th>${strings.general.metric}</th><th>${strings.general.previous}</th><th>${strings.general.last}</th><th>${strings.general.delta}</th></tr></thead><tbody>`;
+    let html = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.general.metric}</th><th>${strings.general.previous}</th><th>${strings.general.last}</th><th>${strings.general.delta}</th></tr></thead><tbody>`;
     html += `<tr><td>${strings.general.date}</td><td>${prev.date}</td><td>${last.date}</td><td></td></tr>`;
     html += `<tr><td>${strings.general.routine}</td><td>${prev.routine_name || '--'}</td><td>${last.routine_name || '--'}</td><td></td></tr>`;
 
@@ -920,7 +920,7 @@ export async function init() {
     const volArrow = volDelta > 0 ? '▲' : volDelta < 0 ? '▼' : '―';
 
     html += `<tr><td>${strings.general.volume}</td><td>${prevVolume.toFixed(0)} ${strings.dashboard.unitKg}</td><td>${lastVolume.toFixed(0)} ${strings.dashboard.unitKg}</td><td style="color:${volDelta > 0 ? 'var(--success)' : volDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${volArrow} ${volDelta > 0 ? '+' : ''}${volDelta.toFixed(0)} ${strings.dashboard.unitKg}</td></tr>`;
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     el.innerHTML = html;
     } catch (err) {
       console.error('loadDeltas error:', err);

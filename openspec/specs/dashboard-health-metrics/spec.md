@@ -2,11 +2,37 @@
 
 ## Purpose
 
-Expose additional health metrics from HealthSync not currently shown on the dashboard: exercise time, walking distance, HRV + resting HR composite, sleep analysis, cycling distance, and per-sport activity breakdown. The dashboard SHALL display a hero card with energy balance growth ring at the top, followed by an activity summary, health metric cards with inline sparklines and trend comparison arrows, and a kcal/día trend chart at the bottom.
+Expose health metrics from HealthSync and the app database on the dashboard with a logical top-to-bottom flow: hero card (energy balance growth ring), two symmetric rows of health KPI cards, trend charts, and a sports section at the bottom with activity summary accent card and per-sport breakdown cards.
 
 Verified during exploration: `blood_pressure` has 0 records (AW doesn't measure BP), `blood_glucose` table does not exist (AW doesn't measure glucose), no pre-computed HR zones exist. Exercise time (59k rows), walking distance (309k rows), and HRV (12k rows) all have abundant data. Standing hours, SpO2, and BP cards have been removed due to sparse or unreliable data.
 
 ## Requirements
+
+### Requirement: Dashboard health metrics card layout
+
+The dashboard SHALL display health metric cards organized in a logical top-to-bottom flow: Hero card (full-width balance with growth ring) at the top, two symmetric rows of health KPI cards (5 + 4), trend charts (kcal daily + weekly balance) in the middle, and a sports section at the bottom with a visual separator. The sports section SHALL include the activity summary accent card and per-sport-type breakdown cards.
+
+#### Scenario: Hero card renders first
+- **WHEN** the dashboard renders
+- **THEN** the hero card with balance semanal and growth ring SHALL appear at the top spanning full width
+- **THEN** no sports or activity content SHALL appear above the hero card
+
+#### Scenario: Health KPIs in two symmetric rows
+- **WHEN** the dashboard renders
+- **THEN** row 1 SHALL contain 5 cards: Sueño, HRV, RHR, Peso, Pasos
+- **THEN** row 2 SHALL contain 4 cards: Ejercicio, Distancia, Calorías Hoy, Próximo Entrenamiento
+- **THEN** each card SHALL include a sparkline where data is available
+
+#### Scenario: Trend charts in the middle
+- **WHEN** daily data is available
+- **THEN** the kcal diarias chart (line + MA7) and balance semanal chart (bars) SHALL render side-by-side below the health KPI rows
+
+#### Scenario: Sports section at the bottom
+- **WHEN** the dashboard renders
+- **THEN** a visual separator or section label ("DEPORTES") SHALL appear before the sports section
+- **THEN** the activity summary accent card SHALL appear first in the sports section
+- **THEN** per-sport-type cards SHALL appear below the accent card
+- **THEN** no sports content SHALL appear above the trend charts
 
 ### Requirement: Exercise time card
 
@@ -58,6 +84,82 @@ The system SHALL display a cycling distance card on the dashboard showing averag
 #### Scenario: Cycling distance card empty state
 - **WHEN** no cycling distance data exists
 - **THEN** the card SHALL display "--" with note "Sin datos de ciclismo"
+
+### Requirement: Weight KPI card
+
+The system SHALL display a dedicated Weight card in the health KPIs row showing the latest weight, delta vs previous period, and a sparkline of weight trend.
+
+#### Scenario: Weight card with data
+- **WHEN** weight entries exist in the selected date range
+- **THEN** the Weight card SHALL display the latest weight in kg with one decimal
+- **THEN** a sparkline of weight values SHALL render below the value
+- **THEN** the delta vs the earliest value in the period SHALL show as "Δ: -1.2 kg" or "Δ: +0.5 kg"
+
+#### Scenario: Weight card without data
+- **WHEN** no weight entries exist
+- **THEN** the Weight card SHALL display "--" with "Sin datos de peso" subtitle
+
+### Requirement: Dynamic sparkline colors based on trend
+
+The system SHALL compute the simple linear regression slope of each sparkline's data series and color the line dynamically: moss (positive slope, improving), ember (negative slope, worsening), lichen (flat slope, stable). For inverse metrics where lower is better (RHR, weight), the slope SHALL be negated before color assignment. When fewer than 5 data points exist, the sparkline SHALL default to lichen (stable) without trend computation. The sparkline SHALL also include a dashed reference line at the series mean and a prominent dot at the last data point.
+
+#### Scenario: Improving metric gets moss sparkline
+- **WHEN** the sparkline data slope is positive and exceeds the metric-specific threshold
+- **THEN** the sparkline stroke SHALL be `var(--moss)`
+
+#### Scenario: Worsening metric gets ember sparkline
+- **WHEN** the sparkline data slope is negative and below the metric-specific threshold
+- **THEN** the sparkline stroke SHALL be `var(--ember)`
+
+#### Scenario: Stable metric gets lichen sparkline
+- **WHEN** the sparkline data slope is within the threshold range
+- **THEN** the sparkline stroke SHALL be `var(--lichen)`
+
+#### Scenario: Few points default to lichen
+- **WHEN** a sparkline has fewer than 5 data points
+- **THEN** the sparkline stroke SHALL be `var(--lichen)` without trend computation
+
+#### Scenario: Reference line at mean
+- **WHEN** a sparkline renders with 3+ data points
+- **THEN** a dashed horizontal line SHALL be drawn at the y-position of the data mean
+- **THEN** the reference line SHALL use `var(--lichen)` at 0.4 opacity
+
+#### Scenario: Last point dot
+- **WHEN** a sparkline renders
+- **THEN** the last data point SHALL display a filled circle dot (r=2.5) with a white stroke border
+
+### Requirement: Period-over-period comparison on sports cards
+
+The system SHALL compare the current period's sport session count against an equivalent previous period and display the delta on each sport card.
+
+#### Scenario: More sessions than previous period
+- **WHEN** Running has 8 sessions in the current 15d period and 6 in the previous 15d period
+- **THEN** the card subtitle SHALL show "8 ses. ▲ +2 vs anterior"
+
+#### Scenario: Fewer sessions than previous period
+- **WHEN** a sport has 4 sessions in the current period and 6 in the previous period
+- **THEN** the card subtitle SHALL show "4 ses. ▼ -2 vs anterior"
+
+#### Scenario: Same sessions as previous period
+- **WHEN** a sport has 3 sessions in both periods
+- **THEN** the card subtitle SHALL show "3 ses. ― vs anterior"
+
+#### Scenario: No previous period data
+- **WHEN** the previous period has no data for a sport type
+- **THEN** no period-over-period indicator SHALL appear for that sport
+
+### Requirement: Bold text hierarchy in card subtitles
+
+The system SHALL apply `font-weight: 600` and `color: var(--moss-ink)` to `<strong>` elements within `.dashboard-card .subtitle`, distinguishing key numeric values from descriptive label text.
+
+#### Scenario: Strong text in subtitle
+- **WHEN** a dashboard card subtitle contains `<strong>` wrapped numbers
+- **THEN** the strong text SHALL render in moss-ink with 600 font weight
+- **THEN** surrounding descriptive text SHALL remain in lichen at normal weight
+
+#### Scenario: Subtitle without strong text
+- **WHEN** a dashboard card subtitle has no `<strong>` elements
+- **THEN** the subtitle SHALL render normally in lichen color
 
 ### Requirement: Dashboard health metric IPC handlers
 
@@ -161,16 +263,6 @@ The system SHALL provide `src/renderer/utils/growth-ring.js` exporting `growthRi
 - **THEN** the SVG SHALL render a complete circle (one arc with sweep = 360°)
 - **THEN** the SVG SHALL NOT be empty
 
-### Requirement: Growth ring legend matches ring encoding
-
-The system SHALL fix the growth ring legend to match the actual ring encoding. The ring colors arcs by kcal magnitude (not balance surplus/deficit). The legend SHALL either relabel to reflect kcal magnitude tiers OR the ring SHALL be re-encoded to use balance values. The hero value and ring SHALL encode the same metric.
-
-#### Scenario: Legend and ring encode the same metric
-- **WHEN** the hero card renders with the growth ring
-- **THEN** the legend labels SHALL match what the ring arcs encode
-- **THEN** if the ring encodes balance, arcs SHALL be colored moss for surplus and ember for deficit
-- **THEN** if the ring encodes kcal magnitude, the legend SHALL say "Alto gasto" / "Bajo gasto" instead of "Excedente" / "Déficit"
-
 ### Requirement: Health metric cards render inline sparklines when series available
 
 The system SHALL render a `sparkline()` (from `src/renderer/utils/sparkline.js`) inside each dashboard `.dashboard-card` whose metric has 2 or more time-series data points in the selected period. Cards without a series SHALL render without a sparkline and without any empty `<svg>` placeholder. The sparkline SHALL appear between the metric value and the subtitle.
@@ -199,7 +291,7 @@ The system SHALL render a `sparkline()` (from `src/renderer/utils/sparkline.js`)
 
 ### Requirement: Trend period comparison arrows on all metric microcharts
 
-The system SHALL display trend arrows on every dashboard metric card's microchart, comparing current period average to previous period average. Each card's sparkline SHALL visually encode the period-over-period trend.
+The system SHALL display trend arrows on every dashboard metric card's microchart, comparing current period average to previous period average.
 
 #### Scenario: All metric cards show trend comparison
 - **WHEN** the dashboard renders with ≥ 2 periods of data
@@ -261,32 +353,34 @@ The system SHALL display per-sport detail cards (Caminata, Ciclismo, Fútbol, et
 - **THEN** the card SHALL display total km traveled in the period (from sport_activities distance data)
 - **THEN** a trend sparkline SHALL show km per session over the period
 
-### Requirement: Dashboard activity summary positioned at top
+### Requirement: Per-sport metric cards include period-over-period comparison
 
-The system SHALL position the green "Resumen de Actividad" card (`.card-accent`) immediately after the hero card, not at the bottom of the dashboard. Per-sport detail cards SHALL follow the green summary card in the same grid row. The green summary SHALL remain full-width (`grid-column: 1 / -1`).
+The system SHALL display period-over-period session count deltas on each per-sport card, comparing the current period against the previous equivalent period.
 
-#### Scenario: Activity summary appears after hero
-- **WHEN** the dashboard renders with activity data
-- **THEN** the `.card-accent` "Resumen de Actividad" SHALL appear in the row immediately after `.card-hero`
-- **THEN** per-sport `.dashboard-card` elements SHALL appear after the `.card-accent` in the same grid
+#### Scenario: Pop indicator on sport cards
+- **WHEN** the dashboard renders per-sport cards with data from both periods
+- **THEN** each card SHALL show the session count delta ("▲ +2" / "▼ -1" / "―") compared to the previous period
 
-#### Scenario: Activity summary absent when no sport data
-- **WHEN** the dashboard renders with no sport activity data for the selected period
-- **THEN** the green summary card SHALL NOT render
-- **THEN** no empty placeholder SHALL appear in its place
+### Requirement: Dashboard health metric IPC handlers
+
+The system SHALL provide IPC handlers for all new health metrics, ideally batched into a single query.
+
+#### Scenario: Batched metrics
+- **WHEN** dashboard initializes
+- **THEN** the system SHOULD call a single `health:getDashboardMetrics(from, to)` returning all metrics together, rather than 5 separate IPC calls
 
 ### Requirement: Remove duplicate resting HR card
 
-The system SHALL remove the standalone "FC Reposo" card from Row 3. Resting HR SHALL appear only once, in the composite HRV + resting HR card in Row 1. The duplicate `rhrSeries` fetch and render SHALL be eliminated.
+The system SHALL remove the standalone "FC Reposo" card from Row 3. Resting HR SHALL appear only once, as its own card in Row 1. The duplicate `rhrSeries` fetch and render SHALL be eliminated.
 
 #### Scenario: RHR appears once
 - **WHEN** the dashboard renders
-- **THEN** resting heart rate SHALL appear only in the HRV + RHR composite card
-- **THEN** no standalone RHR card SHALL exist in any row
+- **THEN** resting heart rate SHALL appear only as a dedicated card in Row 1
+- **THEN** no standalone RHR card SHALL exist in any other row
 
 ### Requirement: Skeleton count matches card count
 
-The system SHALL render the same number of skeleton placeholders as the number of cards that will be produced. Row 1 SHALL render 8 skeletons (hero + 7 cards), Row 3 SHALL render 5 skeletons (5 cards after removals).
+The system SHALL render the same number of skeleton placeholders as the number of cards that will be produced. Row 1 SHALL render 8 skeletons (hero + 7 cards), Row 2 SHALL render 4 skeletons (4 cards).
 
 #### Scenario: No reflow on loading to content transition
 - **WHEN** the dashboard transitions from skeleton to rendered content
@@ -320,15 +414,15 @@ The system SHALL render the three dashboard data fields that are currently fetch
 
 ### Requirement: Dashboard card layout eliminates blank grid gaps
 
-The system SHALL arrange dashboard cards so that no large blank spaces appear between sections. The grid rows SHALL be structured to fill without leaving empty tracks. The kcal/día trend chart SHALL be positioned as the last row of the dashboard (full width), not between the health metric cards and the activity summary.
+The system SHALL arrange dashboard cards so that no large blank spaces appear between sections. The grid rows SHALL be structured to fill without leaving empty tracks. The kcal/día trend chart SHALL be positioned before the sports section.
 
 #### Scenario: No blank grid gaps
 - **WHEN** the dashboard renders with health metrics and activity data
-- **THEN** the health metric cards SHALL be in a grid row above the trend chart
-- **THEN** the trend chart SHALL be the last row
+- **THEN** the health metric cards SHALL be in grid rows above the trend chart
+- **THEN** the trend chart SHALL appear before the sports section
 - **THEN** no empty grid tracks SHALL be visible between any cards
 
-#### Scenario: Trend chart at bottom
+#### Scenario: Trend chart before sports
 - **WHEN** the dashboard renders with ≥ 2 days of daily data
-- **THEN** the kcal/día trend Chart.js chart SHALL appear as the last visual element on the dashboard
+- **THEN** the kcal/día trend Chart.js chart SHALL appear between health KPI rows and the sports section
 - **THEN** the trend chart SHALL span the full width (`grid-column: 1 / -1`)

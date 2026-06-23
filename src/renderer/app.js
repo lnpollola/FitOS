@@ -6,6 +6,7 @@ import { init as initMeasurements } from './views/measurements.js';
 import { init as initTraining } from './views/training.js';
 import { init as initProfile } from './views/profile.js';
 import { init as initAnalytics } from './views/analytics.js';
+import { init as initSleep } from './views/sleep.js';
 import { icon } from './utils/icons.js';
 
 function renderNavIcons() {
@@ -14,7 +15,7 @@ function renderNavIcons() {
     const iconMap = {
       dashboard: 'layout-dashboard', activity: 'activity', diet: 'heart',
       energy: 'trending-up', measurements: 'scale', training: 'dumbbell',
-      analytics: 'trending-up', profile: 'heart',
+      analytics: 'trending-up', profile: 'heart', sleep: 'moon',
     };
     const iconName = iconMap[name] || 'activity';
     el.innerHTML = icon(iconName, 18);
@@ -31,6 +32,7 @@ const views = {
   training: initTraining,
   analytics: initAnalytics,
   profile: initProfile,
+  sleep: initSleep,
 };
 
 function destroyAllCharts() {
@@ -92,3 +94,60 @@ window.addEventListener('resize', toggleSidebar);
 toggleSidebar();
 
 showView('dashboard');
+
+function initSidebarSections() {
+  // Clear stale localStorage state from previous versions
+  ['inicio', 'salud', 'entrenamiento'].forEach(k => localStorage.removeItem(`nav-section-${k}`));
+
+  const sections = document.querySelectorAll('.nav-section:not([data-section="profile-divider"])');
+  sections.forEach(section => {
+    const sectionName = section.dataset.section;
+    const children = document.querySelectorAll(`li[data-section="${sectionName}"]:not(.nav-section)`);
+
+    function getActiveView() {
+      return document.querySelector('.nav-item.active')?.dataset?.view;
+    }
+
+    function getSectionForView(view) {
+      const parent = document.querySelector(`li[data-section] .nav-item[data-view="${view}"]`);
+      if (parent) return parent.closest('li').dataset.section;
+      return null;
+    }
+
+    function updateCollapsed() {
+      const activeView = getActiveView();
+      const activeSection = getSectionForView(activeView);
+      const isActiveSection = sectionName === activeSection;
+
+      if (isActiveSection) {
+        section.classList.remove('collapsed');
+        children.forEach(el => el.style.display = '');
+      } else {
+        const stored = localStorage.getItem(`nav-section-${sectionName}`);
+        const isCollapsed = stored === 'collapsed';
+        section.classList.toggle('collapsed', isCollapsed);
+        children.forEach(el => el.style.display = isCollapsed ? 'none' : '');
+      }
+    }
+
+    section.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const activeView = getActiveView();
+      const activeSection = getSectionForView(activeView);
+      if (sectionName === activeSection) return;
+
+      const isCollapsed = section.classList.toggle('collapsed');
+      children.forEach(el => el.style.display = isCollapsed ? 'none' : '');
+      localStorage.setItem(`nav-section-${sectionName}`, isCollapsed ? 'collapsed' : 'expanded');
+    });
+
+    updateCollapsed();
+
+    const observer = new MutationObserver(() => updateCollapsed());
+    document.querySelectorAll('.nav-item').forEach(item => {
+      observer.observe(item, { attributes: true, attributeFilter: ['class'] });
+    });
+  });
+}
+
+initSidebarSections();
