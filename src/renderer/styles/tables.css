@@ -1,0 +1,106 @@
+/* --- Data Table orgánico --- */
+.data-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.data-table {
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 13px;
+  width: 100%;
+}
+
+body.organic .data-table thead th {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--moss-ink);
+  background: var(--moss-mist);
+  position: sticky;
+  top: 0;
+  padding: 10px 14px;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+body.organic .data-table tbody td {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--moss-ink);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+body.organic .data-table tbody tr:nth-child(even) td {
+  background: var(--smoke);
+}
+
+body.organic .data-table tbody tr:nth-child(odd) td {
+  background: var(--paper);
+}
+
+body.organic .data-table tbody tr:hover td {
+  background: var(--moss-mist);
+  transition: background 0.15s var(--ease-organic);
+}
+
+body.organic .data-table tfoot td {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--moss);
+  border-top: 2px solid var(--moss);
+  padding: 10px 14px;
+}
+
+body.organic .data-table--sticky-col th:first-child,
+body.organic .data-table--sticky-col td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+body.organic .data-table--sticky-col thead th:first-child {
+  z-index: 3;
+}
+
+body.organic .data-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--lichen);
+}
+
+body.organic .data-table-pagination button {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 14px;
+  border: 1px solid var(--moss);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--moss);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+body.organic .data-table-pagination button:hover:not(:disabled) {
+  background: var(--moss);
+  color: var(--bone);
+}
+
+body.organic .data-table-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--lichen);
+}
+

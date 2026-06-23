@@ -8,6 +8,7 @@ import { init as initProfile } from './views/profile.js';
 import { init as initAnalytics } from './views/analytics.js';
 import { init as initSleep } from './views/sleep.js';
 import { icon } from './utils/icons.js';
+import { cacheStore } from './utils/cache-store.js';
 
 function renderNavIcons() {
   document.querySelectorAll('.nav-icon').forEach(el => {
@@ -77,6 +78,9 @@ if (window.electronAPI) {
     _dataChangedTimeout = setTimeout(() => {
       showView(document.querySelector('.nav-item.active')?.dataset?.view || 'dashboard');
     }, 300);
+  });
+  window.electronAPI.onDomainChanged((domain) => {
+    cacheStore.invalidate(domain);
   });
 }
 

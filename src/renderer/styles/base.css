@@ -1,0 +1,258 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Source+Sans+3:wght@400;500;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --sidebar-width: 220px;
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --accent: #0D9488;
+  --accent-hover: #0F766E;
+  --accent-light: #CCFBF1;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --border: #E2E8F0;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --z-1: 1;
+  --z-10: 10;
+  --z-100: 100;
+  --radius-pill: 100px;
+}
+
+body.organic {
+  --bone: #F4EFE6;
+  --smoke: #E6E0D2;
+  --paper: #FBF7EE;
+  --moss: #4E5D3F;
+  --moss-ink: #2F3D26;
+  --moss-mist: #D7DAC7;
+  --ember: #C75B3B;
+  --ink: #1F1B17;
+  --lichen: #8A8870;
+
+  --bg-primary: var(--bone);
+  --bg-secondary: var(--paper);
+  --bg-tertiary: var(--smoke);
+  --text-primary: var(--ink);
+  --text-secondary: var(--lichen);
+  --accent: var(--moss);
+  --accent-hover: var(--moss-ink);
+  --accent-light: var(--moss-mist);
+  --danger: var(--ember);
+  --success: var(--moss);
+  --border: #D8D2C4;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', 'Inter', sans-serif;
+  --ease-organic: cubic-bezier(.2, .85, .25, 1);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+
+  --shadow: 0 1px 2px rgba(78, 93, 63, 0.04), 0 8px 24px -12px rgba(47, 61, 38, 0.18);
+  --shadow-md: 0 2px 6px rgba(78, 93, 63, 0.05), 0 12px 32px -10px rgba(47, 61, 38, 0.20);
+  --shadow-lg: 0 4px 10px rgba(78, 93, 63, 0.06), 0 18px 44px -12px rgba(47, 61, 38, 0.22);
+}
+
+body.organic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0 0.09  0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+body.organic > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.organic #sidebar {
+  --bg-secondary: var(--paper);
+  --text-secondary: var(--lichen);
+}
+
+body.organic #sidebar .nav-item.active {
+  background: var(--moss-mist);
+  color: var(--moss);
+  border-left-color: var(--accent);
+}
+
+body.organic #sidebar .nav-item.active::before {
+  background: var(--moss);
+}
+
+body.organic .nav-section {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 10px;
+  color: var(--lichen);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: var(--space-4) var(--space-5) var(--space-1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+body.organic .nav-section:hover {
+  color: var(--moss-ink);
+}
+
+body.organic .nav-section-chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+body.organic .nav-section.collapsed .nav-section-chevron {
+  transform: rotate(-90deg);
+}
+
+body.organic .sidebar-header h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+body.organic .sidebar-subtitle {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+@media (prefers-contrast: more) {
+  body.organic::before {
+    display: none;
+  }
+}
+
+body.organic .spark {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: var(--space-3);
+  overflow: visible;
+}
+
+body.organic .spark path.line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.organic .spark path.area {
+  opacity: 0.14;
+  stroke: none;
+}
+
+body.organic .spark .dot {
+  fill: var(--moss-ink);
+  stroke: var(--paper);
+  stroke-width: 1.4;
+}
+
+body.organic .dashboard-card .value + .spark {
+  margin-top: var(--space-2);
+}
+
+body.organic .view-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--moss-ink);
+}
+
+body.organic .dashboard-card h3,
+body.organic .card h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--moss-ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+body.organic .data-value-lg {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--moss);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+body.organic .analytics-kpi-card .kpi-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--lichen);
+}
+
+body.organic .analytics-kpi-card .kpi-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--moss);
+}
+
+body.organic .dashboard-card::before {
+  display: none;
+}
+
+body.organic .form-group label {
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.btn, .nav-item, .filter-btn, .dashboard-card, .secondary-toggle, .tag, details summary, [role="button"], .clickable {
+  cursor: pointer;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+

@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   navigate: (view) => ipcRenderer.send('navigate', view),
   onNavigate: (callback) => ipcRenderer.on('navigate', (_event, view) => callback(view)),
   onDataChanged: (callback) => ipcRenderer.on('data-changed', () => callback()),
+  onDomainChanged: (callback) => ipcRenderer.on('domain-changed', (_event, domain) => callback(domain)),
   onHealthImportProgress: (callback) => ipcRenderer.on('health-import-progress', (_event, msg) => callback(msg)),
   removeHealthImportProgressListener: () => ipcRenderer.removeAllListeners('health-import-progress'),
 
