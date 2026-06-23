@@ -6,12 +6,17 @@ Establish a unified token-based design system with CSS custom properties for spa
 ## Requirements
 ### Requirement: Design token system for spacing, elevation, and z-index
 
-The system SHALL define a unified set of CSS custom properties for spacing (`--space-1` through `--space-8`), elevation (`--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`), and z-index layering (`--z-1`, `--z-10`, `--z-100`) in the `:root` selector of `src/renderer/styles/main.css`. All views and components SHALL reference these tokens instead of hardcoded pixel values. Under `body.organic`, the elevation tokens (`--shadow`, `--shadow-md`, `--shadow-lg`) SHALL be overridden with moss-tinted rgba shadows to read as a "diffused light" rather than a neutral drop.
+The system SHALL define a unified set of CSS custom properties for spacing (`--space-1` through `--space-8`), elevation (`--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`), and z-index layering (`--z-1`, `--z-10`, `--z-100`) in the `:root` selector of `src/renderer/styles/base.css`. All views and components SHALL reference these tokens instead of hardcoded pixel values. Under `body.organic`, the elevation tokens (`--shadow`, `--shadow-md`, `--shadow-lg`) SHALL be overridden with moss-tinted rgba shadows to read as a "diffused light" rather than a neutral drop. The CSS SHALL be organized by component in separate files (`base.css`, `layout.css`, `cards.css`, `forms.css`, `tables.css`, `utilities.css`) with `main.css` as an import-only entry point.
 
-#### Scenario: Spacing scale defined
-- **WHEN** a developer opens `src/renderer/styles/main.css`
+#### Scenario: Spacing scale defined in base.css
+- **WHEN** a developer opens `src/renderer/styles/base.css`
 - **THEN** the `:root` selector SHALL contain `--space-1: 4px`, `--space-2: 8px`, `--space-3: 12px`, `--space-4: 16px`, `--space-6: 24px`, `--space-8: 32px`
 - **THEN** existing padding/margin values in the stylesheet SHALL be migrated to use these tokens
+
+#### Scenario: CSS organized by component
+- **WHEN** a developer navigates `src/renderer/styles/`
+- **THEN** separate files SHALL exist for base, layout, cards, forms, tables, and utilities
+- **THEN** `main.css` SHALL contain only `@import` directives
 
 #### Scenario: Elevation tokens defined
 - **WHEN** a developer opens `src/renderer/styles/main.css`
