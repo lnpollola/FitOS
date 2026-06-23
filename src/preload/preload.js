@@ -56,10 +56,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteExercise: (id) => ipcRenderer.invoke('db:deleteExercise', id),
   getTrainingRoutines: () => ipcRenderer.invoke('db:getTrainingRoutines'),
   saveTrainingRoutine: (routine) => ipcRenderer.invoke('db:saveTrainingRoutine', routine),
+  deleteTrainingRoutine: (id) => ipcRenderer.invoke('db:deleteTrainingRoutine', id),
 
   // Energy balance
   getEnergyBalance: (date) => ipcRenderer.invoke('db:getEnergyBalance', date),
   getWeeklyBalance: () => ipcRenderer.invoke('db:getWeeklyBalance'),
+  adjustMealGrams: (deltas) => ipcRenderer.invoke('db:adjustMealGrams', deltas),
 
   // Settings
   getSetting: (key) => ipcRenderer.invoke('db:getSetting', key),
@@ -71,6 +73,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Dashboard
   getDashboardData: () => ipcRenderer.invoke('db:getDashboardData'),
   getSleepData: (from, to) => ipcRenderer.invoke('db:getSleepData', from, to),
+  getSleepAnalysis: (from, to) => ipcRenderer.invoke('db:getSleepAnalysis', from, to),
+  getCyclingDistance: (from, to) => ipcRenderer.invoke('db:getCyclingDistance', from, to),
 
   // Elaborated dishes
   saveDish: (dish) => ipcRenderer.invoke('db:saveDish', dish),

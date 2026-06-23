@@ -30,6 +30,20 @@ The system SHALL maintain a food database (FoodItem) with kcal and macros per 10
 - **WHEN** a full day plan is displayed
 - **THEN** the system SHALL show the sum of all meals' calories and macros, including supplements (creatine 5g, optional protein powder)
 
+#### Scenario: Running totals per meal and daily aggregate
+- **WHEN** the daily plan renders
+- **THEN** each of the 5 meals SHALL show subtotal kcal, protein, carbs, and fat
+- **THEN** subtotals SHALL update when any gram value in that meal changes
+- **WHEN** the daily plan renders with all entries
+- **THEN** a daily aggregate row SHALL show total kcal, protein, carbs, and fat
+- **THEN** totals SHALL match the sum of all 5 meal subtotals
+
+#### Scenario: Compliance indicator
+- **WHEN** the daily aggregate is computed
+- **THEN** a compliance indicator SHALL compare daily total kcal against the TDEE deficit target
+- **THEN** within 100 kcal of target SHALL show green check
+- **THEN** off by >100 kcal SHALL show yellow warning with the gap amount
+
 ### Requirement: Learn new food options
 
 The system SHALL allow the user to add new food items to any meal slot, providing the food name and estimated kcal/macros per 100g, and incorporate them as available options for future planning.
@@ -66,6 +80,20 @@ The system SHALL allow users to manually adjust the gram amount of any meal slot
 - **WHEN** the adaptive planning module recommends a deficit change
 - **THEN** the system SHALL propose specific slot gram adjustments and allow the user to accept, dismiss, or modify them
 
+#### Scenario: Reliable gram editing with debounced input
+- **WHEN** user types a new gram value in a daily plan entry input
+- **THEN** the system SHALL use `input` event with 500ms debounce
+- **THEN** the system SHALL NOT trigger save on every keystroke
+- **WHEN** user finishes typing and the input loses focus
+- **THEN** the system SHALL persist the new gram value via IPC after 500ms debounce
+- **THEN** a subtle saving indicator SHALL appear during debounce
+- **WHEN** user enters a value below the food item's minimum grams
+- **THEN** the value SHALL be clamped to the minimum on blur
+- **WHEN** user enters a value above the maximum grams
+- **THEN** the value SHALL be clamped to the maximum on blur
+- **WHEN** user rapidly clicks increment/decrement buttons
+- **THEN** each click SHALL produce exactly one increment/decrement
+
 ### Requirement: Elaborated dishes as meal components
 
 The system SHALL allow elaborated dishes (pre-composed meals from multiple ingredients) to be used as options within meal template slots, alongside individual food items.
@@ -74,17 +102,58 @@ The system SHALL allow elaborated dishes (pre-composed meals from multiple ingre
 - **WHEN** a user opens a meal slot's options
 - **THEN** the system SHALL display both individual food items and elaborated dishes as selectable options, with dishes marked with a "🍽 Plato" badge
 
+#### Scenario: Example elaborated dishes pre-loaded
+- **WHEN** the elaborated dishes manager is expanded
+- **THEN** at least 3 example dishes SHALL be displayed
+- **THEN** each dish SHALL show name, total kcal, and expandable ingredient list
+- **THEN** example dishes SHALL include combinations already present in the seed meal templates
+
 ### Requirement: Dish card UI with ingredient breakdown
 
-The system SHALL display elaborated dishes as cards showing the dish name, total macros, and an expandable ingredient list.
+The system SHALL render the elaborated dishes manager as a collapsible `<details>` section, collapsed by default. When expanded, dish cards SHALL show the dish name, total macros, and an expandable ingredient list. Each dish card SHALL have edit and delete buttons. The `db:saveDish` handler SHALL upsert by id so edits update existing dishes rather than inserting duplicates.
+
+#### Scenario: Collapsible dishes manager with examples
+- **WHEN** the diet view loads
+- **THEN** the elaborated dishes section SHALL be collapsed under "Gestor de platos" summary with a chevron icon
+- **WHEN** the user expands it
+- **THEN** example dishes and existing user dishes SHALL be displayed as cards
+- **THEN** the open/closed state SHALL be preserved until the user navigates away
 
 #### Scenario: Expand dish card ingredients
 - **WHEN** a user clicks "Ver ingredientes" on a dish card
 - **THEN** the system SHALL expand the card to show each ingredient name, grams, and its individual macro contribution
 
+#### Scenario: Edit button on dish card
+- **WHEN** the dishes list renders
+- **THEN** each dish card SHALL have an "Editar" button alongside the delete button
+
+#### Scenario: Edit pre-fills ingredients
+- **WHEN** the user clicks "Editar" on a dish
+- **THEN** the dish form SHALL pre-fill with the dish's name and existing ingredients
+- **THEN** ingredients SHALL not reset to empty
+
+#### Scenario: Save updates existing dish
+- **WHEN** the user saves an edited dish
+- **THEN** `db:saveDish` SHALL update the existing dish (upsert by id), not insert a new one
+
 ### Requirement: Friendlier food entry interface
 
-The system SHALL provide a more visually organized interface for browsing and adding food items, with search, category filters, and card layout.
+The system SHALL provide a collapsible food item management section. The food browser SHALL be hidden inside a `<details>` element collapsed by default, with search, category filters, paginated food table, and smart defaults for new food entries.
+
+#### Scenario: Collapsible food manager
+- **WHEN** the diet view loads
+- **THEN** the food manager SHALL be collapsed under "Gestor de alimentos" summary with a right-pointing chevron
+- **WHEN** the user clicks the summary
+- **THEN** the food manager SHALL expand with search, category pills, and paginated food table
+- **THEN** the chevron SHALL rotate to point down
+- **WHEN** the user clicks the summary again
+- **THEN** the food manager SHALL collapse
+- **THEN** the chevron SHALL rotate back to right-pointing
+
+#### Scenario: State preserved during session
+- **WHEN** the user expands the food manager, scrolls down, and scrolls back up
+- **THEN** the food manager SHALL remain expanded
+- **THEN** the browser's native `<details>` open attribute SHALL maintain state
 
 #### Scenario: Food browser with categories
 - **WHEN** a user opens the food item browser
@@ -96,21 +165,39 @@ The system SHALL provide a more visually organized interface for browsing and ad
 
 ### Requirement: 5-column meal template display
 
-The system SHALL display the 5 meals (Desayuno, Media Mañana, Comida, Merienda, Cena) as columns showing slot breakdown with food options.
+The system SHALL display the 5 meals (Desayuno, Media Mañana, Comida, Merienda, Cena) as columns showing slot breakdown with food options. Media Mañana and Merienda SHALL be displayed as fixed recipes, not slot-based templates. Food option groups SHALL show category labels above them. Training and rest day gram amounts SHALL both be visible. The daily plan SHALL appear directly below the meal templates.
 
 #### Scenario: Meal columns render from seeded data
 - **WHEN** meal_components and meal_options are populated
-- **THEN** the system SHALL display 5 columns, each showing meal name, slot types, gram amounts, and interchangeable food options
-- **THEN** each slot SHALL show training day and rest day gram amounts
+- **THEN** the system SHALL display 5 columns, each showing meal name
+- **THEN** Desayuno, Comida, and Cena SHALL show slot types with gram amounts and interchangeable food options with category pills above each food group
+- **THEN** Media Mañana and Merienda SHALL display as fixed recipe: "Batido: 200–350ml leche vegetal + 150g fruta + 50g avena + 30g proteína + hielo"
+- **THEN** Media Mañana and Merienda SHALL NOT display interchangeable food option slots
+- **THEN** each slot SHALL show training day grams as the primary value (e.g., "120g") and rest day grams as a secondary muted value (e.g., "100g descanso")
+- **THEN** food options with zero rest day grams SHALL show "—" instead of "0g"
+- **THEN** category pills SHALL use organic palette colors: Carbohidratos warm tan, Proteínas moss, Grasas saludables ember, Infusiones lichen
 
 #### Scenario: User selects food per slot
-- **WHEN** a user clicks a food option in a slot
+- **WHEN** a user clicks a food option in a slot (Desayuno, Comida, or Cena only)
 - **THEN** it SHALL be highlighted as selected
 - **THEN** the meal's total kcal/macros SHALL update
 
 #### Scenario: Create daily plan from selections
-- **WHEN** the user clicks "Usar estas 5 comidas"
+- **WHEN** the user clicks "Generar Plan Diario"
 - **THEN** the system SHALL create a daily_plan with the selected foods and grams
+- **THEN** the plan SHALL render directly below the meal templates for review
+- **THEN** a visible section header "Plan Diario" SHALL separate meal templates from daily plan
+- **THEN** the food manager and elaborated dishes sections SHALL appear below the daily plan
+
+### Requirement: Clarified gram range display
+
+The system SHALL display minimum and maximum gram ranges with descriptive labels ("Mín" and "Máx") below each food option in the meal template columns.
+
+#### Scenario: Gram range with labels
+- **WHEN** a food option renders with training_day_grams = 120 and rest_day_grams = 100
+- **THEN** the display SHALL show "100–120g" as the gram range
+- **THEN** the labels "Mín" and "Máx" SHALL precede or accompany the range
+- **THEN** the range SHALL use `strings.diet.gramRange` for the format string
 
 ### Requirement: Extended food seed data (~150 items)
 
@@ -134,6 +221,11 @@ The system SHALL auto-fill macro fields when the user types a food name, by sear
 - **WHEN** no food item matches the query
 - **THEN** the system SHALL show "Sin coincidencias — completa los macros manualmente"
 
+#### Scenario: Auto-fill preserves user-entered macros
+- **WHEN** the user has typed macro values and then types a food name that matches an existing item
+- **THEN** the auto-fill SHALL NOT overwrite the user's macro values without confirmation
+- **THEN** the system SHALL either skip the overwrite or show a "¿Sobrescribir valores?" confirmation dialog
+
 ### Requirement: Compact food display with pagination
 
 The system SHALL display food items in a paginated table with category pill filters.
@@ -154,7 +246,7 @@ The system SHALL display food items in a paginated table with category pill filt
 
 ### Requirement: Daily plan auto-generator
 
-The system SHALL auto-generate a 5-meal daily plan based on the energy balance target, using macro ratios computed from seed data.
+The system SHALL auto-generate a 5-meal daily plan based on the energy balance target, using macro ratios computed from seed data. The daily plan section SHALL include a training/rest day toggle that controls which gram amounts are used.
 
 #### Scenario: Generate plan from deficit target
 - **WHEN** the user clicks "Generar Plan Automático"
@@ -168,9 +260,83 @@ The system SHALL auto-generate a 5-meal daily plan based on the energy balance t
 - **WHEN** no energy balance target exists
 - **THEN** the system SHALL prompt the user to set a deficit target first
 
+#### Scenario: Training/rest day toggle
+- **WHEN** the daily plan section renders
+- **THEN** a toggle control SHALL appear in the plan header with two options: "Entrenamiento" and "Descanso"
+- **THEN** the default selection SHALL be "Entrenamiento"
+- **THEN** the toggle SHALL persist for the duration of the view session
+- **WHEN** the user selects "Descanso" then generates or renders a daily plan
+- **THEN** the system SHALL use `restday_grams` from `meal_components` for each food option
+- **THEN** the daily totals SHALL reflect the lower gram amounts
+- **THEN** a visual indicator SHALL mark the plan as "Día de descanso"
+- **WHEN** the user selects "Entrenamiento" and generates a daily plan
+- **THEN** the system SHALL use `default_grams` from `meal_components`
+- **THEN** a visual indicator SHALL mark the plan as "Día de entrenamiento"
+
 #### Scenario: Generated plan editable before save
 - **WHEN** the plan is generated
-- **THEN** the system SHALL display it for review and manual tweaks before persisting
+- **THEN** it SHALL display in the daily plan section for review with adjustable gram amounts
+- **THEN** the user SHALL be able to modify grams, swap foods, and adjust before persisting
+- **THEN** a "Guardar Plan" button SHALL persist the reviewed plan
+
+### Requirement: Food categories cover legumes and plant proteins
+
+The system SHALL ensure the category mapping covers legumes (lentejas, garbanzos, alubias, habas, soja) and plant proteins (tofu, tempeh, seitán). These items SHALL match the "Proteínas" or a "Legumbres" category and be visible under their filter.
+
+#### Scenario: Legumes filterable
+- **WHEN** the user filters by "Proteínas" or "Legumbres"
+- **THEN** lentejas, garbanzos, alubias, habas, soja SHALL appear in the filtered results
+
+#### Scenario: Plant proteins filterable
+- **WHEN** the user filters by "Proteínas"
+- **THEN** tofu, tempeh, seitán SHALL appear in the filtered results
+
+### Requirement: Fix add dish to daily plan (FK violation)
+
+The system SHALL fix the "Añadir plato" functionality so that adding an elaborated dish to the daily plan successfully inserts its ingredients. The current implementation passes `meal_component_id: 0` which violates the foreign key constraint. The fix SHALL either resolve a valid `meal_component_id` for the target meal or set it to NULL if the schema allows.
+
+#### Scenario: Add dish inserts ingredients
+- **WHEN** the user selects a dish from "Añadir plato" dropdown for a meal
+- **THEN** the dish's ingredients SHALL be inserted into `daily_plan_entries` with a valid `meal_component_id` (or NULL if schema is relaxed)
+- **THEN** the dish SHALL appear in the daily plan render for that meal
+- **THEN** no FK violation SHALL occur
+
+### Requirement: Fix swap food duplicates entries
+
+The system SHALL fix the "Cambiar alimento" functionality to delete old entries before inserting new ones. The current implementation inserts new food rows without removing the old ones, causing macro duplication.
+
+#### Scenario: Swap replaces old entries
+- **WHEN** the user swaps a food option in the daily plan
+- **THEN** the system SHALL first delete the old `daily_plan_entries` for that meal and date
+- **THEN** the system SHALL insert the new food entries
+- **THEN** the meal's total kcal/macros SHALL reflect only the new food, not doubled
+
+### Requirement: Column totals computed on render
+
+The system SHALL call `updateColumnTotals()` once after the meal template HTML is rendered, not only on food option click. Initial render SHALL show non-zero calorie totals based on default food selections.
+
+#### Scenario: Non-zero totals on load
+- **WHEN** the diet view renders with meal templates
+- **THEN** each meal column SHALL display a non-zero kcal total based on default_grams
+- **THEN** the user SHALL NOT see "0 kcal" on initial load
+
+### Requirement: Eliminate duplicate loads on init
+
+The system SHALL call `loadFoods()`, `loadHiddenFoods()`, and `loadDailyPlan()` exactly once on view init. The current implementation calls them twice (once in `Promise.allSettled` and once after).
+
+#### Scenario: Single load on init
+- **WHEN** the diet view initializes
+- **THEN** each load function SHALL be called exactly once
+- **THEN** no second skeleton flash SHALL occur
+
+### Requirement: Daily plan entries sorted by component sort order
+
+The system SHALL sort daily plan entries by their meal component's `sort_order` before rendering, so foods appear in the logical slot order (carbs, protein, fat) not in DB insertion order.
+
+#### Scenario: Entries sorted by sort_order
+- **WHEN** the daily plan renders for a meal
+- **THEN** entries SHALL be ordered by their component's `sort_order` field
+- **THEN** "Aceite de Oliva" SHALL NOT appear before "Pechuga de Pollo" if protein has a lower sort_order
 
 ## TBD
 

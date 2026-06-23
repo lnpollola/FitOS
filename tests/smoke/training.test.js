@@ -34,4 +34,39 @@ describe('Training view smoke test', () => {
     const { init } = await import('../../src/renderer/views/training.js');
     await expect(init()).resolves.not.toThrow();
   });
+
+  it('renders frequency selector and generate button', async () => {
+    const { init } = await import('../../src/renderer/views/training.js');
+    await init();
+    expect(document.getElementById('frequency-select')).toBeTruthy();
+    expect(document.getElementById('btn-generate-plan')).toBeTruthy();
+  });
+
+  it('renders routine form and list', async () => {
+    const { init } = await import('../../src/renderer/views/training.js');
+    await init();
+    expect(document.getElementById('routine-form')).toBeTruthy();
+    expect(document.getElementById('routine-list')).toBeTruthy();
+  });
+
+  it('renders session form and set editor', async () => {
+    const { init } = await import('../../src/renderer/views/training.js');
+    await init();
+    expect(document.getElementById('session-form')).toBeTruthy();
+    expect(document.getElementById('session-list')).toBeTruthy();
+  });
+
+  it('renders exercise library section', async () => {
+    const { init } = await import('../../src/renderer/views/training.js');
+    await init();
+    expect(document.getElementById('exercise-list')).toBeTruthy();
+  });
+
+  it('uses Lucide icons not emoji', async () => {
+    const { init } = await import('../../src/renderer/views/training.js');
+    await init();
+    const html = document.getElementById('view-training').innerHTML;
+    const emojiRegex = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{2700}-\u{27BF}]/u;
+    expect(html).not.toMatch(emojiRegex);
+  });
 });

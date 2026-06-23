@@ -601,6 +601,30 @@ tr:hover td {
   background: var(--bg-tertiary);
 }
 
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive table {
+  min-width: 100%;
+}
+.table-responsive th:first-child,
+.table-responsive td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-secondary);
+}
+.table-responsive thead th:first-child {
+  z-index: 3;
+}
+.table-responsive tbody tr:nth-child(even) td {
+  background: var(--bg-tertiary);
+}
+.table-responsive tbody tr:hover td:first-child {
+  background: var(--bg-tertiary);
+}
+
 .empty-state {
   text-align: center;
   padding: 40px var(--space-5);
@@ -731,6 +755,27 @@ details summary:hover {
 
 .form-row-full {
   grid-column: 1 / -1;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: 0 0 var(--space-4) 0;
+}
+
+fieldset .form-row-3 {
+  gap: var(--space-3);
+}
+
+legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0 var(--space-2);
 }
 
 .flex-row {
@@ -1087,6 +1132,318 @@ details summary:hover {
   .dashboard-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
+}
+
+/* --- Side-by-side card layout --- */
+.card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+.card-row .card {
+  margin-bottom: 0;
+}
+@media (max-width: 700px) {
+  .card-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Collapsible <details>/<summary> with chevron icon --- */
+details.card {
+  padding: 0;
+}
+details.card summary {
+  padding: var(--space-5);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+details.card summary::-webkit-details-marker {
+  display: none;
+}
+details.card summary::before {
+  content: '▶';
+  font-size: 10px;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+details.card[open] summary::before {
+  transform: rotate(90deg);
+}
+details.card > .card-content {
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+/* --- Category pills (food categories) --- */
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.category-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.category-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.category-pill.carbs { border-color: #F59E0B; color: #D97706; }
+.category-pill.carbs.active { background: #F59E0B; color: white; }
+.category-pill.protein { border-color: #EF4444; color: #DC2626; }
+.category-pill.protein.active { background: #EF4444; color: white; }
+.category-pill.fat { border-color: #8B5CF6; color: #7C3AED; }
+.category-pill.fat.active { background: #8B5CF6; color: white; }
+.category-pill.infusion { border-color: #14B8A6; color: #0D9488; }
+.category-pill.infusion.active { background: #14B8A6; color: white; }
+.category-pill.fruit { border-color: #EC4899; color: #DB2777; }
+.category-pill.fruit.active { background: #EC4899; color: white; }
+.category-pill.vegetable { border-color: #10B981; color: #059669; }
+.category-pill.vegetable.active { background: #10B981; color: white; }
+.category-pill.legume { border-color: #84CC16; color: #65A30D; }
+.category-pill.legume.active { background: #84CC16; color: white; }
+
+/* --- Body-part fieldset grid --- */
+.measurement-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  background: var(--bg-secondary);
+}
+.measurement-fieldset legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0 var(--space-2);
+}
+.measurement-fieldset .fieldset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+@media (max-width: 500px) {
+  .measurement-fieldset .fieldset-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Sleep phase stacked bar --- */
+.sleep-phases {
+  display: flex;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+.sleep-phase {
+  height: 100%;
+  transition: width 0.3s;
+}
+.sleep-phase.deep { background: #1E3A5F; }
+.sleep-phase.rem { background: #7C3AED; }
+.sleep-phase.light { background: #94A3B8; }
+
+/* --- Daily plan running totals --- */
+.meal-total {
+  display: flex;
+  gap: var(--space-3);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px dashed var(--border);
+}
+.daily-aggregate {
+  display: flex;
+  gap: var(--space-4);
+  padding: 14px 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* --- Fixed recipe display --- */
+.fixed-recipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-2);
+}
+.fixed-recipe .recipe-gram-range {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* --- Day type toggle (training/rest) --- */
+.day-type-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.day-type-btn {
+  padding: 8px 16px;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.day-type-btn:hover {
+  background: var(--bg-tertiary);
+}
+.day-type-btn.active {
+  background: var(--accent);
+  color: white;
+}
+.day-type-btn:first-child {
+  border-right: 1px solid var(--border);
+}
+
+/* --- Error state card --- */
+.state-error {
+  border-color: var(--danger) !important;
+}
+.state-error h3 {
+  color: var(--danger) !important;
+}
+.retry-button {
+  margin-top: var(--space-2);
+}
+
+/* --- Training set editor --- */
+.set-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+.set-editor-header {
+  display: grid;
+  grid-template-columns: 32px 1fr 60px 60px 60px 40px;
+  gap: 4px;
+  padding: 6px var(--space-2);
+  background: var(--bg-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.set-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 60px 60px 60px 40px;
+  gap: 4px;
+  padding: 6px var(--space-2);
+  align-items: center;
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+}
+.set-row:hover {
+  background: var(--bg-tertiary);
+}
+.set-row .set-num {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-align: center;
+}
+.set-row input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+.set-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.set-row .set-weight-header,
+.set-row .set-reps-header,
+.set-row .set-rpe-header {
+  text-align: center;
+}
+.set-add-form {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+.set-add-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.set-add-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.set-add-form button {
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* --- Analytics empty-state banner --- */
+.empty-banner {
+  text-align: center;
+  padding: 32px var(--space-5);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+.empty-banner p {
+  font-size: 14px;
+  margin-bottom: var(--space-2);
+}
+.empty-cta {
+  margin-top: var(--space-3);
 }
 
 /* ============================================================

@@ -2,28 +2,33 @@
 
 ## Purpose
 
-Track 10 body metrics plus weight, display trend charts, compute estimated body fat percentage (Navy circumference method), and support comparison views.
+Track 13 body metrics plus weight, display trend charts, compute estimated body fat percentage (Navy circumference method), and support comparison views.
 
 ## Requirements
 
 ### Requirement: Track body measurements over time
 
-The system SHALL allow the user to record and store body measurements across 10 metrics plus weight, with date and optional notes.
+The system SHALL allow the user to record and store body measurements across 13 metrics plus weight, with date and optional notes. The input form SHALL be organized into 4 fieldsets grouped by body part (Cuello y Hombros, Torso, Brazos, Piernas), each with a representative icon.
 
-#### Scenario: Record a measurement set
-- **WHEN** a user enters a new set of body measurements (date, chest, neck, shoulders, biceps left, biceps right, forearm left, forearm right, waist, hips, thigh left, thigh right, calf left, calf right, weight_kg)
-- **THEN** the system SHALL save the measurement set with the given date and display a confirmation
+#### Scenario: Record a measurement set via body-part form
+- **WHEN** a user opens the measurement form
+- **THEN** the form SHALL display 4 fieldsets with icons: Cuello y Hombros, Torso, Brazos, Piernas
+- **THEN** each fieldset SHALL contain its corresponding metric input fields pre-filled with last known values
 
 #### Scenario: Edit a previous measurement set
 - **WHEN** a user opens an existing measurement record, modifies one or more fields, and saves
 - **THEN** the system SHALL update the record and display the updated values
 
-#### Scenario: View measurement history as a table
+#### Scenario: View measurement history as a responsive table
 - **WHEN** a user navigates to the body measurements view
-- **THEN** the system SHALL display all measurement sets sorted by date descending
-- **THEN** each value SHALL be formatted with 1 decimal place and the unit (cm or kg) in the column header
-- **THEN** column headers SHALL be in Spanish
-- **THEN** the table SHALL use alternating row colors for readability
+- **THEN** the system SHALL display measurement sets in a responsive table that scrolls horizontally only when needed
+- **THEN** each row SHALL show per-metric trend arrows (▲/▼/―) comparing to the previous measurement
+- **THEN** column headers SHALL be in Spanish and sticky on horizontal scroll
+
+#### Scenario: Responsive table adapts to viewport
+- **WHEN** the viewport width is below 900px
+- **THEN** the table SHALL enable horizontal scroll with sticky first column (date)
+- **THEN** the "Ver todo" button SHALL be fully functional at all widths
 
 #### Scenario: New measurement form pre-fills with last values
 - **WHEN** a user opens the body measurement form and previous measurement data exists
@@ -35,11 +40,18 @@ The system SHALL allow the user to record and store body measurements across 10 
 
 ### Requirement: Display measurement trends as charts
 
-The system SHALL display individual trend charts for each body metric over time, allowing the user to see progress in specific areas.
+The system SHALL replace the combined chest/neck/shoulders multi-line chart with an evolution chart consolidating key torso metrics (chest, waist, hips), while maintaining individual compact trend charts for all other metrics.
 
-#### Scenario: All metrics have trend charts
-- **WHEN** a user navigates to the measurements view
-- **THEN** the system SHALL display line charts for each of: chest, neck, shoulders, biceps (L/R), forearm (L/R), waist, hips, thigh (L/R), calf (L/R), weight, and estimated body fat percentage
+#### Scenario: Evolution chart replaces chest/neck/shoulders
+- **WHEN** the measurements view renders
+- **THEN** a consolidated evolution chart SHALL replace the previous chest+neck+shoulders chart
+- **THEN** the chart SHALL display waist, chest, and hips as trend lines
+- **THEN** each line SHALL show current value and delta vs first measurement as KPI overlay
+- **THEN** neck and shoulders SHALL remain as individual compact trend charts
+
+#### Scenario: Evolution chart with no data
+- **WHEN** only 1 measurement set exists
+- **THEN** the evolution chart SHALL display a single point per metric with "Más datos necesarios para ver tendencia"
 
 #### Scenario: Chart renders with compact sizing
 - **WHEN** a measurement trend chart renders
@@ -75,6 +87,15 @@ The system SHALL compute an estimated body fat percentage from the measurement d
 - **WHEN** the user has multiple measurement sets
 - **THEN** the system SHALL display estimated body fat percentage as a trend line alongside the weight trend
 
+#### Scenario: Male body-fat without hips
+- **WHEN** the user's sex is male and `neck_cm` and `waist_cm` exist but `hips_cm` is null
+- **THEN** the system SHALL compute body fat using the male Navy formula
+- **THEN** the estimate SHALL NOT show as unavailable due to missing hips
+
+#### Scenario: Female body-fat requires hips
+- **WHEN** the user's sex is female and `hips_cm` is null
+- **THEN** the system SHALL display "Falta medición de cadera para estimar grasa corporal"
+
 ### Requirement: Track weight separately for trend computation
 
 The system SHALL track weight as part of measurement sets and allow standalone weight entries for more frequent logging (e.g., weekly weigh-ins between measurement sessions).
@@ -101,11 +122,18 @@ Individual metric trend charts SHALL render at compact 140px height with KPI ove
 
 ### Requirement: Top-5 history table
 
-The measurement history table SHALL display only the 5 most recent entries by default, with a "Ver todo" button to expand to all entries.
+The measurement history table SHALL display only the 5 most recent entries by default, with a "Ver todo" button to expand. Each metric cell SHALL show a trend arrow comparing to the previous row.
 
-#### Scenario: History shows top-5 by default
+#### Scenario: History shows top-5 with trend arrows
 - **WHEN** a user navigates to the measurements view
-- **THEN** the history table SHALL show only the 5 most recent measurement sets
+- **THEN** the history table SHALL show the 5 most recent measurement sets
+- **THEN** each metric cell SHALL display a small ▲/▼/― arrow based on comparison to the immediately previous entry's value
+
+#### Scenario: Trend arrow thresholds
+- **WHEN** comparing two sequential measurement values
+- **THEN** increase > 0.5 cm SHALL show ▲ (orange/red for waist, green for biceps — context-dependent, neutral gray for most)
+- **THEN** decrease > 0.5 cm SHALL show ▼
+- **THEN** change ≤ 0.5 cm SHALL show ―
 
 #### Scenario: Expand to full history
 - **WHEN** a user clicks "Ver todo"
@@ -120,11 +148,46 @@ The weight trend chart SHALL group data points by calendar month, rendering each
 - **WHEN** the user has weight entries spanning multiple months
 - **THEN** the weight chart SHALL show each calendar month as a distinct segment with monthly average annotation
 
-### Requirement: Combined chest/neck/shoulders chart
+### Requirement: All measurement metrics present in form
 
-The system SHALL render a single multi-line chart for chest, neck, and shoulders metrics with per-metric KPI overlay and trendline.
+The system SHALL ensure all 13 metrics plus weight have corresponding input fields in the measurement form. Any missing metrics SHALL be added.
 
-#### Scenario: Chest/neck/shoulders multi-chart
-- **WHEN** the user has measurement data for chest, neck, and shoulders
-- **THEN** a combined chart SHALL show three lines (chest, neck, shoulders) with per-metric current value KPI
-- **THEN** a trendline SHALL overlay the chart
+#### Scenario: Complete metric coverage
+- **WHEN** the measurement form renders
+- **THEN** inputs SHALL exist for: chest, neck, shoulders, biceps_left, biceps_right, forearm_left, forearm_right, waist, hips, thigh_left, thigh_right, calf_left, calf_right, weight_kg
+- **THEN** no metric defined in the schema SHALL be missing from the form
+
+### Requirement: Chart labels aligned with data points
+
+The system SHALL align chart labels with data points by filtering labels and data together. When a metric has null values, both the label and the data point for that date SHALL be excluded from the chart, or the data SHALL use `null` (sparse) with the label retained.
+
+#### Scenario: Labels and data aligned
+- **WHEN** a measurement chart renders with a metric that has null gaps
+- **THEN** each data point SHALL be plotted at its correct date on the x-axis
+- **THEN** labels and data arrays SHALL have the same length (both filtered, or both unfiltered with nulls)
+
+### Requirement: Upsert on saveMeasurementSet
+
+The system SHALL implement upsert for `saveMeasurementSet`: if a measurement set with the same date already exists, the handler SHALL update it rather than insert a duplicate. This prevents date collisions from corrupting the before/after comparison.
+
+#### Scenario: Same date updates existing
+- **WHEN** `db:saveMeasurementSet({ date, ... })` is called and a row with that date exists
+- **THEN** the handler SHALL UPDATE the existing row
+- **THEN** no duplicate rows with the same date SHALL be created
+
+### Requirement: Remove dead getProfile call from loadHistory
+
+The system SHALL remove the unused `api.getProfile()` call inside `loadHistory` that fetches profile data but never uses it. This eliminates a wasted IPC round-trip on every history render and "Ver todo" toggle.
+
+#### Scenario: No wasted IPC in loadHistory
+- **WHEN** `loadHistory` is called
+- **THEN** `api.getProfile()` SHALL NOT be called within that function
+
+### Requirement: Empty-state text for hidden charts
+
+The system SHALL display an empty-state message (`strings.states.noData`) below any chart `<h2>` heading when the chart is hidden due to insufficient data. No heading SHALL have empty blank space below it.
+
+#### Scenario: Hidden chart shows message
+- **WHEN** a chart is hidden due to insufficient data
+- **THEN** the chart's `<h2>` heading SHALL be followed by a `strings.states.noData` message
+- **THEN** no blank space SHALL appear between the heading and the next section

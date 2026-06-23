@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const { app } = require('electron');
 const { seedIfEmpty } = require('./seed-data');
+const EXERCISES_MIGRATION = require('./seed-data').EXERCISES || [];
 
 let db;
 let healthsyncDb;
@@ -231,6 +232,26 @@ function createTables() {
       exercise_ids TEXT,
       FOREIGN KEY (plan_id) REFERENCES workout_plans(id)
     );
+
+    CREATE TABLE IF NOT EXISTS activity_summary_cache (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      period_days INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      steps INTEGER DEFAULT 0,
+      active_kcal REAL DEFAULT 0,
+      resting_kcal REAL DEFAULT 0,
+      exercise_minutes REAL DEFAULT 0,
+      walking_km REAL DEFAULT 0,
+      cycling_km REAL DEFAULT 0,
+      sleep_hours REAL DEFAULT 0,
+      hrv_avg REAL,
+      resting_hr_avg REAL,
+      sport_sessions INTEGER DEFAULT 0,
+      sport_kcal REAL DEFAULT 0,
+      sport_minutes REAL DEFAULT 0,
+      weight_kg REAL,
+      UNIQUE(period_days, date)
+    );
   `);
 
   // Schema migrations
@@ -275,10 +296,108 @@ function createTables() {
 
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '2')").run();
   }
+
+  if (!schemaVersion || parseInt(schemaVersion) < 3) {
+    // Migration 5: Relax daily_plan_entries.meal_component_id to allow NULL (for dish ingredients)
+    const dpEntriesSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='daily_plan_entries'").get();
+    if (dpEntriesSql && dpEntriesSql.sql.includes('meal_component_id INTEGER NOT NULL')) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS daily_plan_entries_v2 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          daily_plan_id INTEGER NOT NULL,
+          meal_component_id INTEGER,
+          food_item_id INTEGER NOT NULL,
+          grams REAL NOT NULL,
+          FOREIGN KEY (daily_plan_id) REFERENCES daily_plans(id),
+          FOREIGN KEY (meal_component_id) REFERENCES meal_components(id),
+          FOREIGN KEY (food_item_id) REFERENCES food_items(id)
+        );
+        INSERT INTO daily_plan_entries_v2 (id, daily_plan_id, meal_component_id, food_item_id, grams)
+          SELECT id, daily_plan_id, meal_component_id, food_item_id, grams FROM daily_plan_entries;
+        DROP TABLE daily_plan_entries;
+        ALTER TABLE daily_plan_entries_v2 RENAME TO daily_plan_entries;
+      `);
+    }
+
+    // Migration 6: Add sleep phase columns to activity_days
+    const hasSleepDeep = db.prepare("SELECT COUNT(*) as cnt FROM pragma_table_info('activity_days') WHERE name='sleep_deep'").get();
+    if (hasSleepDeep.cnt === 0) {
+      db.exec("ALTER TABLE activity_days ADD COLUMN sleep_deep REAL DEFAULT NULL");
+      db.exec("ALTER TABLE activity_days ADD COLUMN sleep_rem REAL DEFAULT NULL");
+      db.exec("ALTER TABLE activity_days ADD COLUMN sleep_light REAL DEFAULT NULL");
+    }
+
+    // Migration 7: Update exercise_library to Spanish names, muscle groups, equipment, movement patterns
+    if (EXERCISES_MIGRATION.length > 0) {
+      const updateEx = db.prepare('UPDATE exercise_library SET name = ?, muscle_group = ?, equipment = ?, movement_pattern = ? WHERE id = ?');
+      const txn = db.transaction(() => {
+        for (let i = 0; i < EXERCISES_MIGRATION.length; i++) {
+          const ex = EXERCISES_MIGRATION[i];
+          updateEx.run(ex.name, ex.muscle_group, ex.equipment, ex.movement_pattern, i + 1);
+        }
+      });
+      txn();
+    }
+
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '3')").run();
+  }
 }
 
 function getDb() {
   return db;
+}
+
+function populateCache(periodDays) {
+  if (!db) return;
+  const today = new Date();
+  const fromDate = new Date(today);
+  fromDate.setDate(fromDate.getDate() - periodDays);
+  const fromStr = fromDate.toISOString().split('T')[0];
+  const todayStr = today.toISOString().split('T')[0];
+
+  const insert = db.prepare(`
+    INSERT OR REPLACE INTO activity_summary_cache
+      (period_days, date, steps, active_kcal, resting_kcal, sleep_hours, sleep_deep, sleep_rem, sleep_light, weight_kg, sport_sessions, sport_kcal, sport_minutes)
+    VALUES
+      (@period_days, @date, @steps, @active_kcal, @resting_kcal, @sleep_hours, @sleep_deep, @sleep_rem, @sleep_light, @weight_kg, @sport_sessions, @sport_kcal, @sport_minutes)
+  `);
+
+  const days = db.prepare(`
+    SELECT date, steps, active_calories, resting_calories, sleep_hours, sleep_deep, sleep_rem, sleep_light, weight_kg
+    FROM activity_days WHERE date >= ? AND date <= ? ORDER BY date
+  `).all(fromStr, todayStr);
+
+  const sportByDate = {};
+  const sports = db.prepare(`
+    SELECT date, COUNT(*) as sessions, COALESCE(SUM(calories), 0) as kcal, COALESCE(SUM(duration_minutes), 0) as minutes
+    FROM sport_activities WHERE date >= ? AND date <= ? GROUP BY date
+  `).all(fromStr, todayStr);
+  for (const s of sports) {
+    sportByDate[s.date] = s;
+  }
+
+  const txn = db.transaction(() => {
+    db.prepare('DELETE FROM activity_summary_cache WHERE period_days = ?').run(periodDays);
+    for (const d of days) {
+      const sp = sportByDate[d.date] || { sessions: 0, kcal: 0, minutes: 0 };
+      insert.run({
+        period_days: periodDays,
+        date: d.date,
+        steps: d.steps || 0,
+        active_kcal: d.active_calories || 0,
+        resting_kcal: d.resting_calories || 0,
+        sleep_hours: d.sleep_hours || 0,
+        sleep_deep: d.sleep_deep,
+        sleep_rem: d.sleep_rem,
+        sleep_light: d.sleep_light,
+        weight_kg: d.weight_kg,
+        sport_sessions: sp.sessions,
+        sport_kcal: sp.kcal,
+        sport_minutes: sp.minutes,
+      });
+    }
+  });
+  txn();
 }
 
 function initHealthsyncDb() {
@@ -296,4 +415,4 @@ function testHealthsyncConnection() {
   return row.total;
 }
 
-module.exports = { initDatabase, getDb, getDbPath, initHealthsyncDb, getHealthsyncDb, testHealthsyncConnection };
+module.exports = { initDatabase, getDb, getDbPath, initHealthsyncDb, getHealthsyncDb, testHealthsyncConnection, populateCache };

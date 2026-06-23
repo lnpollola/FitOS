@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 const mockApi = {
-  getDashboardData: () => Promise.resolve({ weekBalance: 0 }),
+  getDashboardData: () => Promise.resolve({ weekBalance: -3500, todayCalories: 1850, nextWorkout: 'Push A' }),
   getHealthDashboardMetrics: () => Promise.resolve({ ok: true, data: {} }),
   getActivityKcalByType: () => Promise.resolve([]),
+  getSleepAnalysis: () => Promise.resolve({ ok: true, dailySeries: [], trendArrow: null, consistency: null, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null }),
   getLastImportTimestamp: () => Promise.resolve(null),
   getWeightStats: () => Promise.resolve({ first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 }),
   getHealthDailySummary: () => Promise.resolve({ ok: true, data: [] }),
-  getSleepData: () => Promise.resolve({ ok: false, data: [], avg7d: null }),
+  getCyclingDistance: () => Promise.resolve({ ok: false, data: [] }),
+  getHealthWorkouts: () => Promise.resolve({ ok: false, data: [] }),
+  getEnergyBalance: () => Promise.resolve(null),
 };
 
 describe('Dashboard view smoke test', () => {
@@ -38,10 +41,7 @@ describe('Dashboard view smoke test', () => {
       <div id="last-update"></div>
     `;
     await init();
-    const metricsEl = document.getElementById('row-metrics');
-    if (metricsEl) {
-      expect(metricsEl.innerHTML).toBeTruthy();
-    }
+    expect(document.getElementById('row-metrics').innerHTML).toBeTruthy();
   });
 
   it('rendered HTML contains no emoji characters in icon positions', async () => {
@@ -81,5 +81,12 @@ describe('Dashboard view smoke test', () => {
     expect(activityIdx).toBeGreaterThan(metricsIdx);
     expect(stepsIdx).toBeGreaterThan(activityIdx);
     expect(trendIdx).toBeGreaterThan(stepsIdx);
+  });
+
+  it('uses locale strings not hardcoded text', async () => {
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).not.toContain('▲');
   });
 });

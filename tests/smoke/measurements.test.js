@@ -27,4 +27,29 @@ describe('Measurements view smoke test', () => {
     const { init } = await import('../../src/renderer/views/measurements.js');
     await expect(init()).resolves.not.toThrow();
   });
+
+  it('renders body-part fieldsets', async () => {
+    const { init } = await import('../../src/renderer/views/measurements.js');
+    await init();
+    const html = document.getElementById('view-measurements').innerHTML;
+    expect(html).toContain('Cuello y Hombros');
+    expect(html).toContain('Torso');
+    expect(html).toContain('Brazos');
+    expect(html).toContain('Piernas');
+    expect(html).toContain('fieldset');
+  });
+
+  it('renders comparison result table section', async () => {
+    const { init } = await import('../../src/renderer/views/measurements.js');
+    await init();
+    expect(document.getElementById('comparison-result')).toBeTruthy();
+    expect(document.getElementById('before-date')).toBeTruthy();
+    expect(document.getElementById('after-date')).toBeTruthy();
+  });
+
+  it('renders evolution chart canvas', async () => {
+    const { init } = await import('../../src/renderer/views/measurements.js');
+    await init();
+    expect(document.getElementById('evolution-chart')).toBeTruthy();
+  });
 });

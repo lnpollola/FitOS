@@ -37,4 +37,27 @@ describe('Diet view smoke test', () => {
     const { init } = await import('../../src/renderer/views/diet.js');
     await expect(init()).resolves.not.toThrow();
   });
+
+  it('renders daily plan with date input and day type toggle', async () => {
+    const { init } = await import('../../src/renderer/views/diet.js');
+    await init();
+    expect(document.getElementById('plan-date')).toBeTruthy();
+    expect(document.getElementById('day-type-toggle')).toBeTruthy();
+    expect(document.getElementById('btn-generate-daily-plan')).toBeTruthy();
+    expect(document.getElementById('daily-plan-totals')).toBeTruthy();
+  });
+
+  it('renders collapsible dish manager', async () => {
+    const { init } = await import('../../src/renderer/views/diet.js');
+    await init();
+    const html = document.getElementById('view-diet').innerHTML;
+    expect(html).toContain('Gestor de Platos');
+    expect(html).toContain('details');
+  });
+
+  it('renders meal templates section', async () => {
+    const { init } = await import('../../src/renderer/views/diet.js');
+    await init();
+    expect(document.getElementById('meal-templates')).toBeTruthy();
+  });
 });
