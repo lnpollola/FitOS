@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   navigate: (view) => ipcRenderer.send('navigate', view),
   onNavigate: (callback) => ipcRenderer.on('navigate', (_event, view) => callback(view)),
   onDataChanged: (callback) => ipcRenderer.on('data-changed', () => callback()),
+  onDomainChanged: (callback) => ipcRenderer.on('domain-changed', (_event, domain) => callback(domain)),
   onHealthImportProgress: (callback) => ipcRenderer.on('health-import-progress', (_event, msg) => callback(msg)),
   removeHealthImportProgressListener: () => ipcRenderer.removeAllListeners('health-import-progress'),
 
@@ -32,6 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMealTemplates: () => ipcRenderer.invoke('db:getMealTemplates'),
   getDailyPlan: (date) => ipcRenderer.invoke('db:getDailyPlan', date),
   saveDailyPlanEntry: (entry) => ipcRenderer.invoke('db:saveDailyPlanEntry', entry),
+  deleteDailyPlanEntry: (id) => ipcRenderer.invoke('db:deleteDailyPlanEntry', id),
   deleteDailyPlanEntries: (date) => ipcRenderer.invoke('db:deleteDailyPlanEntries', date),
   updateDailyPlanEntry: (id, grams) => ipcRenderer.invoke('db:updateDailyPlanEntry', id, grams),
 

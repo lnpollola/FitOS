@@ -6,7 +6,7 @@ import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 import { getRangeDates } from '../utils/date-range.js';
 import Chart from 'chart.js/auto';
 import { safeCall } from '../utils/safe-call.js';
-import { sparkline } from '../utils/sparkline.js';
+import { sparkline, computeTrendDirection } from '../utils/sparkline.js';
 import { growthRing } from '../utils/growth-ring.js';
 import { renderStateCard } from '../utils/state-card.js';
 import { getTrendArrow, trendBadge } from '../utils/trend-arrow.js';
@@ -28,17 +28,18 @@ export async function init() {
         <button class="filter-btn" data-range="3m">${strings.dashboard.dateRange3m}</button>
       </div>
       <div id="last-update" class="text-xs text-muted" style="margin-bottom:var(--space-3)" aria-live="polite"></div>
-      <div class="dashboard-grid" id="row-metrics" aria-live="polite"></div>
-      <div class="dashboard-grid" id="row-activity" aria-live="polite" style="margin-top:var(--space-4)"></div>
-      <div class="dashboard-grid" id="row-steps-extras" aria-live="polite"></div>
+      <div class="dashboard-grid" id="row-hero" aria-live="polite"></div>
+      <div class="dashboard-grid" id="row-kpis-1" aria-live="polite"></div>
+      <div class="dashboard-grid" id="row-kpis-2" aria-live="polite"></div>
       <div class="dashboard-chart-row" id="row-trend" style="margin-top:var(--space-4);display:none">
         <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.kcalDaily}</h3><div class="chart-container" style="height:200px"><canvas id="trend-chart"></canvas></div></div>
         <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.weeklyBalanceTrend}</h3><div class="chart-container" style="height:200px"><canvas id="weekly-balance-chart"></canvas></div></div>
       </div>
+      <div class="dashboard-grid" id="row-sports" aria-live="polite"></div>
     `;
 
     if (!api) {
-      document.getElementById('row-metrics').innerHTML = `<div class="dashboard-card"><h3>${strings.dashboard.status}</h3><div class="value">${strings.dashboard.offline}</div><div class="subtitle">${strings.dashboard.offlineSub}</div></div>`;
+      document.getElementById('row-hero').innerHTML = `<div class="dashboard-card"><h3>${strings.dashboard.status}</h3><div class="value">${strings.dashboard.offline}</div><div class="subtitle">${strings.dashboard.offlineSub}</div></div>`;
       return;
     }
 
@@ -51,16 +52,18 @@ export async function init() {
     });
 
     async function render() {
-      const metricsRow = document.getElementById('row-metrics');
-      const stepsExtrasRow = document.getElementById('row-steps-extras');
-      const activityRow = document.getElementById('row-activity');
+      const heroRow = document.getElementById('row-hero');
+      const kpis1Row = document.getElementById('row-kpis-1');
+      const kpis2Row = document.getElementById('row-kpis-2');
+      const sportsRow = document.getElementById('row-sports');
       const trendRow = document.getElementById('row-trend');
       const { from, to } = getRangeDates(_range);
       const daysInPeriod = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
 
-      metricsRow.innerHTML = skeletonCard().repeat(8);
-      stepsExtrasRow.innerHTML = skeletonCard().repeat(5);
-      activityRow.innerHTML = skeletonCard();
+      heroRow.innerHTML = skeletonCard();
+      kpis1Row.innerHTML = skeletonCard().repeat(5);
+      kpis2Row.innerHTML = skeletonCard().repeat(4);
+      sportsRow.innerHTML = skeletonCard();
 
       trendRow.style.display = 'block';
       trendRow.innerHTML = skeletonChart();
@@ -84,6 +87,16 @@ export async function init() {
       const cyclingPromise = api.getCyclingDistance ? api.getCyclingDistance(from, to).catch(() => ({ ok: false, data: [] })) : Promise.resolve({ ok: false, data: [] });
       const workoutsPromise = api.getHealthWorkouts ? api.getHealthWorkouts(2000).catch(() => ({ ok: false, data: [] })) : Promise.resolve({ ok: false, data: [] });
 
+      // Fetch previous period for PoP
+      const daysOffset = daysInPeriod + 1;
+      const prevFrom = new Date(from);
+      prevFrom.setDate(prevFrom.getDate() - daysOffset);
+      const prevTo = new Date(to);
+      prevTo.setDate(prevTo.getDate() - daysOffset);
+      const prevFromStr = prevFrom.toISOString().split('T')[0];
+      const prevToStr = prevTo.toISOString().split('T')[0];
+      const prevSportPromise = api.getSportSummaryByRange ? api.getSportSummaryByRange(prevFromStr, prevToStr).catch(() => []) : Promise.resolve([]);
+
       const now = new Date();
       const weeklyBalancePromises = [];
       if (api.getEnergyBalance) {
@@ -103,6 +116,7 @@ export async function init() {
         healthSummaryPromise,
         cyclingPromise,
         workoutsPromise,
+        prevSportPromise,
         ...weeklyBalancePromises,
       ]);
 
@@ -114,14 +128,13 @@ export async function init() {
       const healthSummary = results[5].status === 'fulfilled' ? results[5].value : null;
       const cyclingResult = results[6].status === 'fulfilled' ? results[6].value : { ok: false, data: [] };
       const workoutsResult = results[7].status === 'fulfilled' ? results[7].value : { ok: false, data: [] };
-      const weeklyBalances = results.slice(8).map(r => r.status === 'fulfilled' ? r.value : null);
+      const prevSportSummary = results[8].status === 'fulfilled' ? results[8].value : [];
+      const weeklyBalances = results.slice(9).map(r => r.status === 'fulfilled' ? r.value : null);
 
       await lastImportPromise;
 
       const dailyData = healthSummary?.ok ? healthSummary.data : [];
       const metrics = healthMetrics?.ok ? healthMetrics.data : null;
-
-
 
       const cyclingData = cyclingResult?.ok && Array.isArray(cyclingResult.data) ? cyclingResult.data : [];
       const cyclingSeries = cyclingData.map(d => d.km);
@@ -153,6 +166,7 @@ export async function init() {
       const walkSeries = metrics?.walking_distance ? tail(metrics.walking_distance).map(d => d.km) : [];
       const exerSeries = metrics?.exercise_time ? tail(metrics.exercise_time).map(d => d.minutes) : [];
       const stepsSeries = dailyData && dailyData.length ? tail(dailyData).map(d => d.steps) : [];
+      const weightSeries = weightStats?.count > 0 ? (appData?.weightEntries || []) : [];
 
       const kcalSeries = dailyData && dailyData.length ? dailyData.map(d => (d.kcal_activas || 0) + (d.kcal_basales || 0)) : [];
       const ringValues = kcalSeries.length ? kcalSeries : [];
@@ -164,11 +178,6 @@ export async function init() {
       const infoItems = [];
       if (appData?.todayCalories != null) {
         infoItems.push(`<span class="text-xs text-muted">${strings.dashboard.plannedIntakeLabel}: <strong>${Math.round(appData.todayCalories).toLocaleString()} kcal</strong></span>`);
-      }
-      if (appData?.measurementDelta != null) {
-        const md = appData.measurementDelta;
-        const sign = md > 0 ? '+' : '';
-        infoItems.push(`<span class="text-xs text-muted">${strings.dashboard.measurementDeltaLabel}: <strong>${sign}${md.toFixed(1)} ${strings.dashboard.unitKg}</strong></span>`);
       }
       if (appData?.nextWorkout) {
         const d = new Date(appData.nextWorkout);
@@ -182,26 +191,19 @@ export async function init() {
         if (hrvData.length > 0) {
           const latestHrv = hrvData[hrvData.length - 1].hrv_ms;
           const avgHrv = (hrvData.reduce((s, d) => s + d.hrv_ms, 0) / hrvData.length).toFixed(1);
-          hrvDisplay = `${latestHrv} ${strings.dashboard.unitMs}`;
-          hrvTrend = `<span class="text-xs text-muted">${strings.dashboard.avg7d}: ${avgHrv} ${strings.dashboard.unitMs}</span>`;
+          hrvDisplay = `<strong>${latestHrv} ${strings.dashboard.unitMs}</strong>`;
+          hrvTrend = ` · ${strings.dashboard.avg7d}: <strong>${avgHrv} ${strings.dashboard.unitMs}</strong>`;
         }
         if (rhrData.length > 0) {
           const latestRhr = rhrData[rhrData.length - 1].rhr_bpm;
-          rhrDisplay = `${Math.round(latestRhr)} ${strings.dashboard.unitBpm}`;
+          rhrDisplay = `<strong>${Math.round(latestRhr)} ${strings.dashboard.unitBpm}</strong>`;
         }
-      }
-
-      let walkDisplay = '--', walkTotal = 0;
-      if (metrics?.walking_distance?.length) {
-        const avgWalk = metrics.walking_distance.reduce((s, d) => s + d.km, 0) / metrics.walking_distance.length;
-        walkTotal = metrics.walking_distance.reduce((s, d) => s + d.km, 0);
-        walkDisplay = `${avgWalk.toFixed(2)} ${strings.dashboard.unitKm}`;
       }
 
       let sleepDisplay = '--', sleepCompliance = '', sleepPhasesBar = '', sleepConsistencyBadge = '';
       if (sleepData?.ok && sleepData.dailySeries?.length) {
         const avgSleep = sleepData.dailySeries.reduce((s, d) => s + d.sleep_hours, 0) / sleepData.dailySeries.length;
-        sleepDisplay = `${avgSleep.toFixed(1)} ${strings.dashboard.unitH}`;
+        sleepDisplay = `<strong>${avgSleep.toFixed(1)} ${strings.dashboard.unitH}</strong>`;
         sleepCompliance = (avgSleep >= 7 && avgSleep <= 9)
           ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.sleepOptimal}</span>`
           : `<span class="compliance-warn">${strings.dashboard.sleepAdjust}</span>`;
@@ -211,42 +213,89 @@ export async function init() {
           const rp = (sleepData.remAvg / phaseTotal * 100).toFixed(1);
           const lp = (sleepData.lightAvg / phaseTotal * 100).toFixed(1);
           sleepPhasesBar = `<div class="flex-gap-md" style="margin-top:var(--space-1)">
-            <div><span class="legend-dot moss"></span><span class="text-xs">${strings.sleep.deep} ${sleepData.deepAvg.toFixed(1)}${strings.dashboard.unitH} (${dp}%)</span></div>
-            <div><span class="legend-dot ember"></span><span class="text-xs">${strings.sleep.rem} ${sleepData.remAvg.toFixed(1)}${strings.dashboard.unitH} (${rp}%)</span></div>
-            <div><span class="legend-dot moss-mist"></span><span class="text-xs">${strings.sleep.light} ${sleepData.lightAvg.toFixed(1)}${strings.dashboard.unitH} (${lp}%)</span></div>
+            <div><span class="legend-dot moss"></span><span class="text-xs">${strings.sleep.deep}: <strong>${sleepData.deepAvg.toFixed(1)}${strings.dashboard.unitH}</strong> (${dp}%)</span></div>
+            <div><span class="legend-dot ember"></span><span class="text-xs">${strings.sleep.rem}: <strong>${sleepData.remAvg.toFixed(1)}${strings.dashboard.unitH}</strong> (${rp}%)</span></div>
+            <div><span class="legend-dot moss-mist"></span><span class="text-xs">${strings.sleep.light}: <strong>${sleepData.lightAvg.toFixed(1)}${strings.dashboard.unitH}</strong> (${lp}%)</span></div>
           </div>`;
         }
         if (sleepData.consistency != null) {
           const label = sleepData.consistency >= 75 ? strings.sleep.consistent : sleepData.consistency >= 50 ? strings.sleep.irregular : strings.sleep.veryIrregular;
-          sleepConsistencyBadge = `<span class="text-xs text-muted">${strings.sleep.consistency}: <strong>${Math.round(sleepData.consistency)}%</strong> · ${label}${trendBadge(sleepSeries)}</span>`;
+          sleepConsistencyBadge = `<span class="text-xs text-muted">${strings.sleep.consistency}: <strong>${Math.round(sleepData.consistency)}%</strong> · ${label}</span>`;
         }
       }
 
-      const cyclingDisplay = cyclingSeries.length ? `${cyclingAvg.toFixed(2)} ${strings.dashboard.unitKm}` : strings.dashboard.noData;
-      const cyclingSubtitle = cyclingSeries.length
-        ? `${strings.dashboard.kmPerDay} · ${strings.dashboard.totalKm}: ${cyclingTotal.toFixed(1)} ${strings.dashboard.unitKm}`
-        : strings.dashboard.noCyclingData;
+      // Weight card
+      let weightDisplay = strings.dashboard.noData;
+      let weightDeltaHtml = '';
+      let weightSparklineHtml = '';
+      if (weightStats?.count > 0 && weightStats.last != null) {
+        weightDisplay = `<strong>${weightStats.last.toFixed(1)} ${strings.dashboard.unitKg}</strong>`;
+        if (weightStats.first != null) {
+          const delta = weightStats.last - weightStats.first;
+          const deltaSign = delta >= 0 ? '+' : '';
+          weightDeltaHtml = `<span class="text-xs text-muted">${strings.dashboard.weightDelta}: ${deltaSign}${delta.toFixed(1)} ${strings.dashboard.unitKg}</span>`;
+        }
+        const wSeries = weightStats.series || [];
+        if (wSeries.length >= 2) {
+          const wColor = computeTrendDirection(wSeries, 'weight');
+          weightSparklineHtml = sparkline(wSeries, { stroke: `var(--${wColor})`, showMean: true });
+        }
+      }
+
+      // Walking + Cycling cards
+      let walkDisplay = strings.dashboard.noData;
+      let walkSub = '';
+      if (metrics?.walking_distance?.length) {
+        const avgWalk = metrics.walking_distance.reduce((s, d) => s + d.km, 0) / metrics.walking_distance.length;
+        const total = metrics.walking_distance.reduce((s, d) => s + d.km, 0);
+        walkDisplay = `<strong>${avgWalk.toFixed(2)} ${strings.dashboard.unitKm}</strong>`;
+        walkSub = `${strings.dashboard.totalKm}: <strong>${total.toFixed(1)} ${strings.dashboard.unitKm}</strong>`;
+      }
+      let cycleDisplay = strings.dashboard.noData;
+      let cycleSub = '';
+      if (cyclingSeries.length) {
+        cycleDisplay = `<strong>${cyclingAvg.toFixed(2)} ${strings.dashboard.unitKm}</strong>`;
+        cycleSub = `${strings.dashboard.totalKm}: <strong>${cyclingTotal.toFixed(1)} ${strings.dashboard.unitKm}</strong>`;
+      }
+
+      const walkColor = walkSeries.length >= 2 ? computeTrendDirection(walkSeries, 'distance') : 'moss';
+      const cycleColor = cyclingSeries.length >= 2 ? computeTrendDirection(cyclingSeries, 'distance') : 'moss';
+
+      const hrvColor = hrvSeries.length >= 2 ? computeTrendDirection(hrvSeries, 'hrv') : 'moss';
+      const rhrColor = rhrSeries.length >= 2 ? computeTrendDirection(rhrSeries, 'rhr') : 'moss';
+      const sleepColor = sleepSeries.length >= 2 ? computeTrendDirection(sleepSeries, 'sleep') : 'moss';
+      const stepsColor = stepsSeries.length >= 2 ? computeTrendDirection(stepsSeries, 'steps') : 'moss';
+      const exerColor = exerSeries.length >= 2 ? computeTrendDirection(exerSeries, 'exercise') : 'moss';
+
+      const steps7d = stepsSeries.length >= 7 ? Math.round(stepsSeries.slice(-7).reduce((a, v) => a + v, 0) / 7) : null;
+      const steps15d = stepsSeries.length >= 15 ? Math.round(stepsSeries.slice(-15).reduce((a, v) => a + v, 0) / 15) : null;
+      const steps1m = stepsSeries.length ? Math.round(stepsSeries.reduce((a, v) => a + v, 0) / stepsSeries.length) : null;
+
+      let exerciseDisplay = '--', exerciseCompliance = '';
+      if (metrics?.exercise_time?.length) {
+        const avgEx = metrics.exercise_time.reduce((s, d) => s + d.minutes, 0) / metrics.exercise_time.length;
+        exerciseDisplay = `<strong>${avgEx.toFixed(0)} ${strings.dashboard.unitMin}</strong>`;
+        exerciseCompliance = avgEx >= 30
+          ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.exerciseCompliant}</span>`
+          : `<span class="compliance-warn">${strings.dashboard.exerciseBelow}</span>`;
+      }
+
+      const todayCaloriesHtml = appData?.todayCalories != null
+        ? `<strong>${Math.round(appData.todayCalories).toLocaleString()} kcal</strong>`
+        : strings.dashboard.noData;
 
       let balanceDetail = '';
       if (appData?.weekBalance != null) {
         balanceDetail = `<span class="text-xs text-muted">${strings.dashboard.avgDay}</span>`;
       }
 
-      const coreCards = [
-        { title: strings.dashboard.sessionCount, value: `${totalSessions}`, subtitle: `${totalKcal.toLocaleString()} ${strings.dashboard.kcalTotal} · ${totalDuration ? (totalDuration / 60).toFixed(1) + ' ' + strings.dashboard.trainingHours : ''}`, spark: null },
-        { title: strings.dashboard.weekBalance, value: avgBalance != null ? `${avgBalance > 0 ? '+' : ''}${avgBalance} kcal` : strings.dashboard.noData, subtitle: balanceDetail },
-        { title: strings.dashboard.hrvComposite, valueHtml: `<span>${strings.dashboard.hrvLabel}: ${hrvDisplay}</span><br><span class="metric-value-sm">${strings.dashboard.restingHr}: ${rhrDisplay}</span>${hrvTrend ? `<br>${hrvTrend}` : ''}`, spark: hrvSeries, sparkColor: 'var(--moss)' },
-        { title: strings.dashboard.walkingDistance, value: walkDisplay, subtitle: `${strings.dashboard.avgDay}${walkTotal ? ' · ' + strings.dashboard.totalKm + ': ' + walkTotal.toFixed(1) + ' ' + strings.dashboard.unitKm : ''}`, spark: walkSeries, sparkColor: 'var(--moss)' },
-        { title: strings.dashboard.sleepTitle, valueHtml: sleepDisplay, subtitle: `${sleepPhasesBar}${sleepConsistencyBadge}${sleepCompliance}`, spark: sleepSeries, sparkColor: 'var(--moss)' },
-        { title: strings.dashboard.cyclingDistance, value: cyclingDisplay, subtitle: cyclingSubtitle, spark: cyclingSeries, sparkColor: 'var(--moss)' },
-      ];
-
+      // Build hero
       const compact = ringValues.length === 0;
       let heroSubline = heroSub;
       if (infoItems.length) {
         heroSubline += `<div class="flex-gap-md" style="margin-top:var(--space-1)">${infoItems.join('')}</div>`;
       }
-      const heroHtml = `
+      heroRow.innerHTML = `
         <div class="card-hero${compact ? ' card-hero--compact' : ''}">
           ${compact ? '' : `<div class="hero-ring-wrap">
             ${growthRing(ringValues)}
@@ -262,28 +311,67 @@ export async function init() {
           </div>
         </div>`;
 
-      const accentHtml = `
-        <div class="dashboard-card card-accent">
-          <h3>${strings.dashboard.activitySummary}</h3>
-          <div class="flex-gap-md" style="margin-top:var(--space-1)">
-            <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
-            <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
-            <div><span class="value" style="color:#fff;font-size:20px">${sportSummary.length}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.uniqueTypes}</div></div>
-            <div><span class="value" style="color:#fff;font-size:20px">${totalSessions > 0 ? Math.round(totalKcal / totalSessions) : 0}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalPerSession}</div></div>
-          </div>
+      // Row 1 KPIs: Sueño, HRV, RHR, Peso, Pasos
+      kpis1Row.innerHTML = `
+        <div class="dashboard-card">
+          <h3>${strings.dashboard.sleepTitle}</h3>
+          <div class="value">${sleepDisplay}</div>
+          ${sleepSeries.length >= 2 ? sparkline(sleepSeries, { stroke: `var(--${sleepColor})`, showMean: true }) : ''}
+          <div class="subtitle">${sleepPhasesBar}${sleepConsistencyBadge}${sleepCompliance}</div>
+        </div>
+        <div class="dashboard-card">
+          <h3>${strings.dashboard.hrvLabel}</h3>
+          <div class="value">${hrvDisplay}</div>
+          ${hrvSeries.length >= 2 ? sparkline(hrvSeries, { stroke: `var(--${hrvColor})`, showMean: true }) : ''}
+          <div class="subtitle">${hrvTrend || ''}</div>
+        </div>
+        <div class="dashboard-card">
+          <h3>${strings.dashboard.restingHr}</h3>
+          <div class="value">${rhrDisplay}</div>
+          ${rhrSeries.length >= 2 ? sparkline(rhrSeries, { stroke: `var(--${rhrColor})`, showMean: true }) : ''}
+          <div class="subtitle">${strings.dashboard.avg7d}</div>
+        </div>
+        <div class="dashboard-card">
+          <h3>${strings.dashboard.latestWeight}</h3>
+          <div class="value">${weightDisplay}</div>
+          ${weightSparklineHtml}
+          <div class="subtitle">${weightDeltaHtml}</div>
+        </div>
+        <div class="dashboard-card">
+          <h3>${strings.dashboard.dailySteps}</h3>
+          <div class="value">${stepsSeries.length ? `<strong>${stepsSeries[stepsSeries.length - 1].toLocaleString()}</strong>` : strings.dashboard.noData}</div>
+          ${stepsSeries.length >= 2 ? sparkline(stepsSeries, { stroke: `var(--${stepsColor})`, showMean: true }) : ''}
+          <div class="subtitle">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m?.toLocaleString() || strings.dashboard.noData}</div>
         </div>`;
 
-      metricsRow.innerHTML = heroHtml + accentHtml + coreCards.map(c => `
+      // Row 2 KPIs: Ejercicio, Caminata, Ciclismo, Calorías Hoy
+      kpis2Row.innerHTML = `
         <div class="dashboard-card">
-          <h3>${c.title}${trendBadge(c.spark)}</h3>
-          <div class="value">${c.valueHtml || c.value || strings.dashboard.noData}</div>
-          ${c.spark && c.spark.length >= 2 ? sparkline(c.spark, { stroke: c.sparkColor }) : ''}
-          ${c.subtitle ? `<div class="subtitle">${c.subtitle}</div>` : ''}
+          <h3>${strings.dashboard.exerciseTime}</h3>
+          <div class="value">${exerciseDisplay}</div>
+          ${exerSeries.length >= 2 ? sparkline(exerSeries, { stroke: `var(--${exerColor})`, showMean: true }) : ''}
+          <div class="subtitle">${exerciseCompliance || strings.dashboard.avgDay}</div>
         </div>
-      `).join('');
+        <div class="dashboard-card">
+          <h3>${strings.activity.sportNames.walking}</h3>
+          <div class="value">${walkDisplay}</div>
+          ${walkSeries.length >= 2 ? sparkline(walkSeries, { stroke: `var(--${walkColor})`, showMean: true }) : ''}
+          <div class="subtitle">${walkSub}</div>
+        </div>
+        <div class="dashboard-card">
+          <h3>${strings.activity.sportNames.cycling}</h3>
+          <div class="value">${cycleDisplay}</div>
+          ${cyclingSeries.length >= 2 ? sparkline(cyclingSeries, { stroke: `var(--${cycleColor})`, showMean: true }) : ''}
+          <div class="subtitle">${cycleSub}</div>
+        </div>
+        <div class="dashboard-card">
+          <h3>${strings.dashboard.todayCalories}</h3>
+          <div class="value">${todayCaloriesHtml}</div>
+          <div class="subtitle">${strings.dashboard.plannedIntakeLabel}</div>
+        </div>`;
 
       if (results[0].status === 'rejected') {
-        const heroCard = metricsRow.querySelector('.card-hero');
+        const heroCard = heroRow.querySelector('.card-hero');
         if (heroCard) {
           const wrapper = document.createElement('div');
           heroCard.replaceWith(wrapper);
@@ -291,87 +379,60 @@ export async function init() {
         }
       }
 
+      // Build PoP map from previous period
+      const prevByType = {};
+      for (const a of prevSportSummary) {
+        prevByType[a.sport_type] = a.count;
+      }
+
+      // Sports section at the bottom
       if (sportSummary && sportSummary.length > 0) {
         const sorted = [...sportSummary].sort((a, b) => b.count - a.count);
-        activityRow.innerHTML = sorted.map(a => {
+        const sportCardsHtml = sorted.map(a => {
+          const prevCount = prevByType[a.sport_type];
+          let popHtml = '';
+          if (prevCount != null) {
+            const delta = a.count - prevCount;
+            const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '―';
+            const sign = delta >= 0 ? '+' : '';
+            popHtml = ` ${strings.dashboard.vsPrevious}: <strong>${sign}${delta}</strong> ${arrow}`;
+          }
           const extra = sportExtra[a.sport_type] || { km: 0, minutes: 0, kcal: 0 };
           const extras = [];
           if (a.sport_type === 'walking' && extra.km) {
-            extras.push(`${strings.dashboard.totalKm}: ${extra.km.toFixed(1)} ${strings.dashboard.unitKm}`);
+            extras.push(`${strings.dashboard.totalKm}: <strong>${extra.km.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
           }
           if (a.sport_type === 'cycling' && extra.km) {
-            extras.push(`${strings.dashboard.totalKm}: ${extra.km.toFixed(1)} ${strings.dashboard.unitKm}`);
+            extras.push(`${strings.dashboard.totalKm}: <strong>${extra.km.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
           }
           if (a.sport_type === 'football' && extra.km) {
-            extras.push(`${strings.dashboard.kmCovered}: ${extra.km.toFixed(1)} ${strings.dashboard.unitKm}`);
+            extras.push(`${strings.dashboard.kmCovered}: <strong>${extra.km.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
           }
           if ((a.sport_type === 'HIIT' || a.sport_type === 'boxing') && extra.minutes > 0) {
             const perMin = (extra.kcal / extra.minutes).toFixed(1);
-            extras.push(`${strings.dashboard.kcalPerMin}: ${perMin}`);
+            extras.push(`${strings.dashboard.kcalPerMin}: <strong>${perMin}</strong>`);
           }
-          const sub = `${a.count} ${strings.dashboard.sessions} · ${a.avg_kcal} ${strings.dashboard.avgKcal}${extras.length ? ' · ' + extras.join(' · ') : ''}`;
+          const sub = `<strong>${a.count}</strong> ${strings.dashboard.sessions} · <strong>${a.avg_kcal}</strong> ${strings.dashboard.avgKcal}${extras.length ? ' · ' + extras.join(' · ') : ''}${popHtml}`;
           return `<div class="dashboard-card">
             <h3>${sportIcon(a.sport_type, 14)} ${getSportDisplayName(a.sport_type)}</h3>
             <div class="value">${a.total_kcal.toLocaleString()} kcal</div>
             <div class="subtitle">${sub}</div>
           </div>`;
         }).join('');
+        const accentHtml = `
+          <div class="dashboard-card card-accent" style="grid-column:1/-1">
+            <h3>${strings.dashboard.activitySummary}</h3>
+            <div class="flex-gap-md" style="margin-top:var(--space-1)">
+              <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
+              <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
+              <div><span class="value" style="color:#fff;font-size:20px">${sportSummary.length}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.uniqueTypes}</div></div>
+              <div><span class="value" style="color:#fff;font-size:20px">${totalSessions > 0 ? Math.round(totalKcal / totalSessions) : 0}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalPerSession}</div></div>
+            </div>
+          </div>`;
+        sportsRow.innerHTML = `<div style="grid-column:1/-1;margin:var(--space-2) 0 var(--space-1)"><hr style="border:none;border-top:2px solid var(--border);opacity:0.5"><p class="text-xs text-muted" style="margin-top:var(--space-2)">${strings.dashboard.sportsSection}</p></div>${accentHtml}${sportCardsHtml}`;
       } else {
-        activityRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
+        sportsRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
       }
-
-      const steps7d = stepsSeries.length >= 7 ? Math.round(stepsSeries.slice(-7).reduce((a, v) => a + v, 0) / 7) : null;
-      const steps15d = stepsSeries.length >= 15 ? Math.round(stepsSeries.slice(-15).reduce((a, v) => a + v, 0) / 15) : null;
-      const steps1m = stepsSeries.length ? Math.round(stepsSeries.reduce((a, v) => a + v, 0) / stepsSeries.length) : null;
-
-      let exerciseDisplay = '--', exerciseCompliance = '';
-      if (metrics?.exercise_time?.length) {
-        const avgEx = metrics.exercise_time.reduce((s, d) => s + d.minutes, 0) / metrics.exercise_time.length;
-        exerciseDisplay = `${avgEx.toFixed(0)} ${strings.dashboard.unitMin}`;
-        exerciseCompliance = avgEx >= 30
-          ? `<span class="compliance-ok">${icon('check', 11)} ${strings.dashboard.exerciseCompliant}</span>`
-          : `<span class="compliance-warn">${strings.dashboard.exerciseBelow}</span>`;
-      }
-
-      const todayCaloriesHtml = appData?.todayCalories != null
-        ? `${Math.round(appData.todayCalories).toLocaleString()} kcal`
-        : strings.dashboard.noData;
-      const measurementDeltaHtml = appData?.measurementDelta != null
-        ? `${appData.measurementDelta > 0 ? '+' : ''}${appData.measurementDelta.toFixed(1)} ${strings.dashboard.unitKg}`
-        : strings.dashboard.noData;
-      const nextWorkoutHtml = appData?.nextWorkout
-        ? new Date(appData.nextWorkout).toLocaleDateString()
-        : strings.dashboard.noData;
-
-      stepsExtrasRow.innerHTML = `
-        <div class="dashboard-card">
-          <h3>${strings.dashboard.dailySteps}${trendBadge(stepsSeries)}</h3>
-          <div class="value">${stepsSeries.length ? stepsSeries[stepsSeries.length - 1].toLocaleString() : strings.dashboard.noData}</div>
-          ${sparkline(stepsSeries, { stroke: 'var(--moss)' })}
-          <div class="subtitle">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m?.toLocaleString() || strings.dashboard.noData}</div>
-        </div>
-        <div class="dashboard-card">
-          <h3>${strings.dashboard.exerciseTime}${trendBadge(exerSeries)}</h3>
-          <div class="value">${exerciseDisplay}</div>
-          ${sparkline(exerSeries, { stroke: 'var(--moss)' })}
-          <div class="subtitle">${exerciseCompliance || strings.dashboard.avgDay}</div>
-        </div>
-        <div class="dashboard-card">
-          <h3>${strings.dashboard.todayCalories}</h3>
-          <div class="value">${todayCaloriesHtml}</div>
-          <div class="subtitle">${strings.dashboard.plannedIntakeLabel}</div>
-        </div>
-        <div class="dashboard-card">
-          <h3>${strings.dashboard.measurementDeltaLabel}</h3>
-          <div class="value">${measurementDeltaHtml}</div>
-          <div class="subtitle">${strings.dashboard.sinceLastMeasurement}</div>
-        </div>
-        <div class="dashboard-card">
-          <h3>${strings.dashboard.nextWorkoutLabel}</h3>
-          <div class="value">${nextWorkoutHtml}</div>
-          <div class="subtitle">${strings.dashboard.plannedTraining}</div>
-        </div>
-      `;
 
       if (dailyData.length > 1) {
         trendRow.style.display = 'grid';

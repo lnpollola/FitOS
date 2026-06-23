@@ -31,13 +31,30 @@
         <div class="sidebar-subtitle">Leandro Pollola</div>
       </div>
       <ul class="nav-list">
-        <li><button class="nav-item" data-view="dashboard" aria-label="Panel"><span class="nav-icon" data-icon="dashboard"></span><span class="nav-text">Panel</span></button></li>
-        <li><button class="nav-item" data-view="activity" aria-label="Actividad"><span class="nav-icon" data-icon="activity"></span><span class="nav-text">Actividad</span></button></li>
-        <li><button class="nav-item" data-view="diet" aria-label="Plan de Dieta"><span class="nav-icon" data-icon="diet"></span><span class="nav-text">Plan de Dieta</span></button></li>
-        <li><button class="nav-item" data-view="energy" aria-label="Balance Energético"><span class="nav-icon" data-icon="energy"></span><span class="nav-text">Balance Energético</span></button></li>
-        <li><button class="nav-item" data-view="measurements" aria-label="Mediciones Corporales"><span class="nav-icon" data-icon="measurements"></span><span class="nav-text">Mediciones Corporales</span></button></li>
-        <li><button class="nav-item" data-view="training" aria-label="Entrenamiento de Fuerza"><span class="nav-icon" data-icon="training"></span><span class="nav-text">Entrenamiento de Fuerza</span></button></li>
-        <li><button class="nav-item" data-view="analytics" aria-label="Tendencias"><span class="nav-icon" data-icon="analytics"></span><span class="nav-text">Tendencias</span></button></li>
+        <li class="nav-section" data-section="inicio">
+          <span class="nav-section-label">INICIO</span>
+          <span class="nav-section-chevron">▾</span>
+        </li>
+        <li data-section="inicio"><button class="nav-item" data-view="dashboard" aria-label="Panel"><span class="nav-icon" data-icon="dashboard"></span><span class="nav-text">Panel</span></button></li>
+        <li data-section="inicio"><button class="nav-item" data-view="analytics" aria-label="Tendencias"><span class="nav-icon" data-icon="analytics"></span><span class="nav-text">Tendencias</span></button></li>
+
+        <li class="nav-section" data-section="salud">
+          <span class="nav-section-label">SALUD</span>
+          <span class="nav-section-chevron">▾</span>
+        </li>
+        <li data-section="salud"><button class="nav-item" data-view="activity" aria-label="Actividad"><span class="nav-icon" data-icon="activity"></span><span class="nav-text">Actividad</span></button></li>
+        <li data-section="salud"><button class="nav-item" data-view="sleep" aria-label="Sueño"><span class="nav-icon" data-icon="sleep"></span><span class="nav-text">Sueño</span></button></li>
+        <li data-section="salud"><button class="nav-item" data-view="energy" aria-label="Balance Energético"><span class="nav-icon" data-icon="energy"></span><span class="nav-text">Balance Energético</span></button></li>
+
+        <li class="nav-section" data-section="entrenamiento">
+          <span class="nav-section-label">ENTRENAMIENTO</span>
+          <span class="nav-section-chevron">▾</span>
+        </li>
+        <li data-section="entrenamiento"><button class="nav-item" data-view="diet" aria-label="Plan de Dieta"><span class="nav-icon" data-icon="diet"></span><span class="nav-text">Plan de Dieta</span></button></li>
+        <li data-section="entrenamiento"><button class="nav-item" data-view="measurements" aria-label="Mediciones Corporales"><span class="nav-icon" data-icon="measurements"></span><span class="nav-text">Mediciones Corporales</span></button></li>
+        <li data-section="entrenamiento"><button class="nav-item" data-view="training" aria-label="Entrenamiento de Fuerza"><span class="nav-icon" data-icon="training"></span><span class="nav-text">Entrenamiento de Fuerza</span></button></li>
+
+        <li class="nav-section" data-section="profile-divider" style="margin-top:auto"><hr style="border:none;border-top:1px solid var(--border);margin:0 var(--space-5)"></li>
         <li><button class="nav-item" data-view="profile" aria-label="Perfil y Ajustes"><span class="nav-icon" data-icon="profile"></span><span class="nav-text">Perfil y Ajustes</span></button></li>
       </ul>
     </nav>
@@ -46,6 +63,7 @@
       <div id="view-activity" class="view"></div>
       <div id="view-diet" class="view"></div>
       <div id="view-energy" class="view"></div>
+      <div id="view-sleep" class="view"></div>
       <div id="view-measurements" class="view"></div>
       <div id="view-training" class="view"></div>
       <div id="view-analytics" class="view"></div>

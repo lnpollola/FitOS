@@ -533,7 +533,7 @@ export async function init() {
         return;
       }
       el.innerHTML = `
-        <table>
+        <div class="data-table-wrapper"><table class="data-table">
           <thead><tr><th>${strings.adaptive.adjDate}</th><th>${strings.adaptive.adjPace}</th><th>${strings.adaptive.adjTargetDeficit}</th><th>${strings.adaptive.adjCurrentDeficit}</th><th>${strings.adaptive.adjGap}</th></tr></thead>
           <tbody>
             <tr>
@@ -544,7 +544,7 @@ export async function init() {
               <td>${adj.deficitGap > 0 ? '+' : ''}${adj.deficitGap.toFixed(0)} kcal</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       `;
     } catch (e) {
       console.error('loadHistory error:', e);

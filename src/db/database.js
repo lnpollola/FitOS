@@ -341,6 +341,22 @@ function createTables() {
 
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '3')").run();
   }
+
+  if (!schemaVersion || parseInt(schemaVersion) < 4) {
+    // Migration 8: Add HealthSync cache columns to activity_summary_cache
+    const cacheCols = [
+      ['exercise_minutes', 'REAL DEFAULT 0'],
+      ['walking_km', 'REAL DEFAULT 0'],
+      ['cycling_km', 'REAL DEFAULT 0'],
+      ['hrv_avg', 'REAL'],
+      ['resting_hr_avg', 'REAL'],
+    ];
+    for (const [col, type] of cacheCols) {
+      const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('activity_summary_cache') WHERE name='${col}'`).get();
+      if (exists.cnt === 0) db.exec(`ALTER TABLE activity_summary_cache ADD COLUMN ${col} ${type}`);
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '4')").run();
+  }
 }
 
 function getDb() {
@@ -357,9 +373,9 @@ function populateCache(periodDays) {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO activity_summary_cache
-      (period_days, date, steps, active_kcal, resting_kcal, sleep_hours, sleep_deep, sleep_rem, sleep_light, weight_kg, sport_sessions, sport_kcal, sport_minutes)
+      (period_days, date, steps, active_kcal, resting_kcal, sleep_hours, sleep_deep, sleep_rem, sleep_light, weight_kg, sport_sessions, sport_kcal, sport_minutes, exercise_minutes, walking_km, cycling_km, hrv_avg, resting_hr_avg)
     VALUES
-      (@period_days, @date, @steps, @active_kcal, @resting_kcal, @sleep_hours, @sleep_deep, @sleep_rem, @sleep_light, @weight_kg, @sport_sessions, @sport_kcal, @sport_minutes)
+      (@period_days, @date, @steps, @active_kcal, @resting_kcal, @sleep_hours, @sleep_deep, @sleep_rem, @sleep_light, @weight_kg, @sport_sessions, @sport_kcal, @sport_minutes, @exercise_minutes, @walking_km, @cycling_km, @hrv_avg, @resting_hr_avg)
   `);
 
   const days = db.prepare(`
@@ -374,6 +390,40 @@ function populateCache(periodDays) {
   `).all(fromStr, todayStr);
   for (const s of sports) {
     sportByDate[s.date] = s;
+  }
+
+  // HealthSync metrics (gracefully skip if not available)
+  let hsExercise = {}, hsWalk = {}, hsCycle = {}, hsHrv = {}, hsRhr = {};
+  try {
+    if (healthsyncDb) {
+      const hsRows = healthsyncDb.prepare(`
+        SELECT date(start_date) as d, ROUND(SUM(value), 1) as minutes FROM exercise_time
+        WHERE date(start_date) >= ? AND date(start_date) <= ? GROUP BY d
+      `).all(fromStr, todayStr);
+      for (const r of hsRows) hsExercise[r.d] = r.minutes;
+      const wkRows = healthsyncDb.prepare(`
+        SELECT date(start_date) as d, ROUND(SUM(value), 3) as km FROM distance_walking_running
+        WHERE date(start_date) >= ? AND date(start_date) <= ? GROUP BY d
+      `).all(fromStr, todayStr);
+      for (const r of wkRows) hsWalk[r.d] = r.km;
+      const cyRows = healthsyncDb.prepare(`
+        SELECT date(start_date) as d, ROUND(SUM(value), 3) as km FROM distance_cycling
+        WHERE date(start_date) >= ? AND date(start_date) <= ? GROUP BY d
+      `).all(fromStr, todayStr);
+      for (const r of cyRows) hsCycle[r.d] = r.km;
+      const hvRows = healthsyncDb.prepare(`
+        SELECT date(start_date) as d, ROUND(AVG(value), 1) as hrv FROM hrv
+        WHERE date(start_date) >= ? AND date(start_date) <= ? GROUP BY d
+      `).all(fromStr, todayStr);
+      for (const r of hvRows) hsHrv[r.d] = r.hrv;
+      const rhRows = healthsyncDb.prepare(`
+        SELECT date(start_date) as d, ROUND(AVG(value), 1) as rhr FROM resting_heart_rate
+        WHERE date(start_date) >= ? AND date(start_date) <= ? GROUP BY d
+      `).all(fromStr, todayStr);
+      for (const r of rhRows) hsRhr[r.d] = r.rhr;
+    }
+  } catch (e) {
+    console.error('HealthSync cache populate failed:', e.message);
   }
 
   const txn = db.transaction(() => {
@@ -394,6 +444,11 @@ function populateCache(periodDays) {
         sport_sessions: sp.sessions,
         sport_kcal: sp.kcal,
         sport_minutes: sp.minutes,
+        exercise_minutes: hsExercise[d.date] || 0,
+        walking_km: hsWalk[d.date] || 0,
+        cycling_km: hsCycle[d.date] || 0,
+        hrv_avg: hsHrv[d.date] || null,
+        resting_hr_avg: hsRhr[d.date] || null,
       });
     }
   });
@@ -410,9 +465,15 @@ function getHealthsyncDb() {
   return healthsyncDb;
 }
 
+function refreshCaches() {
+  try { populateCache(7); } catch (e) { console.error('Cache populate 7d failed:', e.message); }
+  try { populateCache(15); } catch (e) { console.error('Cache populate 15d failed:', e.message); }
+  try { populateCache(30); } catch (e) { console.error('Cache populate 30d failed:', e.message); }
+}
+
 function testHealthsyncConnection() {
   const row = healthsyncDb.prepare("SELECT COUNT(*) as total FROM sqlite_master WHERE type='table'").get();
   return row.total;
 }
 
-module.exports = { initDatabase, getDb, getDbPath, initHealthsyncDb, getHealthsyncDb, testHealthsyncConnection, populateCache };
+module.exports = { initDatabase, getDb, getDbPath, initHealthsyncDb, getHealthsyncDb, testHealthsyncConnection, populateCache, refreshCaches };

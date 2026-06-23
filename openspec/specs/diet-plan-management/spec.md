@@ -8,7 +8,7 @@ Model the diet as a slot-based template (MealTemplate with MealComponent slots a
 
 ### Requirement: Model diet as slot-based template
 
-The system SHALL model the diet as a set of MealTemplates (breakfast, mid-morning, lunch, snack, dinner), each composed of MealComponents (slots for carbs, protein, fat, vegetables, fruit, extras), where each slot has a list of interchangeable FoodItem options with specific gram amounts per day type.
+The system SHALL model the diet as a set of MealTemplates (breakfast, mid-morning, lunch, snack, dinner), each composed of MealComponents (slots for carbs, protein, fat, vegetables, fruit, extras) organized under macronutrient group headers (CARBOHIDRATOS, PROTEÍNAS, GRASAS SALUDABLES), where each slot has a list of interchangeable FoodItem options with specific gram amounts per day type. Media Mañana and Merienda SHALL be fixed recipes with specific ingredient amounts that cannot be changed.
 
 #### Scenario: Diet plan created from extracted data
 - **WHEN** the user imports their existing diet from the extracted structure (Modelo_DietaRes.md)
@@ -16,11 +16,11 @@ The system SHALL model the diet as a set of MealTemplates (breakfast, mid-mornin
 
 #### Scenario: View diet plan structure
 - **WHEN** a user opens the diet plan view
-- **THEN** the system SHALL display the diet as a structured list of meals, each showing its slots, available food options, and gram amounts
+- **THEN** the system SHALL display the diet as a structured list of meals, with food options grouped under macronutrient headers (CARBOHIDRATOS, PROTEÍNAS, GRASAS SALUDABLES) for Desayuno, Comida, Cena, and as fixed recipes for Media Mañana and Merienda
 
 ### Requirement: Compute meal calories and macros from food database
 
-The system SHALL maintain a food database (FoodItem) with kcal and macros per 100g, and compute the total calories, protein, carbs, and fat for each meal and for the full day.
+The system SHALL maintain a food database (FoodItem) with kcal and macros per 100g, and compute the total calories, protein, carbs, and fat for each meal and for the full day. Media Mañana and Merienda SHALL have their calories computed from their fixed ingredient formulas.
 
 #### Scenario: Meal calories computed
 - **WHEN** a meal is displayed
@@ -29,6 +29,12 @@ The system SHALL maintain a food database (FoodItem) with kcal and macros per 10
 #### Scenario: Daily totals computed
 - **WHEN** a full day plan is displayed
 - **THEN** the system SHALL show the sum of all meals' calories and macros, including supplements (creatine 5g, optional protein powder)
+
+#### Scenario: Fixed recipe calories computed
+- **WHEN** the Media Mañana column renders
+- **THEN** the system SHALL compute total kcal from: (300 × bebida_vegetal_kcal_per_100g / 100) + (30 × avena_kcal_per_100g / 100) + (20 × proteina_kcal_per_100g / 100) + (15 × frutos_secos_kcal_per_100g / 100)
+- **WHEN** the Merienda column renders
+- **THEN** the system SHALL compute total kcal from: (350 × bebida_vegetal_kcal_per_100g / 100) + (50 × avena_kcal_per_100g / 100) + (30 × proteina_kcal_per_100g / 100) + (150 × fruta_kcal_per_100g / 100)
 
 #### Scenario: Running totals per meal and daily aggregate
 - **WHEN** the daily plan renders
@@ -165,22 +171,22 @@ The system SHALL provide a collapsible food item management section. The food br
 
 ### Requirement: 5-column meal template display
 
-The system SHALL display the 5 meals (Desayuno, Media Mañana, Comida, Merienda, Cena) as columns showing slot breakdown with food options. Media Mañana and Merienda SHALL be displayed as fixed recipes, not slot-based templates. Food option groups SHALL show category labels above them. Training and rest day gram amounts SHALL both be visible. The daily plan SHALL appear directly below the meal templates.
+The system SHALL display the 5 meals (Desayuno, Media Mañana, Comida, Merienda, Cena) as columns showing slot breakdown with food options organized by macronutrient groups. Media Mañana and Merienda SHALL be displayed as fixed recipes with specific calculated ingredients and calorie totals, not as slot-based templates. Food options within slots SHALL be grouped under macronutrient headers (CARBOHIDRATOS, PROTEÍNAS, GRASAS SALUDABLES) that appear above their respective food group. Training and rest day gram amounts SHALL both be visible. The daily plan SHALL appear directly below the meal templates.
 
 #### Scenario: Meal columns render from seeded data
 - **WHEN** meal_components and meal_options are populated
 - **THEN** the system SHALL display 5 columns, each showing meal name
-- **THEN** Desayuno, Comida, and Cena SHALL show slot types with gram amounts and interchangeable food options with category pills above each food group
-- **THEN** Media Mañana and Merienda SHALL display as fixed recipe: "Batido: 200–350ml leche vegetal + 150g fruta + 50g avena + 30g proteína + hielo"
+- **THEN** Desayuno, Comida, and Cena SHALL show food options grouped under macronutrient headers: CARBOHIDRATOS, PROTEÍNAS, GRASAS SALUDABLES
+- **THEN** each macronutrient header SHALL appear above its food group
+- **THEN** Media Mañana SHALL display fixed ingredients: "300ml bebida vegetal", "30g harina de avena", "20g proteína", "15g frutos secos" with total kcal calculated from food_items
+- **THEN** Merienda SHALL display fixed ingredients: "350ml bebida vegetal", "50g harina de avena", "30g proteína", "150g fruta" with total kcal calculated from food_items
 - **THEN** Media Mañana and Merienda SHALL NOT display interchangeable food option slots
-- **THEN** each slot SHALL show training day grams as the primary value (e.g., "120g") and rest day grams as a secondary muted value (e.g., "100g descanso")
-- **THEN** food options with zero rest day grams SHALL show "—" instead of "0g"
-- **THEN** category pills SHALL use organic palette colors: Carbohidratos warm tan, Proteínas moss, Grasas saludables ember, Infusiones lichen
+- **THEN** each macronutrient group header SHALL use organic palette colors: Carbohidratos warm tan, Proteínas moss, Grasas saludables ember
 
 #### Scenario: User selects food per slot
 - **WHEN** a user clicks a food option in a slot (Desayuno, Comida, or Cena only)
-- **THEN** it SHALL be highlighted as selected
-- **THEN** the meal's total kcal/macros SHALL update
+- **THEN** it SHALL toggle between selected (highlighted with accent border) and deselected
+- **THEN** the slot's kcal total SHALL recalculate immediately on each click
 
 #### Scenario: Create daily plan from selections
 - **WHEN** the user clicks "Generar Plan Diario"
@@ -311,14 +317,32 @@ The system SHALL fix the "Cambiar alimento" functionality to delete old entries 
 - **THEN** the system SHALL insert the new food entries
 - **THEN** the meal's total kcal/macros SHALL reflect only the new food, not doubled
 
+### Requirement: Column totals computed on food selection toggle
+
+The system SHALL call `updateColumnTotals()` after every food item click (select or deselect) in a meal template slot. Column kcal totals SHALL start at 0 and reflect only the sum of all currently selected food items in that slot. No fallback to default gram amounts SHALL occur when no foods are selected.
+
+#### Scenario: Column total updates on selection
+- **WHEN** the user clicks a food item in a meal template column
+- **THEN** the column's kcal total SHALL update immediately
+- **THEN** no page reload or manual refresh SHALL be required
+
+#### Scenario: Column total reflects multiple selections
+- **WHEN** three food items are selected in the Desayuno column
+- **THEN** the column total SHALL equal the sum of all three items' kcal contributions
+
+#### Scenario: Column starts at 0 with no selection
+- **WHEN** a meal template column renders with no food items selected
+- **THEN** the column total SHALL display "0 kcal"
+- **THEN** the total SHALL only increase when the user actively selects a food option
+
 ### Requirement: Column totals computed on render
 
-The system SHALL call `updateColumnTotals()` once after the meal template HTML is rendered, not only on food option click. Initial render SHALL show non-zero calorie totals based on default food selections.
+The system SHALL call `updateColumnTotals()` once after the meal template HTML is rendered, not only on food option click. Initial render SHALL show "0 kcal" for all columns, reflecting that no foods are selected by default and the user must click to add selections.
 
-#### Scenario: Non-zero totals on load
+#### Scenario: Zero totals on initial load
 - **WHEN** the diet view renders with meal templates
-- **THEN** each meal column SHALL display a non-zero kcal total based on default_grams
-- **THEN** the user SHALL NOT see "0 kcal" on initial load
+- **THEN** each meal column SHALL display "0 kcal" initially
+- **THEN** totals SHALL update to non-zero only after the user selects food options
 
 ### Requirement: Eliminate duplicate loads on init
 

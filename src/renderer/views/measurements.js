@@ -141,12 +141,15 @@ export async function init() {
           </div>
           <button class="btn btn-primary" id="btn-compare">${strings.measurements.compare}</button>
         </div>
-        <div id="comparison-result" class="table-responsive" aria-live="polite"></div>
+        <div id="comparison-result" aria-live="polite"></div>
       </div>
     `;
 
     const api = window.electronAPI;
     if (!api) { return; }
+
+    const PAGE_SIZE = 10;
+    let _historyPage = 0;
 
     async function prefillForm() {
       const today = new Date().toISOString().split('T')[0];
@@ -168,7 +171,7 @@ export async function init() {
         if (input && latest[col] != null) input.value = latest[col];
       }
       const weightInput = document.querySelector('#measurement-form input[name="weight_kg"]');
-      if (weightInput && latest.weight_kg != null) input.value = latest.weight_kg;
+      if (weightInput && latest.weight_kg != null) weightInput.value = latest.weight_kg;
     }
 
     document.getElementById('measurement-form').addEventListener('submit', async (e) => {
@@ -257,12 +260,14 @@ export async function init() {
       }
       const allCols = [...METRIC_COLUMNS, 'weight_kg'];
       const headers = [strings.measurements.date, ...allCols.map(c => getMeasurementLabel(c)), ''];
-      const showAll = el.dataset.showAll === 'true';
-      const displaySets = showAll ? sets : sets.slice(0, 5);
-      let html = '<div class="table-responsive"><table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+      const totalPages = Math.ceil(sets.length / PAGE_SIZE);
+      if (_historyPage >= totalPages) _historyPage = totalPages - 1;
+      const start = _historyPage * PAGE_SIZE;
+      const displaySets = sets.slice(start, start + PAGE_SIZE);
+      let html = '<div class="data-table-wrapper"><table class="data-table data-table--sticky-col"><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
       for (let i = 0; i < displaySets.length; i++) {
         const s = displaySets[i];
-        const prev = i > 0 ? displaySets[i - 1] : null;
+        const prev = i + start > 0 ? sets[i + start - 1] : null;
         html += `<tr><td>${s.date}</td>`;
         for (const col of allCols) {
           const val = s[col];
@@ -273,18 +278,19 @@ export async function init() {
         html += '</tr>';
       }
       html += '</tbody></table></div>';
-      if (sets.length > 5) {
-        html += `<button class="btn btn-secondary mt-2" id="toggle-history">${showAll ? strings.measurements.showLess : strings.measurements.showAll}</button>`;
+      if (totalPages > 1) {
+        html += `<div class="data-table-pagination">
+          <button id="hist-prev" ${_historyPage === 0 ? 'disabled' : ''}>${strings.measurements.prevPage || '‹ Anterior'}</button>
+          <span>${strings.measurements.page || 'Página'} ${_historyPage + 1} ${strings.measurements.pageOf || 'de'} ${totalPages}</span>
+          <button id="hist-next" ${_historyPage >= totalPages - 1 ? 'disabled' : ''}>${strings.measurements.nextPage || 'Siguiente ›'}</button>
+        </div>`;
       }
       el.innerHTML = html;
 
-      const toggleBtn = document.getElementById('toggle-history');
-      if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-          el.dataset.showAll = showAll ? 'false' : 'true';
-          loadHistory();
-        });
-      }
+      const prevBtn = document.getElementById('hist-prev');
+      const nextBtn = document.getElementById('hist-next');
+      if (prevBtn) prevBtn.addEventListener('click', () => { _historyPage--; loadHistory(); });
+      if (nextBtn) nextBtn.addEventListener('click', () => { _historyPage++; loadHistory(); });
 
       el.querySelectorAll('[data-delete-measurement]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -375,9 +381,9 @@ export async function init() {
         if (!monthGroups[key]) monthGroups[key] = [];
         monthGroups[key].push(w.weight_kg);
       }
-      const months = Object.keys(monthGroups).sort();
+      const months = Object.keys(monthGroups).sort().reverse();
       let prevAvg = null;
-      let summaryHtml = `<table style="width:100%;font-size:13px"><thead><tr><th>${strings.measurements.month}</th><th>${strings.measurements.avgWeight}</th><th>${strings.measurements.monthDelta}</th></tr></thead><tbody>`;
+      let summaryHtml = `<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>${strings.measurements.month}</th><th>${strings.measurements.avgWeight}</th><th>${strings.measurements.monthDelta}</th></tr></thead><tbody>`;
       for (const m of months) {
         const vals = monthGroups[m];
         const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -392,7 +398,7 @@ export async function init() {
         summaryHtml += '</td></tr>';
         prevAvg = avg;
       }
-      summaryHtml += '</tbody></table>';
+      summaryHtml += '</tbody></table></div>';
       summaryEl.innerHTML = summaryHtml;
     }
 
@@ -669,7 +675,7 @@ export async function init() {
       }
 
       const allCols = ['weight_kg', ...METRIC_COLUMNS];
-      let html = '<table><thead><tr><th>' + strings.measurements.metricLabel + '</th><th>' + strings.measurements.before + '</th><th>' + strings.measurements.after + '</th><th>' + strings.measurements.delta + '</th></tr></thead><tbody>';
+      let html = '<div class="data-table-wrapper"><table class="data-table data-table--sticky-col"><thead><tr><th>' + strings.measurements.metricLabel + '</th><th>' + strings.measurements.before + '</th><th>' + strings.measurements.after + '</th><th>' + strings.measurements.delta + '</th></tr></thead><tbody>';
       for (const m of allCols) {
         const bVal = before[m];
         const aVal = after[m];
@@ -678,7 +684,7 @@ export async function init() {
           html += `<tr><td>${getMeasurementLabel(m)}</td><td>${bVal.toFixed(1)}</td><td>${aVal.toFixed(1)}</td><td>${formatDelta(delta, m)}</td></tr>`;
         }
       }
-      html += '</tbody></table>';
+      html += '</tbody></table></div>';
       el.innerHTML = html;
     }
 

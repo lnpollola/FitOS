@@ -34,14 +34,15 @@ describe('Dashboard view smoke test', () => {
   it('render injects skeletons before data resolves', async () => {
     const { init } = await import('../../src/renderer/views/dashboard.js');
     document.getElementById('view-dashboard').innerHTML = `
-      <div class="dashboard-grid" id="row-metrics"></div>
-      <div class="dashboard-grid" id="row-steps-extras"></div>
+      <div class="dashboard-grid" id="row-hero"></div>
+      <div class="dashboard-grid" id="row-kpis-1"></div>
+      <div class="dashboard-grid" id="row-kpis-2"></div>
       <div class="dashboard-chart-row" id="row-trend" style="display:none"></div>
-      <div class="dashboard-grid" id="row-activity"></div>
+      <div class="dashboard-grid" id="row-sports"></div>
       <div id="last-update"></div>
     `;
     await init();
-    expect(document.getElementById('row-metrics').innerHTML).toBeTruthy();
+    expect(document.getElementById('row-hero').innerHTML).toBeTruthy();
   });
 
   it('rendered HTML contains no emoji characters in icon positions', async () => {
@@ -69,18 +70,20 @@ describe('Dashboard view smoke test', () => {
     expect(html).not.toContain('data-range="7d"');
   });
 
-  it('rows in correct order: metrics → activity → steps-extras → trend', async () => {
+  it('rows in correct order: hero → kpis-1 → kpis-2 → trend → sports', async () => {
     const { init } = await import('../../src/renderer/views/dashboard.js');
     await init();
     const html = document.getElementById('view-dashboard').innerHTML;
-    const metricsIdx = html.indexOf('id="row-metrics"');
-    const activityIdx = html.indexOf('id="row-activity"');
-    const stepsIdx = html.indexOf('id="row-steps-extras"');
+    const heroIdx = html.indexOf('id="row-hero"');
+    const kpis1Idx = html.indexOf('id="row-kpis-1"');
+    const kpis2Idx = html.indexOf('id="row-kpis-2"');
     const trendIdx = html.indexOf('id="row-trend"');
-    expect(metricsIdx).toBeGreaterThan(-1);
-    expect(activityIdx).toBeGreaterThan(metricsIdx);
-    expect(stepsIdx).toBeGreaterThan(activityIdx);
-    expect(trendIdx).toBeGreaterThan(stepsIdx);
+    const sportsIdx = html.indexOf('id="row-sports"');
+    expect(heroIdx).toBeGreaterThan(-1);
+    expect(kpis1Idx).toBeGreaterThan(heroIdx);
+    expect(kpis2Idx).toBeGreaterThan(kpis1Idx);
+    expect(trendIdx).toBeGreaterThan(kpis2Idx);
+    expect(sportsIdx).toBeGreaterThan(trendIdx);
   });
 
   it('uses locale strings not hardcoded text', async () => {

@@ -6,12 +6,17 @@ Establish a unified token-based design system with CSS custom properties for spa
 ## Requirements
 ### Requirement: Design token system for spacing, elevation, and z-index
 
-The system SHALL define a unified set of CSS custom properties for spacing (`--space-1` through `--space-8`), elevation (`--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`), and z-index layering (`--z-1`, `--z-10`, `--z-100`) in the `:root` selector of `src/renderer/styles/main.css`. All views and components SHALL reference these tokens instead of hardcoded pixel values. Under `body.organic`, the elevation tokens (`--shadow`, `--shadow-md`, `--shadow-lg`) SHALL be overridden with moss-tinted rgba shadows to read as a "diffused light" rather than a neutral drop.
+The system SHALL define a unified set of CSS custom properties for spacing (`--space-1` through `--space-8`), elevation (`--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`), and z-index layering (`--z-1`, `--z-10`, `--z-100`) in the `:root` selector of `src/renderer/styles/base.css`. All views and components SHALL reference these tokens instead of hardcoded pixel values. Under `body.organic`, the elevation tokens (`--shadow`, `--shadow-md`, `--shadow-lg`) SHALL be overridden with moss-tinted rgba shadows to read as a "diffused light" rather than a neutral drop. The CSS SHALL be organized by component in separate files (`base.css`, `layout.css`, `cards.css`, `forms.css`, `tables.css`, `utilities.css`) with `main.css` as an import-only entry point.
 
-#### Scenario: Spacing scale defined
-- **WHEN** a developer opens `src/renderer/styles/main.css`
+#### Scenario: Spacing scale defined in base.css
+- **WHEN** a developer opens `src/renderer/styles/base.css`
 - **THEN** the `:root` selector SHALL contain `--space-1: 4px`, `--space-2: 8px`, `--space-3: 12px`, `--space-4: 16px`, `--space-6: 24px`, `--space-8: 32px`
 - **THEN** existing padding/margin values in the stylesheet SHALL be migrated to use these tokens
+
+#### Scenario: CSS organized by component
+- **WHEN** a developer navigates `src/renderer/styles/`
+- **THEN** separate files SHALL exist for base, layout, cards, forms, tables, and utilities
+- **THEN** `main.css` SHALL contain only `@import` directives
 
 #### Scenario: Elevation tokens defined
 - **WHEN** a developer opens `src/renderer/styles/main.css`
@@ -62,7 +67,7 @@ The system SHALL extend the existing utility classes in `main.css` with text-siz
 
 ### Requirement: Component classes for repeated card patterns
 
-The system SHALL define component CSS classes for card patterns that appear multiple times across views: `.card-accent` (full-width card with accent background), `.compliance-ok` (green compliance badge), `.compliance-warn` (amber compliance badge), `.metric-trend` (inline trend indicator), `.metric-value-sm` (smaller metric value).
+The system SHALL define component CSS classes for card patterns that appear multiple times across views: `.card-accent` (full-width card with accent background), `.compliance-ok` (green compliance badge), `.compliance-warn` (amber compliance badge), `.metric-trend` (inline trend indicator), `.metric-value-sm` (smaller metric value). Card subtitles SHALL support `<strong>` elements styled with `font-weight: 600` and `color: var(--moss-ink)` for key numeric values.
 
 #### Scenario: Accent card class replaces inline styles
 - **WHEN** a view renders a full-width card with the accent background color
@@ -71,6 +76,10 @@ The system SHALL define component CSS classes for card patterns that appear mult
 #### Scenario: Compliance badge classes replace inline styles
 - **WHEN** a view renders a compliance indicator (checkmark with green or amber color)
 - **THEN** the view SHALL use `<span class="compliance-ok">` or `<span class="compliance-warn">` instead of `style="font-size:11px;color:var(--success)"`
+
+#### Scenario: Strong text in card subtitles
+- **WHEN** a card subtitle contains `<strong>` wrapped numbers
+- **THEN** the strong text SHALL render in moss-ink with 600 font weight
 
 ### Requirement: Organic token override block behind `body.organic`
 
@@ -133,4 +142,21 @@ The system SHALL style the sidebar header to display the app name and user profi
 - **WHEN** the sidebar is in collapsed mode (below 900px)
 - **THEN** the user name subtitle SHALL be hidden (`display: none`)
 - **THEN** the app name `<h1>` SHALL remain visible at a reduced size
+
+### Requirement: Design system includes data table component
+
+The system's design system SHALL include the `.data-table` component as a first-class citizen alongside `.card`, `.dashboard-card`, and `.btn`. The component SHALL encompass `.data-table-wrapper`, `.data-table`, `.data-table--sticky-col`, and `.data-table-pagination`.
+
+#### Scenario: Design system documented with data table
+- **WHEN** developers reference the design system
+- **THEN** `.data-table` SHALL be listed as the standard pattern for tabular data display
+- **THEN** deprecated table patterns (`.table-responsive`, `.ranking-table-wrap`, bare `<table>`) SHALL be documented as removed
+
+### Requirement: Design system includes sidebar section component
+
+The system's design system SHALL include the `.nav-section` component for collapsible sidebar section headers with chevron icons and Fraunces italic typography.
+
+#### Scenario: Sidebar section documented
+- **WHEN** developers reference the design system
+- **THEN** `.nav-section` SHALL be documented as the pattern for grouping nav items in the sidebar
 

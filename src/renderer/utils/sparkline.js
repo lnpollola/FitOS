@@ -1,4 +1,42 @@
-export function sparkline(values, { stroke = 'var(--moss)', width = 120, height = 36 } = {}) {
+const TREND_THRESHOLDS = {
+  sleep: 0.02,
+  hrv: 0.1,
+  rhr: 0.05,
+  weight: 0.01,
+  steps: 50,
+  calories: 10,
+  distance: 0.05,
+  exercise: 0.5,
+  default: 0.05,
+};
+
+const INVERSE_METRICS = new Set(['rhr', 'weight']);
+
+export function computeTrendDirection(series, metricType = 'default') {
+  if (!series || series.length < 5) return 'lichen';
+  const nums = series.map(v => (v == null ? 0 : Number(v))).filter(v => !isNaN(v));
+  if (nums.length < 5) return 'lichen';
+
+  const n = nums.length;
+  const indices = Array.from({ length: n }, (_, i) => i);
+  const sumX = indices.reduce((a, v) => a + v, 0);
+  const sumY = nums.reduce((a, v) => a + v, 0);
+  const sumXY = indices.reduce((a, x, i) => a + x * nums[i], 0);
+  const sumX2 = indices.reduce((a, x) => a + x * x, 0);
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+
+  let adjustedSlope = slope;
+  if (INVERSE_METRICS.has(metricType)) {
+    adjustedSlope = -slope;
+  }
+
+  const threshold = TREND_THRESHOLDS[metricType] || TREND_THRESHOLDS.default;
+  if (adjustedSlope > threshold) return 'moss';
+  if (adjustedSlope < -threshold) return 'ember';
+  return 'lichen';
+}
+
+export function sparkline(values, { stroke = 'var(--moss)', width = 120, height = 36, showMean = false } = {}) {
   if (!values || values.length < 2) return '';
   const nums = values.map(v => (v == null ? 0 : Number(v)));
   if (nums.length < 2) return '';
@@ -25,9 +63,17 @@ export function sparkline(values, { stroke = 'var(--moss)', width = 120, height 
   }
   const areaD = `${d} L ${pts[pts.length - 1][0].toFixed(2)} ${(h - pad).toFixed(2)} L ${pts[0][0].toFixed(2)} ${(h - pad).toFixed(2)} Z`;
   const last = pts[pts.length - 1];
+  const meanY = pad + innerH - ((nums.reduce((a, v) => a + v, 0) / nums.length - min) / span) * innerH;
+
+  let extras = '';
+  if (showMean && nums.length >= 3) {
+    extras += `<line x1="${pad}" y1="${meanY.toFixed(2)}" x2="${(w - pad).toFixed(2)}" y2="${meanY.toFixed(2)}" stroke="var(--lichen)" stroke-opacity="0.4" stroke-dasharray="2,2" stroke-width="0.8"/>`;
+  }
+
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
     <path class="area" d="${areaD}" style="fill:${stroke}"/>
     <path class="line" d="${d}" style="stroke:${stroke}"/>
+    ${extras}
     <circle class="dot" cx="${last[0].toFixed(2)}" cy="${last[1].toFixed(2)}" r="2.4"/>
   </svg>`;
 }
