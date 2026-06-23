@@ -62,9 +62,13 @@ export function init() {
 - **`apple-health-import.js`**: Integración con HealthSync CLI (Go), parsea XML Apple Health
 
 ### `src/db/` — Datos
-- **`database.js`**: 22 tablas, schema v1 con migraciones (sport_types expandido, practical_examples)
-- **`seed-data.js`**: 46 alimentos, 56 ejercicios, 5 workout plans (2x-6x semana)
+- **`database.js`**: 22 tablas, schema v5 con migraciones (sport_types expandido, practical_examples, HealthSync cache, exercise enrichment, food_items fiber/category)
+- **`seed-data.js`**: 198 alimentos, 53 ejercicios enriquecidos, 5 planes de fuerza + 12 planes HIIT/WOD/METCON/HYBRID, plantillas de 5 comidas con opciones por categoría
+  - `seedIfEmpty(db)`: solo si las tablas están vacías (instalación limpia)
+  - `migrateSeedData(db)`: upsert idempotente de foods/exercises/plans por nombre, bumpea `seed_version`
+  - `resetSeedTemplates(db)`: reset completo de meal_components, exercise_library, workout_plans, elaborated_dishes (FK-safe), bumpea `seed_template_version`
 - **`import-export.js`**: Backup/restore full JSON
+- **Ver `docs/SEED_DATA.md`** para guía completa de cómo actualizar alimentos, ejercicios, planes, plantillas y platos elaborados
 
 ## Tablas Principales
 `user_profile`, `activity_days`, `sport_activities`, `food_items`, `meal_templates`, `meal_components`, `meal_options`, `daily_plans`, `daily_plan_entries`, `measurement_sets`, `weight_entries`, `training_routines`, `training_routine_days`, `exercise_library`, `training_sessions`, `training_sets`, `settings`, `elaborated_dishes`, `dish_ingredients`, `meal_dish_options`, `workout_plans`, `workout_plan_days`

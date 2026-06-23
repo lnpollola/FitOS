@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const os = require('os');
 const { app } = require('electron');
-const { seedIfEmpty } = require('./seed-data');
+const { seedIfEmpty, migrateSeedData } = require('./seed-data');
 const EXERCISES_MIGRATION = require('./seed-data').EXERCISES || [];
 
 let db;
@@ -19,6 +19,7 @@ function initDatabase() {
   db.pragma('foreign_keys = ON');
   createTables();
   seedIfEmpty(db);
+  migrateSeedData(db);
   return db;
 }
 
@@ -356,6 +357,61 @@ function createTables() {
       if (exists.cnt === 0) db.exec(`ALTER TABLE activity_summary_cache ADD COLUMN ${col} ${type}`);
     }
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '4')").run();
+  }
+
+  if (!schemaVersion || parseInt(schemaVersion) < 5) {
+    // exercise_library: category, difficulty, intensity, bilateral, explosive, unilateral, secondary_muscles
+    const exCols = [
+      ['category', 'TEXT'],
+      ['difficulty', 'TEXT'],
+      ['intensity', 'TEXT'],
+      ['bilateral', 'INTEGER DEFAULT 1'],
+      ['explosive', 'INTEGER DEFAULT 0'],
+      ['unilateral', 'INTEGER DEFAULT 0'],
+      ['secondary_muscles', 'TEXT'],
+    ];
+    for (const [col, type] of exCols) {
+      const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('exercise_library') WHERE name='${col}'`).get();
+      if (exists.cnt === 0) db.exec(`ALTER TABLE exercise_library ADD COLUMN ${col} ${type}`);
+    }
+
+    // workout_plans: type, style, level, estimated_duration_min, goal
+    const wpCols = [
+      ['type', "TEXT DEFAULT 'Fuerza'"],
+      ['style', 'TEXT'],
+      ['level', 'TEXT'],
+      ['estimated_duration_min', 'INTEGER'],
+      ['goal', 'TEXT'],
+    ];
+    for (const [col, type] of wpCols) {
+      const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('workout_plans') WHERE name='${col}'`).get();
+      if (exists.cnt === 0) db.exec(`ALTER TABLE workout_plans ADD COLUMN ${col} ${type}`);
+    }
+
+    // workout_plan_days: prescribed_reps, scaling_beginner, scaling_advanced
+    const wdCols = [
+      ['prescribed_reps', 'TEXT'],
+      ['scaling_beginner', 'TEXT'],
+      ['scaling_advanced', 'TEXT'],
+    ];
+    for (const [col, type] of wdCols) {
+      const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('workout_plan_days') WHERE name='${col}'`).get();
+      if (exists.cnt === 0) db.exec(`ALTER TABLE workout_plan_days ADD COLUMN ${col} ${type}`);
+    }
+
+    // Re-seed enriched data (new foods, exercise categories, HIIT/WOD plans)
+
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '5')").run();
+  }
+
+  // Idempotent: ensure food_items has fiber/category even if v5 ran before these columns were added
+  const fiColsFinal = [
+    ['fiber_per_100g', 'REAL DEFAULT 0'],
+    ['category', 'TEXT'],
+  ];
+  for (const [col, type] of fiColsFinal) {
+    const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('food_items') WHERE name='${col}'`).get();
+    if (exists.cnt === 0) db.exec(`ALTER TABLE food_items ADD COLUMN ${col} ${type}`);
   }
 }
 
