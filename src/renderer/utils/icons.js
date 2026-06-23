@@ -1,4 +1,4 @@
-import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu, LayoutDashboard } from 'lucide';
+import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu, LayoutDashboard, Ruler, ScanLine, ChevronDown, ChevronUp, ArrowUpRightFromSquare, CircleUser, Circle, Layers } from 'lucide';
 
 const iconRegistry = {
   check: Check, 'arrow-up': ArrowUp, 'arrow-down': ArrowDown,
@@ -9,6 +9,10 @@ const iconRegistry = {
   'alert-circle': AlertCircle, 'refresh-cw': RefreshCw,
   plus: Plus, download: Download, upload: Upload,
   menu: Menu, 'layout-dashboard': LayoutDashboard,
+  ruler: Ruler, 'scan-line': ScanLine,
+  'chevron-down': ChevronDown, 'chevron-up': ChevronUp,
+  'arrow-up-right-from-square': ArrowUpRightFromSquare,
+  'circle-user': CircleUser, circle: Circle, layers: Layers,
 };
 
 function renderAttributes(attrs) {

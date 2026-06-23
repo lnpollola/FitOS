@@ -35,8 +35,7 @@ describe('Activity view smoke test', () => {
   it('renders session-comparison element', async () => {
     const { init } = await import('../../src/renderer/views/activity.js');
     await init();
-    const compEl = document.getElementById('session-comparison');
-    expect(compEl).toBeTruthy();
+    expect(document.getElementById('session-comparison')).toBeTruthy();
   });
 
   it('preserves weekly-chart canvas after init', async () => {
@@ -45,5 +44,20 @@ describe('Activity view smoke test', () => {
     const canvas = document.getElementById('weekly-chart');
     expect(canvas).toBeTruthy();
     expect(canvas.tagName).toBe('CANVAS');
+  });
+
+  it('renders ranking table card', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    expect(document.getElementById('recognition-table-card')).toBeTruthy();
+    expect(document.getElementById('recognition-table')).toBeTruthy();
+  });
+
+  it('renders no emoji in icon positions', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const html = document.getElementById('view-activity').innerHTML;
+    const emojiRegex = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{2700}-\u{27BF}]/u;
+    expect(html).not.toMatch(emojiRegex);
   });
 });

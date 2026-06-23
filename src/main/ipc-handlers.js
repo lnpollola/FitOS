@@ -2,11 +2,17 @@ const { ipcMain, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
 const Database = require('better-sqlite3');
-const { getDb, initHealthsyncDb, getHealthsyncDb } = require('../db/database');
+const { getDb, initHealthsyncDb, getHealthsyncDb, populateCache } = require('../db/database');
 const { exportAllData, importAllData } = require('../db/import-export');
 const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData } = require('./apple-health-import');
 
 const HEALTHSYNC_DB_PATH = path.join(os.homedir(), '.healthsync', 'healthsync.db');
+
+function refreshCaches() {
+  try { populateCache(7); } catch (e) { console.error('Cache populate 7d failed:', e.message); }
+  try { populateCache(15); } catch (e) { console.error('Cache populate 15d failed:', e.message); }
+  try { populateCache(30); } catch (e) { console.error('Cache populate 30d failed:', e.message); }
+}
 
 function getHS() {
   let hs = getHealthsyncDb();
@@ -45,12 +51,14 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('db:saveActivityDay', (_event, day) => {
     const db = getDb();
     db.prepare(`
-      INSERT INTO activity_days (date, steps, active_calories, resting_calories, heart_rate_avg, sleep_hours, weight_kg)
-      VALUES (@date, @steps, @active_calories, @resting_calories, @heart_rate_avg, @sleep_hours, @weight_kg)
+      INSERT INTO activity_days (date, steps, active_calories, resting_calories, heart_rate_avg, sleep_hours, sleep_deep, sleep_rem, sleep_light, weight_kg)
+      VALUES (@date, @steps, @active_calories, @resting_calories, @heart_rate_avg, @sleep_hours, @sleep_deep, @sleep_rem, @sleep_light, @weight_kg)
       ON CONFLICT(date) DO UPDATE SET
         steps = @steps, active_calories = @active_calories, resting_calories = @resting_calories,
-        heart_rate_avg = @heart_rate_avg, sleep_hours = @sleep_hours, weight_kg = @weight_kg
+        heart_rate_avg = @heart_rate_avg, sleep_hours = @sleep_hours, sleep_deep = @sleep_deep,
+        sleep_rem = @sleep_rem, sleep_light = @sleep_light, weight_kg = @weight_kg
     `).run(day);
+    refreshCaches();
     return true;
   });
 
@@ -65,6 +73,7 @@ function registerIpcHandlers(mainWindow) {
       INSERT INTO sport_activities (date, sport_type, calories, duration_minutes)
       VALUES (@date, @sport_type, @calories, @duration_minutes)
     `).run(activity);
+    refreshCaches();
     return true;
   });
 
@@ -142,6 +151,7 @@ function registerIpcHandlers(mainWindow) {
       await parseHealthsyncXML(xmlPath);
       const migration = migrateHealthData(mainWindow);
       Object.assign(result, migration);
+      refreshCaches();
     } catch (e) {
       result.errors.push(e.message);
     }
@@ -211,6 +221,7 @@ function registerIpcHandlers(mainWindow) {
     });
 
     transaction();
+    refreshCaches();
     return true;
   });
 
@@ -335,10 +346,17 @@ function registerIpcHandlers(mainWindow) {
 
   ipcMain.handle('db:saveMeasurementSet', (_event, set) => {
     const db = getDb();
-    const columns = Object.keys(set).filter(k => k !== 'date');
+    const columns = Object.keys(set).filter(k => k !== 'date' && k !== 'id');
     const placeholders = columns.map(c => `@${c}`).join(', ');
     const colNames = columns.join(', ');
-    db.prepare(`INSERT INTO measurement_sets (date, ${colNames}) VALUES (@date, ${placeholders})`).run(set);
+    const updateSet = columns.map(c => `${c} = @${c}`).join(', ');
+    const existing = db.prepare('SELECT id FROM measurement_sets WHERE date = ?').get(set.date);
+    if (existing) {
+      db.prepare(`UPDATE measurement_sets SET ${updateSet} WHERE date = @date`).run(set);
+    } else {
+      db.prepare(`INSERT INTO measurement_sets (date, ${colNames}) VALUES (@date, ${placeholders})`).run(set);
+    }
+    refreshCaches();
     return true;
   });
 
@@ -356,6 +374,7 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('db:saveWeightEntry', (_event, entry) => {
     const db = getDb();
     db.prepare('INSERT INTO weight_entries (date, weight_kg) VALUES (@date, @weight_kg)').run(entry);
+    refreshCaches();
     return true;
   });
 
@@ -399,8 +418,12 @@ function registerIpcHandlers(mainWindow) {
 
   ipcMain.handle('db:saveTrainingSession', (_event, session) => {
     const db = getDb();
-    db.prepare('INSERT INTO training_sessions (date, routine_id, notes) VALUES (@date, @routine_id, @notes)').run(session);
-    return true;
+    if (session.id) {
+      db.prepare('UPDATE training_sessions SET date = @date, routine_id = @routine_id, notes = @notes WHERE id = @id').run(session);
+      return { ok: true, id: session.id };
+    }
+    const result = db.prepare('INSERT INTO training_sessions (date, routine_id, notes) VALUES (@date, @routine_id, @notes)').run(session);
+    return { ok: true, id: result.lastInsertRowid };
   });
 
   ipcMain.handle('db:deleteTrainingSession', (_event, id) => {
@@ -417,11 +440,15 @@ function registerIpcHandlers(mainWindow) {
 
   ipcMain.handle('db:saveTrainingSet', (_event, set) => {
     const db = getDb();
-    db.prepare(`
+    if (set.id) {
+      db.prepare('UPDATE training_sets SET session_id = @session_id, exercise_id = @exercise_id, set_number = @set_number, load_kg = @load_kg, reps = @reps, rpe = @rpe WHERE id = @id').run(set);
+      return { ok: true, id: set.id };
+    }
+    const result = db.prepare(`
       INSERT INTO training_sets (session_id, exercise_id, set_number, load_kg, reps, rpe)
       VALUES (@session_id, @exercise_id, @set_number, @load_kg, @reps, @rpe)
     `).run(set);
-    return true;
+    return { ok: true, id: result.lastInsertRowid };
   });
 
   ipcMain.handle('db:deleteTrainingSet', (_event, id) => {
@@ -438,7 +465,18 @@ function registerIpcHandlers(mainWindow) {
 
   ipcMain.handle('db:saveTrainingRoutine', (_event, routine) => {
     const db = getDb();
-    db.prepare('INSERT INTO training_routines (name) VALUES (@name)').run(routine);
+    if (routine.id) {
+      db.prepare('UPDATE training_routines SET name = @name WHERE id = @id').run(routine);
+      return { ok: true, id: routine.id };
+    }
+    const result = db.prepare('INSERT INTO training_routines (name) VALUES (@name)').run(routine);
+    return { ok: true, id: result.lastInsertRowid };
+  });
+
+  ipcMain.handle('db:deleteTrainingRoutine', (_event, id) => {
+    const db = getDb();
+    db.prepare('UPDATE training_sessions SET routine_id = NULL WHERE routine_id = ?').run(id);
+    db.prepare('DELETE FROM training_routines WHERE id = ?').run(id);
     return true;
   });
 
@@ -502,7 +540,12 @@ function registerIpcHandlers(mainWindow) {
     weekAgo.setDate(weekAgo.getDate() - 7);
     const startDate = weekAgo.toISOString().split('T')[0];
 
-    const days = db.prepare(`
+    const cached = db.prepare(`
+      SELECT date, steps, sport_kcal, sport_sessions FROM activity_summary_cache
+      WHERE period_days = 7 AND date >= ? ORDER BY date
+    `).all(startDate);
+
+    const days = cached.length > 0 ? cached : db.prepare(`
       SELECT a.date, a.steps, COALESCE(SUM(s.calories), 0) as sport_cal
       FROM activity_days a
       LEFT JOIN sport_activities s ON a.date = s.date
@@ -514,7 +557,8 @@ function registerIpcHandlers(mainWindow) {
     let netBalance = 0;
     for (const d of days) {
       const neat = (d.steps || 0) * 0.04;
-      const tdee = bmr + (d.sport_cal || 0) + neat;
+      const sportCal = d.sport_kcal || d.sport_cal || 0;
+      const tdee = bmr + sportCal + neat;
 
       const planEntries = db.prepare(`
         SELECT dpe.grams, fi.kcal_per_100g
@@ -679,6 +723,15 @@ function registerIpcHandlers(mainWindow) {
   // Elaborated dishes
   ipcMain.handle('db:saveDish', (_event, dish) => {
     const db = getDb();
+    if (dish.id) {
+      db.prepare(`
+        UPDATE elaborated_dishes SET name = @name, description = @description, total_kcal = @total_kcal,
+        total_protein = @total_protein, total_carbs = @total_carbs, total_fat = @total_fat, servings = @servings
+        WHERE id = @id
+      `).run(dish);
+      db.prepare('DELETE FROM dish_ingredients WHERE dish_id = ?').run(dish.id);
+      return dish.id;
+    }
     const result = db.prepare(`
       INSERT INTO elaborated_dishes (name, description, total_kcal, total_protein, total_carbs, total_fat, servings)
       VALUES (@name, @description, @total_kcal, @total_protein, @total_carbs, @total_fat, @servings)
@@ -761,7 +814,93 @@ function registerIpcHandlers(mainWindow) {
     return db.prepare(`SELECT * FROM exercise_library WHERE id IN (${placeholders})`).all(...ids);
   });
 
-  // Export / Import
+  // ─── New handlers: sleep analysis, cycling distance, meal gram adjustments ───
+
+  ipcMain.handle('db:getSleepAnalysis', (_event, from, to) => {
+    try {
+      const db = getDb();
+      const data = db.prepare(`
+        SELECT date, sleep_hours, sleep_deep, sleep_rem, sleep_light
+        FROM activity_days
+        WHERE date >= ? AND date <= ? AND sleep_hours IS NOT NULL
+        ORDER BY date ASC
+      `).all(from, to);
+
+      if (data.length === 0) return { ok: true, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null, consistency: null, dailySeries: [], trendArrow: null };
+
+      const totalAvg = data.reduce((s, d) => s + d.sleep_hours, 0) / data.length;
+      const deepValues = data.filter(d => d.sleep_deep != null);
+      const remValues = data.filter(d => d.sleep_rem != null);
+      const lightValues = data.filter(d => d.sleep_light != null);
+      const deepAvg = deepValues.length > 0 ? deepValues.reduce((s, d) => s + d.sleep_deep, 0) / deepValues.length : null;
+      const remAvg = remValues.length > 0 ? remValues.reduce((s, d) => s + d.sleep_rem, 0) / remValues.length : null;
+      const lightAvg = lightValues.length > 0 ? lightValues.reduce((s, d) => s + d.sleep_light, 0) / lightValues.length : null;
+
+      const mean = totalAvg;
+      const variance = data.reduce((s, d) => s + Math.pow(d.sleep_hours - mean, 2), 0) / data.length;
+      const stdDev = Math.sqrt(variance);
+      const consistency = Math.max(0, Math.min(100, 100 - stdDev * 20));
+
+      const midPoint = Math.floor(data.length / 2);
+      const firstHalfAvg = data.slice(0, midPoint).reduce((s, d) => s + d.sleep_hours, 0) / Math.max(1, midPoint);
+      const secondHalfAvg = data.slice(midPoint).reduce((s, d) => s + d.sleep_hours, 0) / Math.max(1, data.length - midPoint);
+      const pctChange = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+      const trendArrow = pctChange > 5 ? 'up' : pctChange < -5 ? 'down' : 'flat';
+
+      return { ok: true, totalAvg, deepAvg, remAvg, lightAvg, consistency, dailySeries: data, trendArrow };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('db:getCyclingDistance', (_event, from, to) => {
+    try {
+      const hs = getHS();
+      const data = hs.prepare(`
+        SELECT date(start_date) as date, ROUND(SUM(value), 3) as km
+        FROM distance_cycling
+        WHERE date(start_date) BETWEEN ? AND ?
+        GROUP BY date ORDER BY date ASC
+      `).all(from, to);
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('db:adjustMealGrams', (_event, { carbDelta, fatDelta }) => {
+    try {
+      const db = getDb();
+      const changes = [];
+      const carbComponents = db.prepare(`
+        SELECT mc.id, mc.default_grams, fi.name as food_name
+        FROM meal_components mc
+        JOIN food_items fi ON mc.food_item_id = fi.id
+        WHERE fi.carbs_per_100g > fi.protein_per_100g AND fi.carbs_per_100g > fi.fat_per_100g
+      `).all();
+      for (const c of carbComponents) {
+        const newGrams = Math.max(0, c.default_grams + carbDelta);
+        db.prepare('UPDATE meal_components SET default_grams = ? WHERE id = ?').run(newGrams, c.id);
+        changes.push({ name: c.food_name, oldGrams: c.default_grams, newGrams });
+      }
+      const fatComponents = db.prepare(`
+        SELECT mc.id, mc.default_grams, fi.name as food_name
+        FROM meal_components mc
+        JOIN food_items fi ON mc.food_item_id = fi.id
+        WHERE fi.fat_per_100g > fi.protein_per_100g AND fi.fat_per_100g > fi.carbs_per_100g
+      `).all();
+      for (const f of fatComponents) {
+        const newGrams = Math.max(0, f.default_grams + fatDelta);
+        db.prepare('UPDATE meal_components SET default_grams = ? WHERE id = ?').run(newGrams, f.id);
+        changes.push({ name: f.food_name, oldGrams: f.default_grams, newGrams });
+      }
+      return { ok: true, changes };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  // ─── Export / Import ───
   ipcMain.handle('export:data', async () => {
     const result = await dialog.showSaveDialog(mainWindow, {
       defaultPath: `health-data-${new Date().toISOString().split('T')[0]}.json`,
@@ -949,7 +1088,9 @@ function registerIpcHandlers(mainWindow) {
   });
 
   ipcMain.handle('health:syncToApp', () => {
-    return migrateHealthData(mainWindow);
+    const result = migrateHealthData(mainWindow);
+    refreshCaches();
+    return result;
   });
 
   // ─── HealthSync analytics queries (date-range, read-only) ───
@@ -1197,7 +1338,7 @@ function registerIpcHandlers(mainWindow) {
         SELECT date(start_date) as date, ROUND(AVG(value), 1) as spo2_percent
         FROM spo2
         WHERE date(start_date) BETWEEN ? AND ?
-        GROUP BY date ORDER BY date DESC
+        GROUP BY date ORDER BY date ASC
       `).all(from, to);
       return { ok: true, data };
     } catch (e) {
@@ -1208,11 +1349,11 @@ function registerIpcHandlers(mainWindow) {
   ipcMain.handle('health:getDashboardMetrics', (_event, from, to) => {
     try {
       const hs = getHS();
-      const bp = hs.prepare(`SELECT date(start_date) as date, systolic, diastolic FROM blood_pressure WHERE date(start_date) BETWEEN ? AND ? ORDER BY start_date DESC`).all(from, to);
+      const bp = hs.prepare(`SELECT date(start_date) as date, systolic, diastolic FROM blood_pressure WHERE date(start_date) BETWEEN ? AND ? ORDER BY start_date ASC`).all(from, to);
       const stand = hs.prepare(`SELECT date(start_date) as date, ROUND(SUM(value), 1) as hours FROM stand_hours WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
       const exercise = hs.prepare(`SELECT date(start_date) as date, ROUND(SUM(value), 1) as minutes FROM exercise_time WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
       const walk = hs.prepare(`SELECT date(start_date) as date, ROUND(SUM(value), 3) as km FROM distance_walking_running WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
-      const spo2 = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as spo2_percent FROM spo2 WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date DESC`).all(from, to);
+      const spo2 = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as spo2_percent FROM spo2 WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
       const hrv = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as hrv_ms FROM hrv WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
       const rhr = hs.prepare(`SELECT date(start_date) as date, ROUND(AVG(value), 1) as rhr_bpm FROM resting_heart_rate WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`).all(from, to);
       return { ok: true, data: { blood_pressure: bp, standing_hours: stand, exercise_time: exercise, walking_distance: walk, spo2, hrv, resting_hr: rhr } };

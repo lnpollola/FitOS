@@ -202,67 +202,59 @@ const FOOD_ITEMS = [
 ];
 
 const EXERCISES = [
-  // Warmup / mobility
-  { name: 'Cat Camel', muscle_group: 'Spine', equipment: 'Bodyweight', movement_pattern: 'Spine Mobility' },
-  { name: 'Bird Dog', muscle_group: 'Core', equipment: 'Bodyweight', movement_pattern: 'Core Anti-Rotation' },
-  { name: 'Hip Stretch', muscle_group: 'Hips', equipment: 'Bodyweight', movement_pattern: 'Hip Mobility' },
-  { name: 'Estiramiento Dorsal y Pecho', muscle_group: 'Back/Chest', equipment: 'Bodyweight', movement_pattern: 'Upper Body Mobility' },
-  { name: 'Movilidad Peso Muerto Unilateral', muscle_group: 'Hamstrings', equipment: 'Bodyweight', movement_pattern: 'Hip Hinge' },
-  { name: 'Elevaciones Laterales con Elástico', muscle_group: 'Shoulders', equipment: 'Band', movement_pattern: 'Lateral Raise' },
-  // Lower body
-  { name: 'Aductor en Máquina Sentado', muscle_group: 'Adductors', equipment: 'Machine', movement_pattern: 'Hip Adduction' },
-  { name: 'Abductor en Máquina Sentado', muscle_group: 'Abductors', equipment: 'Machine', movement_pattern: 'Hip Abduction' },
-  { name: 'Femoral Tumbado', muscle_group: 'Hamstrings', equipment: 'Machine', movement_pattern: 'Knee Flexion' },
-  { name: 'Femoral Sentado', muscle_group: 'Hamstrings', equipment: 'Machine', movement_pattern: 'Knee Flexion' },
-  { name: 'Sentadilla en Multipower', muscle_group: 'Quads/Glutes', equipment: 'Smith Machine', movement_pattern: 'Squat' },
-  { name: 'Sentadilla Hack', muscle_group: 'Quads', equipment: 'Machine', movement_pattern: 'Squat' },
-  { name: 'Prensa de 45 Grados', muscle_group: 'Quads', equipment: 'Machine', movement_pattern: 'Squat' },
-  { name: 'Peso Muerto Rumano (RDL)', muscle_group: 'Hamstrings/Glutes', equipment: 'Barbell', movement_pattern: 'Hip Hinge' },
-  { name: 'Peso Muerto Unilateral', muscle_group: 'Hamstrings/Glutes', equipment: 'Dumbbell', movement_pattern: 'Hip Hinge' },
-  { name: 'Curl Femoral', muscle_group: 'Hamstrings', equipment: 'Machine', movement_pattern: 'Knee Flexion' },
-  { name: 'Elevación de Talones Sentado', muscle_group: 'Calves', equipment: 'Machine', movement_pattern: 'Ankle Plantarflexion' },
-  { name: 'Elevación de Talones de Pie', muscle_group: 'Calves', equipment: 'Barbell', movement_pattern: 'Ankle Plantarflexion' },
-  { name: 'Extensiones de Cuádriceps', muscle_group: 'Quads', equipment: 'Machine', movement_pattern: 'Knee Extension' },
-  { name: 'Zancada Búlgara', muscle_group: 'Quads/Glutes', equipment: 'Dumbbell', movement_pattern: 'Squat' },
-  { name: 'Hip Thrust', muscle_group: 'Glutes', equipment: 'Barbell', movement_pattern: 'Hip Hinge' },
-  // Upper body - Push
-  { name: 'Press Plano con Mancuernas', muscle_group: 'Chest', equipment: 'Dumbbell', movement_pattern: 'Horizontal Push' },
-  { name: 'Press Inclinado con Mancuernas', muscle_group: 'Chest', equipment: 'Dumbbell', movement_pattern: 'Horizontal Push' },
-  { name: 'Press Banca con Barra', muscle_group: 'Chest', equipment: 'Barbell', movement_pattern: 'Horizontal Push' },
-  { name: 'Aperturas en Máquina', muscle_group: 'Chest', equipment: 'Machine', movement_pattern: 'Horizontal Fly' },
-  { name: 'Press Militar con Barra', muscle_group: 'Shoulders', equipment: 'Barbell', movement_pattern: 'Vertical Push' },
-  { name: 'Press Arnold', muscle_group: 'Shoulders', equipment: 'Dumbbell', movement_pattern: 'Vertical Push' },
-  { name: 'Elevaciones Laterales', muscle_group: 'Shoulders', equipment: 'Dumbbell', movement_pattern: 'Lateral Raise' },
-  { name: 'Elevaciones Frontales', muscle_group: 'Shoulders', equipment: 'Dumbbell', movement_pattern: 'Front Raise' },
-  { name: 'Fondos en Paralelas', muscle_group: 'Chest/Triceps', equipment: 'Bodyweight', movement_pattern: 'Vertical Push' },
-  // Upper body - Pull
-  { name: 'Dominadas', muscle_group: 'Back', equipment: 'Bodyweight', movement_pattern: 'Vertical Pull' },
-  { name: 'Jalón al Pecho', muscle_group: 'Back', equipment: 'Cable', movement_pattern: 'Vertical Pull' },
-  { name: 'Remo con Barra', muscle_group: 'Back', equipment: 'Barbell', movement_pattern: 'Horizontal Pull' },
-  { name: 'Remo en Máquina', muscle_group: 'Back', equipment: 'Machine', movement_pattern: 'Horizontal Pull' },
-  { name: 'Remo en Polea Baja', muscle_group: 'Back', equipment: 'Cable', movement_pattern: 'Horizontal Pull' },
-  { name: 'Face Pull', muscle_group: 'Shoulders/Rear Delts', equipment: 'Cable', movement_pattern: 'Horizontal Pull' },
-  { name: 'Peso Muerto', muscle_group: 'Back/Hamstrings', equipment: 'Barbell', movement_pattern: 'Hip Hinge' },
-  // Arms
-  { name: 'Curl de Bíceps con Barra', muscle_group: 'Biceps', equipment: 'Barbell', movement_pattern: 'Elbow Flexion' },
-  { name: 'Curl de Bíceps con Mancuerna', muscle_group: 'Biceps', equipment: 'Dumbbell', movement_pattern: 'Elbow Flexion' },
-  { name: 'Curl Martillo', muscle_group: 'Biceps', equipment: 'Dumbbell', movement_pattern: 'Elbow Flexion' },
-  { name: 'Extensión de Tríceps en Polea', muscle_group: 'Triceps', equipment: 'Cable', movement_pattern: 'Elbow Extension' },
-  { name: 'Press Francés', muscle_group: 'Triceps', equipment: 'Barbell', movement_pattern: 'Elbow Extension' },
-  { name: 'Fondo en Banco', muscle_group: 'Triceps', equipment: 'Bench', movement_pattern: 'Elbow Extension' },
-  // Core
-  { name: 'Plancha', muscle_group: 'Core', equipment: 'Bodyweight', movement_pattern: 'Core Anti-Extension' },
-  { name: 'Plancha Lateral', muscle_group: 'Core', equipment: 'Bodyweight', movement_pattern: 'Core Anti-Lateral Flexion' },
-  { name: 'Elevación de Piernas', muscle_group: 'Core', equipment: 'Bodyweight', movement_pattern: 'Core Flexion' },
-  { name: 'Russian Twist', muscle_group: 'Core', equipment: 'Bodyweight', movement_pattern: 'Core Rotation' },
-  { name: 'Ab Wheel Rollout', muscle_group: 'Core', equipment: 'Wheel', movement_pattern: 'Core Anti-Extension' },
-  { name: 'Encogimiento (Crunch)', muscle_group: 'Core', equipment: 'Bodyweight', movement_pattern: 'Core Flexion' },
-  { name: 'Pallof Press', muscle_group: 'Core', equipment: 'Cable', movement_pattern: 'Core Anti-Rotation' },
-  // Cardio / HIIT
-  { name: 'Burpees', muscle_group: 'Full Body', equipment: 'Bodyweight', movement_pattern: 'Explosive' },
-  { name: 'Saltos de Cuerda', muscle_group: 'Calves/Full Body', equipment: 'Rope', movement_pattern: 'Plyometric' },
-  { name: 'Box Jumps', muscle_group: 'Quads/Glutes', equipment: 'Box', movement_pattern: 'Plyometric' },
-  { name: 'Kettlebell Swing', muscle_group: 'Glutes/Hamstrings', equipment: 'Kettlebell', movement_pattern: 'Hip Hinge' },
+  { name: 'Movilidad Columna (Gato-Camello)', muscle_group: 'Columna', equipment: 'Peso Corporal', movement_pattern: 'Movilidad Columna' },
+  { name: 'Perro de Caza (Bird Dog)', muscle_group: 'Core', equipment: 'Peso Corporal', movement_pattern: 'Anti-Rotación Core' },
+  { name: 'Estiramiento de Cadera', muscle_group: 'Cadera', equipment: 'Peso Corporal', movement_pattern: 'Movilidad Cadera' },
+  { name: 'Estiramiento Dorsal y Pecho', muscle_group: 'Espalda/Pecho', equipment: 'Peso Corporal', movement_pattern: 'Movilidad Tren Superior' },
+  { name: 'Movilidad Peso Muerto Unilateral', muscle_group: 'Isquios', equipment: 'Peso Corporal', movement_pattern: 'Bisagra de Cadera' },
+  { name: 'Elevaciones Laterales con Elástico', muscle_group: 'Hombros', equipment: 'Banda Elástica', movement_pattern: 'Elevación Lateral' },
+  { name: 'Aductores con Banda Elástica', muscle_group: 'Aductores', equipment: 'Banda Elástica', movement_pattern: 'Adcción de Cadera' },
+  { name: 'Abductores con Banda Elástica', muscle_group: 'Abductores', equipment: 'Banda Elástica', movement_pattern: 'Abducción de Cadera' },
+  { name: 'Peso Muerto a Una Pierna', muscle_group: 'Isquios', equipment: 'Mancuernas', movement_pattern: 'Bisagra de Cadera' },
+  { name: 'Curl Femoral con Mancuerna', muscle_group: 'Isquios', equipment: 'Mancuernas', movement_pattern: 'Flexión de Rodilla' },
+  { name: 'Sentadilla con Barra', muscle_group: 'Cuádriceps/Glúteos', equipment: 'Barra', movement_pattern: 'Sentadilla' },
+  { name: 'Sentadilla Goblet', muscle_group: 'Cuádriceps', equipment: 'Mancuernas', movement_pattern: 'Sentadilla' },
+  { name: 'Zancadas con Mancuernas', muscle_group: 'Cuádriceps/Glúteos', equipment: 'Mancuernas', movement_pattern: 'Sentadilla' },
+  { name: 'Peso Muerto Rumano (RDL)', muscle_group: 'Isquios/Glúteos', equipment: 'Barra', movement_pattern: 'Bisagra de Cadera' },
+  { name: 'Peso Muerto Unilateral', muscle_group: 'Isquios/Glúteos', equipment: 'Mancuernas', movement_pattern: 'Bisagra de Cadera' },
+  { name: 'Puente de Glúteos', muscle_group: 'Glúteos', equipment: 'Peso Corporal', movement_pattern: 'Extensión de Cadera' },
+  { name: 'Elevación de Talones Sentado', muscle_group: 'Gemelos', equipment: 'Mancuernas', movement_pattern: 'Flexión Plantar' },
+  { name: 'Elevación de Talones de Pie', muscle_group: 'Gemelos', equipment: 'Barra', movement_pattern: 'Flexión Plantar' },
+  { name: 'Sentadilla Isométrica (Pared)', muscle_group: 'Cuádriceps', equipment: 'Peso Corporal', movement_pattern: 'Sentadilla Isométrica' },
+  { name: 'Zancada Búlgara', muscle_group: 'Cuádriceps/Glúteos', equipment: 'Mancuernas', movement_pattern: 'Sentadilla' },
+  { name: 'Empuje de Cadera (Hip Thrust)', muscle_group: 'Glúteos', equipment: 'Barra', movement_pattern: 'Extensión de Cadera' },
+  { name: 'Press Plano con Mancuernas', muscle_group: 'Pecho', equipment: 'Mancuernas', movement_pattern: 'Empuje Horizontal' },
+  { name: 'Press Inclinado con Mancuernas', muscle_group: 'Pecho', equipment: 'Mancuernas', movement_pattern: 'Empuje Horizontal' },
+  { name: 'Press Banca con Barra', muscle_group: 'Pecho', equipment: 'Barra', movement_pattern: 'Empuje Horizontal' },
+  { name: 'Aperturas con Mancuernas', muscle_group: 'Pecho', equipment: 'Mancuernas', movement_pattern: 'Apertura Horizontal' },
+  { name: 'Press Militar con Barra', muscle_group: 'Hombros', equipment: 'Barra', movement_pattern: 'Empuje Vertical' },
+  { name: 'Press Arnold', muscle_group: 'Hombros', equipment: 'Mancuernas', movement_pattern: 'Empuje Vertical' },
+  { name: 'Elevaciones Laterales', muscle_group: 'Hombros', equipment: 'Mancuernas', movement_pattern: 'Elevación Lateral' },
+  { name: 'Elevaciones Frontales', muscle_group: 'Hombros', equipment: 'Mancuernas', movement_pattern: 'Elevación Frontal' },
+  { name: 'Fondos en Paralelas', muscle_group: 'Pecho/Tríceps', equipment: 'Peso Corporal', movement_pattern: 'Empuje Vertical' },
+  { name: 'Dominadas', muscle_group: 'Espalda', equipment: 'Peso Corporal', movement_pattern: 'Tirón Vertical' },
+  { name: 'Remo Invertido (Barra)', muscle_group: 'Espalda', equipment: 'Peso Corporal', movement_pattern: 'Tirón Horizontal' },
+  { name: 'Remo con Barra', muscle_group: 'Espalda', equipment: 'Barra', movement_pattern: 'Tirón Horizontal' },
+  { name: 'Remo con Mancuerna', muscle_group: 'Espalda', equipment: 'Mancuernas', movement_pattern: 'Tirón Horizontal' },
+  { name: 'Face Pull con Banda Elástica', muscle_group: 'Hombros/Delts Posteriores', equipment: 'Banda Elástica', movement_pattern: 'Tirón Horizontal' },
+  { name: 'Peso Muerto', muscle_group: 'Espalda/Isquios', equipment: 'Barra', movement_pattern: 'Bisagra de Cadera' },
+  { name: 'Curl de Bíceps con Barra', muscle_group: 'Bíceps', equipment: 'Barra', movement_pattern: 'Flexión de Codo' },
+  { name: 'Curl de Bíceps con Mancuerna', muscle_group: 'Bíceps', equipment: 'Mancuernas', movement_pattern: 'Flexión de Codo' },
+  { name: 'Curl Martillo', muscle_group: 'Bíceps', equipment: 'Mancuernas', movement_pattern: 'Flexión de Codo' },
+  { name: 'Extensión de Tríceps con Mancuerna', muscle_group: 'Tríceps', equipment: 'Mancuernas', movement_pattern: 'Extensión de Codo' },
+  { name: 'Press Francés', muscle_group: 'Tríceps', equipment: 'Barra', movement_pattern: 'Extensión de Codo' },
+  { name: 'Fondos en Banco', muscle_group: 'Tríceps', equipment: 'Banco', movement_pattern: 'Extensión de Codo' },
+  { name: 'Plancha', muscle_group: 'Core', equipment: 'Peso Corporal', movement_pattern: 'Anti-Extensión Core' },
+  { name: 'Plancha Lateral', muscle_group: 'Core', equipment: 'Peso Corporal', movement_pattern: 'Anti-Flexión Lateral Core' },
+  { name: 'Elevación de Piernas', muscle_group: 'Core', equipment: 'Peso Corporal', movement_pattern: 'Flexión Core' },
+  { name: 'Giro Ruso (Russian Twist)', muscle_group: 'Core', equipment: 'Mancuernas', movement_pattern: 'Rotación Core' },
+  { name: 'Ab Wheel Rollout', muscle_group: 'Core', equipment: 'Rueda', movement_pattern: 'Anti-Extensión Core' },
+  { name: 'Encogimiento (Crunch)', muscle_group: 'Core', equipment: 'Peso Corporal', movement_pattern: 'Flexión Core' },
+  { name: 'Pallof Press con Banda', muscle_group: 'Core', equipment: 'Banda Elástica', movement_pattern: 'Anti-Rotación Core' },
+  { name: 'Burpees', muscle_group: 'Cuerpo Completo', equipment: 'Peso Corporal', movement_pattern: 'Explosivo' },
+  { name: 'Saltos de Cuerda', muscle_group: 'Gemelos/Cuerpo Completo', equipment: 'Cuerda', movement_pattern: 'Pliométrico' },
+  { name: 'Saltos al Cajón', muscle_group: 'Cuádriceps/Glúteos', equipment: 'Cajón', movement_pattern: 'Pliométrico' },
+  { name: 'Kettlebell Swing', muscle_group: 'Glúteos/Isquios', equipment: 'Kettlebell', movement_pattern: 'Bisagra de Cadera' },
 ];
 
 const WORKOUT_PLANS = [
@@ -392,6 +384,39 @@ function seedIfEmpty(db) {
     transaction();
     console.log(`Seeded ${MEAL_COMPONENTS.length} meal components with options`);
   }
+
+  const dishCount = db.prepare('SELECT COUNT(*) as count FROM elaborated_dishes').get().count;
+  if (dishCount === 0) {
+    const insertDish = db.prepare('INSERT INTO elaborated_dishes (name, description, total_kcal, total_protein, total_carbs, total_fat, servings) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertIngredient = db.prepare('INSERT INTO dish_ingredients (dish_id, food_item_id, grams) VALUES (?, ?, ?)');
+    const dishes = [
+      { name: 'Batido Proteico de Frutas', description: 'Batido con leche vegetal, fruta, avena y proteína', ingredients: [{ food_id: 40, grams: 300 }, { food_id: 5, grams: 50 }, { food_id: 32, grams: 150 }, { food_id: 32, grams: 30 }] },
+      { name: 'Bowl de Avena y Plátano', description: 'Avena con plátano, proteína y frutos secos', ingredients: [{ food_id: 5, grams: 60 }, { food_id: 41, grams: 150 }, { food_id: 32, grams: 30 }, { food_id: 35, grams: 15 }] },
+      { name: 'Ensalada de Pollo y Quinoa', description: 'Pollo con quinoa, verduras y aceite de oliva', ingredients: [{ food_id: 20, grams: 150 }, { food_id: 14, grams: 80 }, { food_id: 45, grams: 200 }, { food_id: 33, grams: 10 }] },
+      { name: 'Salmón con Verduras al Horno', description: 'Salmón con verduras variadas y aceite de oliva', ingredients: [{ food_id: 25, grams: 180 }, { food_id: 45, grams: 250 }, { food_id: 33, grams: 15 }] },
+    ];
+    const transaction = db.transaction(() => {
+      for (const dish of dishes) {
+        let totalKcal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+        for (const ing of dish.ingredients) {
+          const food = FOOD_ITEMS[ing.food_id - 1];
+          if (food) {
+            totalKcal += (ing.grams / 100) * food.kcal_per_100g;
+            totalProtein += (ing.grams / 100) * food.protein_per_100g;
+            totalCarbs += (ing.grams / 100) * food.carbs_per_100g;
+            totalFat += (ing.grams / 100) * food.fat_per_100g;
+          }
+        }
+        const result = insertDish.run(dish.name, dish.description, Math.round(totalKcal), Math.round(totalProtein), Math.round(totalCarbs), Math.round(totalFat), 1);
+        const dishId = result.lastInsertRowid;
+        for (const ing of dish.ingredients) {
+          insertIngredient.run(dishId, ing.food_id, ing.grams);
+        }
+      }
+    });
+    transaction();
+    console.log(`Seeded ${dishes.length} example elaborated dishes`);
+  }
 }
 
 function seedStats() {
@@ -440,4 +465,4 @@ const MEAL_COMPONENTS = [
   { meal_template_id: 5, food_item_id: 41, default_grams: 0, restday_grams: 0, sort_order: 5, options: [42] },
 ];
 
-module.exports = { seedIfEmpty, seedStats };
+module.exports = { seedIfEmpty, seedStats, EXERCISES, FOOD_ITEMS };
