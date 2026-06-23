@@ -4,6 +4,8 @@ const { initDatabase } = require('../db/database');
 const { exportAllData, importAllData } = require('../db/import-export');
 const { registerIpcHandlers } = require('./ipc-handlers');
 
+app.commandLine.appendSwitch('disable-gpu');
+
 let mainWindow;
 
 function createWindow() {
