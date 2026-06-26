@@ -16,18 +16,20 @@ export async function init() {
     container.innerHTML = `
     <h2 class="view-title">${strings.activity.title}</h2>
     <div class="card">
-      <h2>${strings.activity.importAppleHealth}</h2>
-      <p class="text-sm text-muted" style="margin-bottom:8px">${strings.activity.importReference}</p>
-      <div class="flex-gap-sm" style="flex-wrap:wrap">
-        <button class="btn btn-primary" id="btn-import-health">${strings.activity.importAppleHealth}</button>
+      <h2>${strings.activity.syncAppleHealth}</h2>
+      <p class="text-sm text-muted" style="margin-bottom:8px">${strings.activity.syncAppleHealthHint}</p>
+      <div class="flex-gap-sm" style="flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" id="btn-sync-apple-health">${strings.activity.syncAppleHealth}</button>
+        <button class="btn btn-secondary" id="btn-refresh-apple-health" title="${strings.activity.refreshTitle}">${icon('refresh-cw', 14)} <span id="btn-refresh-label">${strings.activity.refresh}</span></button>
         <button class="btn btn-secondary" id="btn-install-healthsync" style="display:none">${strings.activity.installHealthsync}</button>
         <span id="healthsync-status" class="text-sm text-muted"></span>
       </div>
-      <div id="last-import-info" class="text-sm text-muted" style="margin-top:8px"></div>
-      <div style="margin-top:8px;display:none" id="reimport-section">
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" id="reimport-checkbox" />
-          ${strings.activity.reImportCheckbox}
+      <div id="sync-source-info" class="text-sm text-muted" style="margin-top:8px"></div>
+      <div id="last-import-info" class="text-sm text-muted" style="margin-top:6px"></div>
+      <div style="margin-top:6px">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text-muted)">
+          <input type="checkbox" id="force-reparse-checkbox" />
+          ${strings.activity.forceReparseXml}
         </label>
       </div>
       <div id="health-import-progress" style="display:none;margin-top:12px">
@@ -67,16 +69,18 @@ export async function init() {
     const api = window.electronAPI;
     if (!api) return;
 
-    const healthImportBtn = document.getElementById('btn-import-health');
+    const syncAppleHealthBtn = document.getElementById('btn-sync-apple-health');
+    const refreshBtn = document.getElementById('btn-refresh-apple-health');
+    const refreshLabel = document.getElementById('btn-refresh-label');
     const installBtn = document.getElementById('btn-install-healthsync');
     const healthStatus = document.getElementById('healthsync-status');
+    const sourceInfoEl = document.getElementById('sync-source-info');
     const progressEl = document.getElementById('health-import-progress');
     const progressBar = document.getElementById('health-progress-bar');
     const progressText = document.getElementById('health-progress-text');
     const resultEl = document.getElementById('health-import-result');
     const lastImportInfo = document.getElementById('last-import-info');
-    const reimportSection = document.getElementById('reimport-section');
-    const reimportCheckbox = document.getElementById('reimport-checkbox');
+    const forceReparseCheckbox = document.getElementById('force-reparse-checkbox');
 
     let _chartRange = '7d';
     let _comparisonPeriod = '7d';
@@ -101,18 +105,8 @@ export async function init() {
       if (ts) {
         const d = new Date(ts);
         lastImportInfo.textContent = `${strings.activity.lastImport}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-        reimportSection.style.display = 'block';
-        healthImportBtn.disabled = true;
-        healthImportBtn.style.opacity = '0.5';
-        reimportCheckbox.addEventListener('change', () => {
-          healthImportBtn.disabled = !reimportCheckbox.checked;
-          healthImportBtn.style.opacity = reimportCheckbox.checked ? '1' : '0.5';
-        });
       } else {
-        lastImportInfo.textContent = '';
-        reimportSection.style.display = 'none';
-        healthImportBtn.disabled = false;
-        healthImportBtn.style.opacity = '1';
+        lastImportInfo.textContent = strings.activity.lastImportNever;
       }
     }
 
@@ -120,11 +114,45 @@ export async function init() {
       const hasHealthsync = await safeCall(api.checkHealthsync(), false);
       if (!hasHealthsync) {
         installBtn.style.display = 'inline-block';
+        syncAppleHealthBtn.disabled = true;
+        syncAppleHealthBtn.style.opacity = '0.5';
         healthStatus.textContent = strings.activity.healthsyncNotInstalled;
       } else {
         installBtn.style.display = 'none';
+        syncAppleHealthBtn.disabled = false;
+        syncAppleHealthBtn.style.opacity = '1';
         healthStatus.textContent = strings.activity.healthsyncAvailable;
       }
+    }
+
+    async function loadSourceInfo() {
+      const info = await safeCall(api.getHealthsyncDbInfo(), null);
+      const fmt = (d) => d ? new Date(d).toLocaleString() : null;
+      const xmlMtime = info?.xmlMtime || null;
+      const dbMtime = info?.lastModified ? new Date(info.lastModified).toISOString() : null;
+      const xmlStr = fmt(xmlMtime);
+      const dbStr = fmt(dbMtime);
+      const counts = info && info.tables
+        ? Object.entries(info.tables).filter(([, c]) => c > 0).map(([t, c]) => `${t}:${c}`).join(', ')
+        : '';
+      if (!xmlStr && !dbStr) {
+        sourceInfoEl.textContent = strings.activity.healthsyncDbMissing;
+        syncAppleHealthBtn.disabled = true;
+        syncAppleHealthBtn.style.opacity = '0.5';
+        return;
+      }
+      syncAppleHealthBtn.disabled = false;
+      syncAppleHealthBtn.style.opacity = '1';
+      const parts = [];
+      if (xmlStr) {
+        const willReparse = !dbStr || new Date(xmlMtime) > new Date(dbMtime);
+        parts.push(`${strings.activity.xmlLabel}: ${xmlStr} ${willReparse ? `(${strings.activity.actionWillReparse})` : `(${strings.activity.actionWillSyncOnly})`}`);
+      }
+      if (dbStr) {
+        parts.push(`${strings.activity.healthsyncLastUpdate}: ${dbStr}`);
+        if (counts) parts.push(counts);
+      }
+      sourceInfoEl.textContent = parts.join(' — ');
     }
 
     installBtn.addEventListener('click', async () => {
@@ -141,55 +169,88 @@ export async function init() {
       api.onHealthImportProgress((msg) => {
         progressEl.style.display = 'block';
         progressText.textContent = msg;
+        progressBar.style.width = msg.includes('Parseando') ? '30%' : '70%';
       });
     }
 
-    healthImportBtn.addEventListener('click', async () => {
-      healthImportBtn.dataset.loading = 'true';
+    syncAppleHealthBtn.addEventListener('click', async () => {
+      syncAppleHealthBtn.dataset.loading = 'true';
       try {
-        const hasHealthsync = await safeCall(api.checkHealthsync(), false);
-        if (!hasHealthsync) {
-          resultEl.style.display = 'block';
-          resultEl.innerHTML = `<p style="color:var(--danger)">${strings.activity.healthsyncImportError}</p>`;
-          return;
-        }
-
-        const xmlPath = 'apple-health-export/exportar.xml';
+        const originalLabel = syncAppleHealthBtn.textContent;
+        syncAppleHealthBtn.textContent = strings.activity.healthsyncSyncing;
+        syncAppleHealthBtn.disabled = true;
         progressEl.style.display = 'block';
-        progressBar.style.width = '50%';
-        progressText.textContent = strings.activity.importingData;
-        healthImportBtn.disabled = true;
+        progressBar.style.width = '5%';
+        progressText.textContent = strings.activity.healthsyncSyncing;
+        resultEl.style.display = 'none';
+        forceReparseCheckbox.disabled = true;
 
-        const result = await safeCall(api.importAppleHealthXML(xmlPath), { created: 0, skipped: 0, errors: ['Error de comunicación'] });
+        const options = forceReparseCheckbox.checked ? { forceReparse: true } : {};
+        const result = await safeCall(api.syncAppleHealth(options), {
+          ok: false, action: null, errors: ['Error de comunicación']
+        });
+
         progressBar.style.width = '100%';
-
-        const now = new Date().toISOString();
-        await safeCall(api.setLastImportTimestamp(now));
-
-        reimportCheckbox.checked = false;
-        healthImportBtn.disabled = true;
-        healthImportBtn.style.opacity = '0.5';
+        syncAppleHealthBtn.textContent = originalLabel;
+        syncAppleHealthBtn.disabled = false;
+        forceReparseCheckbox.disabled = false;
+        forceReparseCheckbox.checked = false;
 
         resultEl.style.display = 'block';
-        if (result.errors && result.errors.length > 0) {
-          resultEl.innerHTML = `<p style="color:var(--danger)">${result.errors.join(', ')}</p>`;
+        if (!result.ok || (result.errors && result.errors.length > 0)) {
+          const errs = (result.errors || []).join(', ');
+          resultEl.innerHTML = `<p style="color:var(--danger)">${errs}</p>`;
         } else {
+          const actionLabel = result.action === 'parse-and-sync'
+            ? strings.activity.actionParseAndSync
+            : strings.activity.actionSyncOnly;
+          const mig = result.migration || {};
+          const cache = result.cache?.periods || {};
+          const cacheSummary = Object.entries(cache).map(([k, v]) => `${k}: ${v.rows}`).join(' · ');
           resultEl.innerHTML = `
-            <p style="color:var(--success)">${strings.activity.importComplete}</p>
-            <p style="font-size:13px">${strings.activity.recordsCreated}: ${result.created} | ${strings.activity.recordsSkipped}: ${result.skipped}</p>
+            <p style="color:var(--success)">${strings.activity.importComplete} <span style="font-size:12px;color:var(--text-muted)">(${actionLabel})</span></p>
+            <p style="font-size:13px">${strings.activity.recordsCreated}: ${mig.created || 0}${mig.skipped ? ` | ${strings.activity.recordsSkipped}: ${mig.skipped}` : ''}${cacheSummary ? ` | ${cacheSummary}` : ''}</p>
           `;
         }
 
+        await loadSourceInfo();
+        await loadLastImport();
+
         const tlEl = document.getElementById('activity-timeline');
         if (tlEl) tlEl.innerHTML = skeletonCard();
-        const importResults = await Promise.allSettled([loadTimeline(), loadChart(), loadLastImport()]);
-        importResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity import load failed:', r.reason));
+        const importResults = await Promise.allSettled([loadTimeline(), loadChart()]);
+        importResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity sync load failed:', r.reason));
       } finally {
-        healthImportBtn.dataset.loading = 'false';
+        syncAppleHealthBtn.dataset.loading = 'false';
       }
     });
 
+    async function refreshActivityView() {
+      refreshBtn.disabled = true;
+      const originalLabel = refreshLabel.textContent;
+      refreshLabel.textContent = strings.activity.refreshing;
+      try {
+        const tlEl = document.getElementById('activity-timeline');
+        const chartContainer = document.querySelector('.chart-container');
+        if (tlEl) tlEl.innerHTML = skeletonCard();
+        if (chartContainer) {
+          const existing = chartContainer.querySelector('.chart-empty-state');
+          if (existing) existing.remove();
+        }
+        await loadSourceInfo();
+        await loadLastImport();
+        const results = await Promise.allSettled([loadTimeline(), loadChart()]);
+        results.forEach(r => r.status !== 'fulfilled' && console.warn('Activity refresh failed:', r.reason));
+      } finally {
+        refreshBtn.disabled = false;
+        refreshLabel.textContent = originalLabel;
+      }
+    }
+
+    refreshBtn.addEventListener('click', refreshActivityView);
+
     checkHealthsync();
+    await loadSourceInfo();
     await loadLastImport();
 
     document.querySelectorAll('#summary-filters .filter-btn').forEach(btn => {

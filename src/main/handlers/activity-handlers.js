@@ -1,6 +1,6 @@
 const { dialog } = require('electron');
 const { refreshCaches } = require('../../db/database');
-const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData } = require('../apple-health-import');
+const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData, getHealthsyncDbInfo, fullSync, getCacheStats, syncAppleHealth } = require('../apple-health-import');
 
 const HEALTHSYNC_DB_PATH = require('path').join(require('os').homedir(), '.healthsync', 'healthsync.db');
 
@@ -146,15 +146,11 @@ function register(ipcMain, getDb, getHS, notifyDomain) {
 
   ipcMain.handle('db:checkHealthsync', () => !!getHealthsyncPath());
   ipcMain.handle('db:installHealthsync', () => installHealthsync().then(() => true).catch(() => false));
+  ipcMain.handle('db:getHealthsyncDbInfo', () => getHealthsyncDbInfo());
 
-  ipcMain.handle('db:importAppleHealthXML', async (_event, xmlPath) => {
-    const result = { created: 0, skipped: 0, errors: [] };
-    try {
-      await parseHealthsyncXML(xmlPath);
-      const migration = migrateHealthData(global._mainWindow);
-      Object.assign(result, migration);
-      refreshCaches(); if (notifyDomain) notifyDomain("activity");
-    } catch (e) { result.errors.push(e.message); }
+  ipcMain.handle('db:syncAppleHealth', async (_event, options) => {
+    const result = await syncAppleHealth(global._mainWindow, options || {});
+    if (result.ok && notifyDomain) notifyDomain("activity");
     return result;
   });
 }

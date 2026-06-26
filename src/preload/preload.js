@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTrendWeight: () => ipcRenderer.invoke('db:getTrendWeight'),
   getLastImportTimestamp: () => ipcRenderer.invoke('db:getLastImportTimestamp'),
   setLastImportTimestamp: (timestamp) => ipcRenderer.invoke('db:setLastImportTimestamp', timestamp),
+  getHealthsyncDbInfo: () => ipcRenderer.invoke('db:getHealthsyncDbInfo'),
 
   // Dashboard
   getDashboardData: () => ipcRenderer.invoke('db:getDashboardData'),
@@ -98,7 +99,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Apple Health
   checkHealthsync: () => ipcRenderer.invoke('db:checkHealthsync'),
   installHealthsync: () => ipcRenderer.invoke('db:installHealthsync'),
-  importAppleHealthXML: (xmlPath) => ipcRenderer.invoke('db:importAppleHealthXML', xmlPath),
+  syncAppleHealth: (options) => ipcRenderer.invoke('db:syncAppleHealth', options),
   getHealthDailySummary: (from, to) => ipcRenderer.invoke('health:getDailySummary', from, to),
   getHealthWorkouts: (limit) => ipcRenderer.invoke('health:getWorkouts', limit),
   getHealthSleep: (limit) => ipcRenderer.invoke('health:getSleep', limit),

@@ -23,7 +23,8 @@ dist/
 build/
 
 # Apple Health Export
-apple-healt-export/
+apple-health-export/
+workout-routes/
 
 # Build artifacts (Electron AppImage, unpacked binaries)
 release/
