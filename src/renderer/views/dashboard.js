@@ -96,6 +96,8 @@ export async function init() {
       const prevFromStr = prevFrom.toISOString().split('T')[0];
       const prevToStr = prevTo.toISOString().split('T')[0];
       const prevSportPromise = api.getSportSummaryByRange ? api.getSportSummaryByRange(prevFromStr, prevToStr).catch(() => []) : Promise.resolve([]);
+      const activityComparisonPromise = api.getActivityComparison ? api.getActivityComparison(from, to).catch(() => null) : Promise.resolve(null);
+      const lifetimeStatsPromise = api.getSportLifetimeStats ? api.getSportLifetimeStats().catch(() => ({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 })) : Promise.resolve({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 });
 
       const now = new Date();
       const weeklyBalancePromises = [];
@@ -117,6 +119,8 @@ export async function init() {
         cyclingPromise,
         workoutsPromise,
         prevSportPromise,
+        activityComparisonPromise,
+        lifetimeStatsPromise,
         ...weeklyBalancePromises,
       ]);
 
@@ -124,12 +128,14 @@ export async function init() {
       const healthMetrics = results[1].status === 'fulfilled' && results[1].value?.ok ? results[1].value : { ok: false, data: null };
       const sportSummary = results[2].status === 'fulfilled' ? results[2].value : [];
       const sleepData = results[3].status === 'fulfilled' ? results[3].value : { ok: false, dailySeries: [], trendArrow: null, consistency: null, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null };
-      const weightStats = results[4].status === 'fulfilled' ? results[4].value : { first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 };
+      const weightStats = results[4].status === 'fulfilled' ? results[4].value : { first: null, last: null, min: null, max: null, trend: null, count: 0 };
       const healthSummary = results[5].status === 'fulfilled' ? results[5].value : null;
       const cyclingResult = results[6].status === 'fulfilled' ? results[6].value : { ok: false, data: [] };
       const workoutsResult = results[7].status === 'fulfilled' ? results[7].value : { ok: false, data: [] };
       const prevSportSummary = results[8].status === 'fulfilled' ? results[8].value : [];
-      const weeklyBalances = results.slice(9).map(r => r.status === 'fulfilled' ? r.value : null);
+      const activityComparison = results[9].status === 'fulfilled' ? results[9].value : null;
+      const lifetimeStats = results[10].status === 'fulfilled' ? results[10].value : { totalWeeks: 0, currentStreak: 0, totalSessions: 0 };
+      const weeklyBalances = results.slice(11).map(r => r.status === 'fulfilled' ? r.value : null);
 
       await lastImportPromise;
 
@@ -154,6 +160,31 @@ export async function init() {
       const totalSessions = sportSummary.reduce((s, a) => s + a.count, 0);
       const totalKcal = sportSummary.reduce((s, a) => s + a.total_kcal, 0);
       const totalDuration = sportSummary.reduce((s, a) => s + (a.total_duration || 0), 0);
+      const totalDistance = sportSummary.reduce((s, a) => s + (a.total_distance_km || 0), 0);
+      const currentActiveDays = activityComparison?.currentActiveDays || 0;
+      const previousActiveDays = activityComparison?.previousActiveDays || 0;
+      const previousDistance = activityComparison?.previousDistanceKm || 0;
+      const previousDuration = activityComparison?.previousDurationMin || 0;
+      const periodLengthDays = activityComparison?.periodLengthDays || daysInPeriod;
+
+      function bestStreak(dates) {
+        if (!dates || dates.length === 0) return 0;
+        let best = 1, run = 1;
+        for (let i = 1; i < dates.length; i++) {
+          const prev = new Date(dates[i - 1]);
+          const curr = new Date(dates[i]);
+          const diffDays = Math.round((curr - prev) / 86400000);
+          if (diffDays === 1) {
+            run += 1;
+            if (run > best) best = run;
+          } else if (diffDays > 1) {
+            run = 1;
+          }
+        }
+        return best;
+      }
+      const currentBestStreak = bestStreak(activityComparison?.currentActiveDates);
+      const previousBestStreak = bestStreak(activityComparison?.previousActiveDates);
 
       const avgBalance = appData?.weekBalance != null && daysInPeriod > 0
         ? Math.round(appData.weekBalance / daysInPeriod)
@@ -242,20 +273,24 @@ export async function init() {
         }
       }
 
-      // Walking + Cycling cards
+      // Walking + Cycling cards (use sport_activities data to match the bottom section)
+      const walkingSport = sportSummary.find(s => s.sport_type === 'walking');
+      const cyclingSport = sportSummary.find(s => s.sport_type === 'cycling');
+      const walkTotalKm = walkingSport?.total_distance_km || 0;
+      const cycleTotalKm = cyclingSport?.total_distance_km || 0;
       let walkDisplay = strings.dashboard.noData;
       let walkSub = '';
-      if (metrics?.walking_distance?.length) {
-        const avgWalk = metrics.walking_distance.reduce((s, d) => s + d.km, 0) / metrics.walking_distance.length;
-        const total = metrics.walking_distance.reduce((s, d) => s + d.km, 0);
-        walkDisplay = `<strong>${avgWalk.toFixed(2)} ${strings.dashboard.unitKm}</strong>`;
-        walkSub = `${strings.dashboard.totalKm}: <strong>${total.toFixed(1)} ${strings.dashboard.unitKm}</strong>`;
+      if (walkTotalKm > 0) {
+        const avgPerDay = daysInPeriod > 0 ? walkTotalKm / daysInPeriod : 0;
+        walkDisplay = `<strong>${avgPerDay.toFixed(2)} ${strings.dashboard.unitKm}</strong>`;
+        walkSub = `${strings.dashboard.totalKm}: <strong>${walkTotalKm.toFixed(1)} ${strings.dashboard.unitKm}</strong>`;
       }
       let cycleDisplay = strings.dashboard.noData;
       let cycleSub = '';
-      if (cyclingSeries.length) {
-        cycleDisplay = `<strong>${cyclingAvg.toFixed(2)} ${strings.dashboard.unitKm}</strong>`;
-        cycleSub = `${strings.dashboard.totalKm}: <strong>${cyclingTotal.toFixed(1)} ${strings.dashboard.unitKm}</strong>`;
+      if (cycleTotalKm > 0) {
+        const avgPerDay = daysInPeriod > 0 ? cycleTotalKm / daysInPeriod : 0;
+        cycleDisplay = `<strong>${avgPerDay.toFixed(2)} ${strings.dashboard.unitKm}</strong>`;
+        cycleSub = `${strings.dashboard.totalKm}: <strong>${cycleTotalKm.toFixed(1)} ${strings.dashboard.unitKm}</strong>`;
       }
 
       const walkColor = walkSeries.length >= 2 ? computeTrendDirection(walkSeries, 'distance') : 'moss';
@@ -385,6 +420,12 @@ export async function init() {
         prevByType[a.sport_type] = a.count;
       }
 
+      const activeDaysTrend = getTrendArrow(currentActiveDays, previousActiveDays);
+      const distanceTrend = getTrendArrow(totalDistance, previousDistance);
+      const durationTrend = getTrendArrow(totalDuration, previousDuration);
+      const streakTrend = getTrendArrow(currentBestStreak, previousBestStreak);
+      const comparisonTip = strings.activity.periodComparisonTooltip;
+
       // Sports section at the bottom
       if (sportSummary && sportSummary.length > 0) {
         const sorted = [...sportSummary].sort((a, b) => b.count - a.count);
@@ -395,24 +436,14 @@ export async function init() {
             const delta = a.count - prevCount;
             const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '―';
             const sign = delta >= 0 ? '+' : '';
-            popHtml = ` ${strings.dashboard.vsPrevious}: <strong>${sign}${delta}</strong> ${arrow}`;
+            popHtml = ` · ${strings.dashboard.vsPrevious}: <strong>${sign}${delta}</strong> ${arrow}`;
           }
-          const extra = sportExtra[a.sport_type] || { km: 0, minutes: 0, kcal: 0 };
+          const distanceKm = a.total_distance_km || 0;
           const extras = [];
-          if (a.sport_type === 'walking' && extra.km) {
-            extras.push(`${strings.dashboard.totalKm}: <strong>${extra.km.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
+          if (distanceKm > 0) {
+            extras.push(`<strong>${distanceKm.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
           }
-          if (a.sport_type === 'cycling' && extra.km) {
-            extras.push(`${strings.dashboard.totalKm}: <strong>${extra.km.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
-          }
-          if (a.sport_type === 'football' && extra.km) {
-            extras.push(`${strings.dashboard.kmCovered}: <strong>${extra.km.toFixed(1)} ${strings.dashboard.unitKm}</strong>`);
-          }
-          if ((a.sport_type === 'HIIT' || a.sport_type === 'boxing') && extra.minutes > 0) {
-            const perMin = (extra.kcal / extra.minutes).toFixed(1);
-            extras.push(`${strings.dashboard.kcalPerMin}: <strong>${perMin}</strong>`);
-          }
-          const sub = `<strong>${a.count}</strong> ${strings.dashboard.sessions} · <strong>${a.avg_kcal}</strong> ${strings.dashboard.avgKcal}${extras.length ? ' · ' + extras.join(' · ') : ''}${popHtml}`;
+          const sub = `<strong>${a.count}</strong> ${strings.dashboard.sessions}${extras.length ? ' · ' + extras.join(' · ') : ''}${popHtml}`;
           return `<div class="dashboard-card">
             <h3>${sportIcon(a.sport_type, 14)} ${getSportDisplayName(a.sport_type)}</h3>
             <div class="value">${a.total_kcal.toLocaleString()} kcal</div>
@@ -422,14 +453,34 @@ export async function init() {
         const accentHtml = `
           <div class="dashboard-card card-accent" style="grid-column:1/-1">
             <h3>${strings.dashboard.activitySummary}</h3>
-            <div class="flex-gap-md" style="margin-top:var(--space-1)">
+            <div class="flex-gap-md" style="margin-top:var(--space-1);flex-wrap:wrap;gap:var(--space-3)">
               <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
               <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
-              <div><span class="value" style="color:#fff;font-size:20px">${sportSummary.length}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.uniqueTypes}</div></div>
-              <div><span class="value" style="color:#fff;font-size:20px">${totalSessions > 0 ? Math.round(totalKcal / totalSessions) : 0}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalPerSession}</div></div>
+              <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${currentActiveDays} <span style="font-size:14px">${activeDaysTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.activeDays} ${strings.activity.activeDaysOf.replace('{total}', periodLengthDays)}</div></div>
+              <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${totalDistance.toFixed(1)} ${strings.dashboard.unitKm} <span style="font-size:14px">${distanceTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.distanceKm}</div></div>
+              <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${Math.round(totalDuration)} <span style="font-size:13px;opacity:0.7">${strings.activity.minutesUnit}</span> <span style="font-size:14px">${durationTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.totalMinutes}</div></div>
+              <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${currentBestStreak} <span style="font-size:14px">${streakTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.bestStreak} ${currentBestStreak > 0 ? strings.activity.bestStreakDays.replace('{n}', currentBestStreak) : ''}</div></div>
             </div>
           </div>`;
-        sportsRow.innerHTML = `<div style="grid-column:1/-1;margin:var(--space-2) 0 var(--space-1)"><hr style="border:none;border-top:2px solid var(--border);opacity:0.5"><p class="text-xs text-muted" style="margin-top:var(--space-2)">${strings.dashboard.sportsSection}</p></div>${accentHtml}${sportCardsHtml}`;
+        const streakBadge = lifetimeStats.currentStreak > 0
+          ? `<span style="display:inline-block;background:var(--success, #10b981);color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle">${icon('flame', 11)} ${strings.activity.streakActive}</span>`
+          : '';
+        const consistencyHtml = `
+          <div class="dashboard-card" style="grid-column:1/-1;background:linear-gradient(135deg, var(--accent) 0%, var(--ember) 100%);color:#fff;padding:20px 24px">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3)">
+              <div style="flex:1;min-width:200px">
+                <div class="text-xs" style="opacity:0.85;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px">${icon('trophy', 14)} ${strings.activity.consistency}</div>
+                <div style="font-size:42px;font-weight:700;line-height:1.1;margin-top:6px">${lifetimeStats.totalWeeks}</div>
+                <div class="text-sm" style="opacity:0.85;margin-top:2px">${strings.activity.totalWeeksWithGoalSub}</div>
+              </div>
+              <div style="border-left:1px solid rgba(255,255,255,0.25);padding-left:var(--space-3);min-width:180px">
+                <div class="text-xs" style="opacity:0.85;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px">${strings.activity.currentStreakWeeks}${streakBadge}</div>
+                <div style="font-size:42px;font-weight:700;line-height:1.1;margin-top:6px;display:flex;align-items:baseline;gap:8px">${lifetimeStats.currentStreak}<span style="font-size:24px">${icon('flame', 24)}</span></div>
+                <div class="text-sm" style="opacity:0.85;margin-top:2px">${strings.activity.currentStreakWeeksSub}</div>
+              </div>
+            </div>
+          </div>`;
+        sportsRow.innerHTML = `<div style="grid-column:1/-1;margin:var(--space-2) 0 var(--space-1)"><hr style="border:none;border-top:2px solid var(--border);opacity:0.5"><p class="text-xs text-muted" style="margin-top:var(--space-2)">${strings.dashboard.sportsSection}</p></div>${consistencyHtml}${accentHtml}${sportCardsHtml}`;
       } else {
         sportsRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
       }

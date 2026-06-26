@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getActivityKcalByType: (from, to) => ipcRenderer.invoke('db:getActivityKcalByType', from, to),
   getSportSummaryByRange: (from, to) => ipcRenderer.invoke('db:getSportSummaryByRange', from, to),
   getActivityComparison: (from, to) => ipcRenderer.invoke('db:getActivityComparison', from, to),
+  getSportLifetimeStats: () => ipcRenderer.invoke('db:getSportLifetimeStats'),
   getWeightStats: (from, to) => ipcRenderer.invoke('db:getWeightStats', from, to),
   searchFoodItems: (query) => ipcRenderer.invoke('db:searchFoodItems', query),
 
