@@ -489,6 +489,45 @@ async function syncAppleHealth(mainWindow, options = {}) {
   return result;
 }
 
+function resetHealthsyncData() {
+  const db = getDb();
+  const before = {
+    activity_days: db.prepare('SELECT COUNT(*) as c FROM activity_days').get().c,
+    sport_activities: db.prepare('SELECT COUNT(*) as c FROM sport_activities').get().c,
+    weight_entries: db.prepare('SELECT COUNT(*) as c FROM weight_entries').get().c,
+    activity_summary_cache: db.prepare('SELECT COUNT(*) as c FROM activity_summary_cache').get().c,
+  };
+  const txn = db.transaction(() => {
+    db.exec('DELETE FROM activity_days');
+    db.exec('DELETE FROM sport_activities');
+    db.exec('DELETE FROM weight_entries');
+    db.exec('DELETE FROM activity_summary_cache');
+  });
+  txn();
+  const after = {
+    activity_days: db.prepare('SELECT COUNT(*) as c FROM activity_days').get().c,
+    sport_activities: db.prepare('SELECT COUNT(*) as c FROM sport_activities').get().c,
+    weight_entries: db.prepare('SELECT COUNT(*) as c FROM weight_entries').get().c,
+    activity_summary_cache: db.prepare('SELECT COUNT(*) as c FROM activity_summary_cache').get().c,
+  };
+  return {
+    before,
+    after,
+    deleted: {
+      activity_days: before.activity_days - after.activity_days,
+      sport_activities: before.sport_activities - after.sport_activities,
+      weight_entries: before.weight_entries - after.weight_entries,
+      activity_summary_cache: before.activity_summary_cache - after.activity_summary_cache,
+    },
+  };
+}
+
+async function resetAndSyncHealthsync(mainWindow) {
+  const reset = resetHealthsyncData();
+  const sync = await syncAppleHealth(mainWindow, {});
+  return { reset, sync };
+}
+
 module.exports = {
   getHealthsyncPath,
   installHealthsync,
@@ -496,6 +535,8 @@ module.exports = {
   migrateHealthData,
   fullSync,
   syncAppleHealth,
+  resetHealthsyncData,
+  resetAndSyncHealthsync,
   resolveAppleHealthXml,
   getHealthsyncDbInfo,
   getCacheStats,

@@ -9,6 +9,7 @@ const mockApi = {
   checkHealthsync: () => Promise.resolve(false),
   installHealthsync: () => Promise.resolve(false),
   syncAppleHealth: () => Promise.resolve({ ok: true, action: 'sync-only', migration: { created: 0, skipped: 0, errors: [] }, cache: { periods: {} } }),
+  resetAndSyncHealthsync: () => Promise.resolve({ reset: { before: {}, after: {}, deleted: {} }, sync: { ok: true, migration: { created: 0, skipped: 0, errors: [] } } }),
   setLastImportTimestamp: () => Promise.resolve(true),
   getHealthsyncDbInfo: () => Promise.resolve({ available: false, path: '', lastModified: null, xmlPath: null, xmlMtime: null, tables: {} }),
   onHealthImportProgress: () => {},
@@ -85,5 +86,11 @@ describe('Activity view smoke test', () => {
     await new Promise(r => setTimeout(r, 50));
     await new Promise(r => setTimeout(r, 50));
     expect(btn.disabled).toBe(false);
+  });
+
+  it('renders reset-and-sync button', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    expect(document.getElementById('btn-reset-sync-healthsync')).toBeTruthy();
   });
 });

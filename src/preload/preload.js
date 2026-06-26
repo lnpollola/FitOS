@@ -100,6 +100,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkHealthsync: () => ipcRenderer.invoke('db:checkHealthsync'),
   installHealthsync: () => ipcRenderer.invoke('db:installHealthsync'),
   syncAppleHealth: (options) => ipcRenderer.invoke('db:syncAppleHealth', options),
+  resetAndSyncHealthsync: () => ipcRenderer.invoke('db:resetAndSyncHealthsync'),
   getHealthDailySummary: (from, to) => ipcRenderer.invoke('health:getDailySummary', from, to),
   getHealthWorkouts: (limit) => ipcRenderer.invoke('health:getWorkouts', limit),
   getHealthSleep: (limit) => ipcRenderer.invoke('health:getSleep', limit),

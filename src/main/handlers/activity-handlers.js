@@ -1,6 +1,6 @@
 const { dialog } = require('electron');
 const { refreshCaches } = require('../../db/database');
-const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData, getHealthsyncDbInfo, fullSync, getCacheStats, syncAppleHealth } = require('../apple-health-import');
+const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData, getHealthsyncDbInfo, fullSync, getCacheStats, syncAppleHealth, resetAndSyncHealthsync } = require('../apple-health-import');
 
 const HEALTHSYNC_DB_PATH = require('path').join(require('os').homedir(), '.healthsync', 'healthsync.db');
 
@@ -151,6 +151,12 @@ function register(ipcMain, getDb, getHS, notifyDomain) {
   ipcMain.handle('db:syncAppleHealth', async (_event, options) => {
     const result = await syncAppleHealth(global._mainWindow, options || {});
     if (result.ok && notifyDomain) notifyDomain("activity");
+    return result;
+  });
+
+  ipcMain.handle('db:resetAndSyncHealthsync', async () => {
+    const result = await resetAndSyncHealthsync(global._mainWindow);
+    if (result.sync && result.sync.ok && notifyDomain) notifyDomain("activity");
     return result;
   });
 }

@@ -26,11 +26,12 @@ export async function init() {
       </div>
       <div id="sync-source-info" class="text-sm text-muted" style="margin-top:8px"></div>
       <div id="last-import-info" class="text-sm text-muted" style="margin-top:6px"></div>
-      <div style="margin-top:6px">
+      <div style="margin-top:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text-muted)">
           <input type="checkbox" id="force-reparse-checkbox" />
           ${strings.activity.forceReparseXml}
         </label>
+        <button class="btn-link" id="btn-reset-sync-healthsync" style="font-size:12px;color:var(--text-muted);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline">${strings.activity.resetAndSync}</button>
       </div>
       <div id="health-import-progress" style="display:none;margin-top:12px">
         <div style="background:var(--bg-tertiary);border-radius:4px;height:20px;overflow:hidden">
@@ -248,6 +249,43 @@ export async function init() {
     }
 
     refreshBtn.addEventListener('click', refreshActivityView);
+
+    const resetSyncBtn = document.getElementById('btn-reset-sync-healthsync');
+    if (resetSyncBtn && api.resetAndSyncHealthsync) {
+      resetSyncBtn.addEventListener('click', async () => {
+        const ok = window.confirm(strings.activity.resetAndSyncConfirm);
+        if (!ok) return;
+        resetSyncBtn.disabled = true;
+        const originalLabel = resetSyncBtn.textContent;
+        resetSyncBtn.textContent = strings.activity.healthsyncSyncing;
+        try {
+          const result = await safeCall(api.resetAndSyncHealthsync(), null);
+          if (result && result.sync) {
+            const r = result.reset;
+            const s = result.sync;
+            const mig = s.migration || {};
+            resultEl.style.display = 'block';
+            if (s.ok) {
+              resultEl.innerHTML = `
+                <p style="color:var(--success)">${strings.activity.resetComplete}</p>
+                <p style="font-size:12px;color:var(--text-muted)">${strings.activity.recordsCreated}: ${mig.created || 0} | sport_activities: ${r.after.sport_activities}</p>
+              `;
+            } else {
+              resultEl.innerHTML = `<p style="color:var(--danger)">${(s.errors || []).join(', ')}</p>`;
+            }
+            await loadSourceInfo();
+            await loadLastImport();
+            const tlEl = document.getElementById('activity-timeline');
+            if (tlEl) tlEl.innerHTML = skeletonCard();
+            const importResults = await Promise.allSettled([loadTimeline(), loadChart()]);
+            importResults.forEach(r => r.status !== 'fulfilled' && console.warn('Activity reset+sync load failed:', r.reason));
+          }
+        } finally {
+          resetSyncBtn.disabled = false;
+          resetSyncBtn.textContent = originalLabel;
+        }
+      });
+    }
 
     checkHealthsync();
     await loadSourceInfo();
