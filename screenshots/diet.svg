@@ -1,157 +1,257 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" font-family="system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="'Source Sans 3', 'Inter', sans-serif">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a1a2e"/>
-      <stop offset="100%" stop-color="#16213e"/>
-    </linearGradient>
+    <pattern id="grain" x="0" y="0" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="#F4EFE6"/>
+      <rect width="160" height="160" filter="url(#n)" opacity="0.04"/>
+    </pattern>
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0 0.09  1 0"/>
+    </filter>
   </defs>
-  <rect width="1000" height="700" fill="url(#bg)"/>
-  <text x="20" y="36" fill="white" font-size="18" font-weight="bold">Plan de Dieta — 5 Columnas de Comidas</text>
 
-  <!-- 5 meal columns -->
-  <g transform="translate(10, 55)">
-    <!-- Col 1: Desayuno -->
-    <rect x="0" y="0" width="190" height="580" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="95" y="25" text-anchor="middle" fill="#0D9488" font-size="13" font-weight="600">Desayuno</text>
-    <line x1="10" y1="35" x2="180" y2="35" stroke="#2d2d4a" stroke-width="1"/>
+  <rect width="1280" height="800" fill="#F4EFE6"/>
+  <rect width="1280" height="800" fill="url(#grain)"/>
 
-    <rect x="8" y="42" width="174" height="90" rx="6" fill="#1a1a2e"/>
-    <text x="16" y="60" fill="#9ca3af" font-size="11">Pan Integral</text>
-    <text x="16" y="76" fill="#6b7280" font-size="10">100 kcal/100g · 100g Entr</text>
-    <rect x="12" y="84" width="50" height="20" rx="4" fill="#0D9488" opacity="0.2"/>
-    <text x="37" y="98" text-anchor="middle" fill="#0D9488" font-size="10" font-weight="600">Pan Blanco</text>
-    <rect x="66" y="84" width="50" height="20" rx="4" fill="#0D9488" opacity="0.2"/>
-    <text x="91" y="98" text-anchor="middle" fill="#0D9488" font-size="10">Avena</text>
-    <rect x="120" y="84" width="50" height="20" rx="4" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="145" y="98" text-anchor="middle" fill="#9ca3af" font-size="10">Tortas</text>
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="220" height="800" fill="#FBF7EE"/>
+  <line x1="220" y1="0" x2="220" y2="800" stroke="#D8D2C4" stroke-width="1"/>
+  <text x="24" y="40" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#2F3D26" letter-spacing="-0.5">FitOS</text>
+  <text x="24" y="58" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Leandro Pollola</text>
 
-    <rect x="8" y="140" width="174" height="90" rx="6" fill="#1a1a2e"/>
-    <text x="16" y="158" fill="#9ca3af" font-size="11">Pechuga de Pavo</text>
-    <text x="16" y="174" fill="#6b7280" font-size="10">120 kcal/100g · 120g Entr</text>
-    <rect x="12" y="182" width="50" height="20" rx="4" fill="#0D9488" opacity="0.2"/>
-    <text x="37" y="196" text-anchor="middle" fill="#0D9488" font-size="10">Jamón Cocido</text>
-    <rect x="66" y="182" width="50" height="20" rx="4" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="91" y="196" text-anchor="middle" fill="#9ca3af" font-size="10">Pollo</text>
+  <text x="24" y="100" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">INICIO  ▾</text>
+  <text x="36" y="129" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Panel</text>
+  <text x="36" y="160" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Tendencias</text>
 
-    <rect x="8" y="238" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="16" y="256" fill="#9ca3af" font-size="11">Frutos Secos</text>
-    <text x="16" y="272" fill="#6b7280" font-size="10">607 kcal/100g · 10g Entr</text>
+  <text x="24" y="200" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">SALUD  ▾</text>
+  <text x="36" y="226" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Actividad</text>
+  <text x="36" y="252" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Sueño</text>
+  <text x="36" y="278" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Balance Energético</text>
 
-    <rect x="8" y="316" width="174" height="50" rx="6" fill="#1a1a2e"/>
-    <text x="16" y="334" fill="#9ca3af" font-size="11">Fruta</text>
-    <text x="16" y="350" fill="#6b7280" font-size="10">Opciones: Manzana, Naranja</text>
+  <text x="24" y="318" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">ENTRENAMIENTO  ▾</text>
+  <rect x="14" y="326" width="192" height="34" rx="8" fill="#D7DAC7"/>
+  <rect x="14" y="326" width="3" height="34" rx="1.5" fill="#4E5D3F"/>
+  <path d="M 30 348 L 40 344 L 36 350 L 40 352" stroke="#2F3D26" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="52" y="347" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Plan de Dieta</text>
+  <text x="36" y="396" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Mediciones</text>
+  <text x="36" y="422" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Entrenamiento</text>
 
-    <rect x="10" y="380" width="170" height="36" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="95" y="404" text-anchor="middle" fill="#0D9488" font-size="12" font-weight="600">385 kcal</text>
+  <line x1="24" y1="700" x2="196" y2="700" stroke="#D8D2C4" stroke-width="1"/>
+  <text x="36" y="724" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Perfil y Ajustes</text>
 
-    <!-- Col 2: Media Mañana -->
-    <rect x="200" y="0" width="190" height="580" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="295" y="25" text-anchor="middle" fill="#0D9488" font-size="13" font-weight="600">Media Mañana</text>
-    <line x1="210" y1="35" x2="380" y2="35" stroke="#2d2d4a" stroke-width="1"/>
+  <!-- Main content -->
+  <text x="250" y="48" font-family="'Fraunces', Georgia, serif" font-size="28" font-weight="600" fill="#2F3D26" letter-spacing="-0.6">Plan de Dieta</text>
+  <text x="250" y="68" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">5 comidas · 2.120 kcal objetivo · déficit −400 kcal</text>
 
-    <rect x="208" y="42" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="216" y="60" fill="#9ca3af" font-size="11">Harina de Avena</text>
-    <text x="216" y="76" fill="#6b7280" font-size="10">389 kcal/100g · 30g</text>
-
-    <rect x="208" y="120" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="216" y="138" fill="#9ca3af" font-size="11">Huevos</text>
-    <text x="216" y="154" fill="#6b7280" font-size="10">155 kcal/100g · 10g</text>
-
-    <rect x="208" y="198" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="216" y="216" fill="#9ca3af" font-size="11">Frutos Secos</text>
-    <text x="216" y="232" fill="#6b7280" font-size="10">15g</text>
-
-    <rect x="208" y="276" width="174" height="50" rx="6" fill="#1a1a2e"/>
-    <text x="216" y="294" fill="#9ca3af" font-size="11">Yogur Natural</text>
-    <text x="216" y="310" fill="#6b7280" font-size="10">300g</text>
-
-    <rect x="210" y="340" width="170" height="36" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="295" y="364" text-anchor="middle" fill="#0D9488" font-size="12" font-weight="600">210 kcal</text>
-
-    <!-- Col 3: Comida -->
-    <rect x="400" y="0" width="190" height="580" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="495" y="25" text-anchor="middle" fill="#0D9488" font-size="13" font-weight="600">Comida</text>
-    <line x1="410" y1="35" x2="580" y2="35" stroke="#2d2d4a" stroke-width="1"/>
-
-    <rect x="408" y="42" width="174" height="90" rx="6" fill="#1a1a2e"/>
-    <text x="416" y="60" fill="#9ca3af" font-size="11">Arroz Blanco</text>
-    <text x="416" y="76" fill="#6b7280" font-size="10">130 kcal/100g · 60g Entr</text>
-    <rect x="412" y="84" width="50" height="20" rx="4" fill="#0D9488" opacity="0.2"/>
-    <text x="437" y="98" text-anchor="middle" fill="#0D9488" font-size="10">Pasta</text>
-    <rect x="466" y="84" width="50" height="20" rx="4" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="491" y="98" text-anchor="middle" fill="#9ca3af" font-size="10">Patata</text>
-
-    <rect x="408" y="140" width="174" height="90" rx="6" fill="#1a1a2e"/>
-    <text x="416" y="158" fill="#9ca3af" font-size="11">Pollo/Pavo</text>
-    <text x="416" y="174" fill="#6b7280" font-size="10">150g</text>
-    <rect x="412" y="182" width="50" height="20" rx="4" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="437" y="196" text-anchor="middle" fill="#9ca3af" font-size="10">Pescado</text>
-
-    <rect x="408" y="238" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="416" y="256" fill="#9ca3af" font-size="11">Aceite de Oliva</text>
-    <text x="416" y="272" fill="#6b7280" font-size="10">10g</text>
-
-    <rect x="408" y="316" width="174" height="50" rx="6" fill="#1a1a2e"/>
-    <text x="416" y="334" fill="#9ca3af" font-size="11">Verduras Variadas</text>
-    <text x="416" y="350" fill="#6b7280" font-size="10">150g</text>
-
-    <rect x="410" y="380" width="170" height="36" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="495" y="404" text-anchor="middle" fill="#0D9488" font-size="12" font-weight="600">520 kcal</text>
-
-    <!-- Col 4: Merienda -->
-    <rect x="600" y="0" width="190" height="580" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="695" y="25" text-anchor="middle" fill="#0D9488" font-size="13" font-weight="600">Merienda</text>
-    <line x1="610" y1="35" x2="780" y2="35" stroke="#2d2d4a" stroke-width="1"/>
-
-    <rect x="608" y="42" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="616" y="60" fill="#9ca3af" font-size="11">Corn Flakes</text>
-    <text x="616" y="76" fill="#6b7280" font-size="10">357 kcal/100g · 30g Desc</text>
-
-    <rect x="608" y="120" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="616" y="138" fill="#9ca3af" font-size="11">Proteína en Polvo</text>
-    <text x="616" y="154" fill="#6b7280" font-size="10">20g</text>
-
-    <rect x="608" y="198" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="616" y="216" fill="#9ca3af" font-size="11">Frutos Secos</text>
-    <text x="616" y="232" fill="#6b7280" font-size="10">15g</text>
-
-    <rect x="608" y="276" width="174" height="50" rx="6" fill="#1a1a2e"/>
-    <text x="616" y="294" fill="#9ca3af" font-size="11">Fruta</text>
-    <text x="616" y="310" fill="#6b7280" font-size="10">120g</text>
-
-    <rect x="610" y="340" width="170" height="36" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="695" y="364" text-anchor="middle" fill="#0D9488" font-size="12" font-weight="600">195 kcal</text>
-
-    <!-- Col 5: Cena -->
-    <rect x="800" y="0" width="190" height="580" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="895" y="25" text-anchor="middle" fill="#0D9488" font-size="13" font-weight="600">Cena</text>
-    <line x1="810" y1="35" x2="980" y2="35" stroke="#2d2d4a" stroke-width="1"/>
-
-    <rect x="808" y="42" width="174" height="90" rx="6" fill="#1a1a2e"/>
-    <text x="816" y="60" fill="#9ca3af" font-size="11">Patata/Boniato</text>
-    <text x="816" y="76" fill="#6b7280" font-size="10">200g Entr · 80g Desc</text>
-    <rect x="812" y="84" width="50" height="20" rx="4" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="837" y="98" text-anchor="middle" fill="#9ca3af" font-size="10">Arroz</text>
-
-    <rect x="808" y="140" width="174" height="90" rx="6" fill="#1a1a2e"/>
-    <text x="816" y="158" fill="#9ca3af" font-size="11">Pescado</text>
-    <text x="816" y="174" fill="#6b7280" font-size="10">150g</text>
-    <rect x="812" y="182" width="50" height="20" rx="4" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="837" y="196" text-anchor="middle" fill="#9ca3af" font-size="10">Pollo</text>
-
-    <rect x="808" y="238" width="174" height="70" rx="6" fill="#1a1a2e"/>
-    <text x="816" y="256" fill="#9ca3af" font-size="11">Aceite de Oliva</text>
-    <text x="816" y="272" fill="#6b7280" font-size="10">10g</text>
-
-    <rect x="808" y="316" width="174" height="50" rx="6" fill="#1a1a2e"/>
-    <text x="816" y="334" fill="#9ca3af" font-size="11">Verduras</text>
-    <text x="816" y="350" fill="#6b7280" font-size="10">200g</text>
-
-    <rect x="810" y="380" width="170" height="36" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-    <text x="895" y="404" text-anchor="middle" fill="#0D9488" font-size="12" font-weight="600">445 kcal</text>
+  <!-- Date and controls -->
+  <g transform="translate(960, 36)">
+    <rect x="0" y="0" width="120" height="32" rx="8" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="60" y="20" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#2F3D26">27 jun 2026 ▾</text>
+  </g>
+  <g transform="translate(1090, 36)">
+    <rect x="0" y="0" width="80" height="32" rx="8" fill="#4E5D3F"/>
+    <text x="40" y="20" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="600" fill="#FBF7EE">+ Plato</text>
+  </g>
+  <g transform="translate(1180, 36)">
+    <rect x="0" y="0" width="70" height="32" rx="8" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="35" y="20" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#2F3D26">PDF</text>
   </g>
 
-  <!-- Use 5 meals button -->
-  <rect x="370" y="650" width="180" height="36" rx="8" fill="#0D9488"/>
-  <text x="460" y="673" text-anchor="middle" fill="white" font-size="13" font-weight="600">Usar estas 5 comidas</text>
+  <!-- 5 meal columns -->
+  <!-- Desayuno -->
+  <g transform="translate(250, 90)">
+    <rect x="0" y="0" width="194" height="200" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="16" y="26" font-family="'Fraunces', Georgia, serif" font-size="16" font-weight="600" fill="#2F3D26">Desayuno</text>
+    <text x="16" y="42" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">08:00 · 480 kcal</text>
+
+    <rect x="14" y="58" width="166" height="58" rx="10" fill="#F4EFE6"/>
+    <text x="24" y="78" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Avena con frutas</text>
+    <text x="24" y="94" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">50g avena · 1 plátano</text>
+    <text x="24" y="108" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#4E5D3F">320 kcal · P10 C52 G7</text>
+
+    <rect x="14" y="124" width="166" height="58" rx="10" fill="#F4EFE6" opacity="0.6" stroke="#D8D2C4" stroke-dasharray="2 2"/>
+    <text x="24" y="144" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Tortilla de claras</text>
+    <text x="24" y="160" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">3 claras · espinaca</text>
+    <text x="24" y="174" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">160 kcal</text>
+  </g>
+
+  <!-- Media mañana -->
+  <g transform="translate(454, 90)">
+    <rect x="0" y="0" width="194" height="200" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="16" y="26" font-family="'Fraunces', Georgia, serif" font-size="16" font-weight="600" fill="#2F3D26">Media mañana</text>
+    <text x="16" y="42" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">11:00 · 220 kcal</text>
+
+    <rect x="14" y="58" width="166" height="58" rx="10" fill="#F4EFE6"/>
+    <text x="24" y="78" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Yogur griego</text>
+    <text x="24" y="94" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">170g · nueces 15g</text>
+    <text x="24" y="108" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#4E5D3F">220 kcal · P18 C12 G10</text>
+
+    <rect x="14" y="124" width="166" height="58" rx="10" fill="#F4EFE6" opacity="0.6" stroke="#D8D2C4" stroke-dasharray="2 2"/>
+    <text x="24" y="144" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Manzana + almendras</text>
+    <text x="24" y="160" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">1 pieza · 20g frutos secos</text>
+    <text x="24" y="174" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">180 kcal</text>
+  </g>
+
+  <!-- Almuerzo -->
+  <g transform="translate(658, 90)">
+    <rect x="0" y="0" width="194" height="200" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="16" y="26" font-family="'Fraunces', Georgia, serif" font-size="16" font-weight="600" fill="#2F3D26">Almuerzo</text>
+    <text x="16" y="42" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">14:00 · 620 kcal</text>
+
+    <rect x="14" y="58" width="166" height="58" rx="10" fill="#F4EFE6"/>
+    <text x="24" y="78" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Pollo con quinoa</text>
+    <text x="24" y="94" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">180g pechuga · 80g quinoa</text>
+    <text x="24" y="108" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#4E5D3F">620 kcal · P58 C62 G8</text>
+
+    <rect x="14" y="124" width="166" height="58" rx="10" fill="#F4EFE6" opacity="0.6" stroke="#D8D2C4" stroke-dasharray="2 2"/>
+    <text x="24" y="144" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Salmón al horno</text>
+    <text x="24" y="160" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">180g · boniato 150g</text>
+    <text x="24" y="174" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">590 kcal</text>
+  </g>
+
+  <!-- Merienda -->
+  <g transform="translate(862, 90)">
+    <rect x="0" y="0" width="194" height="200" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="16" y="26" font-family="'Fraunces', Georgia, serif" font-size="16" font-weight="600" fill="#2F3D26">Merienda</text>
+    <text x="16" y="42" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">17:30 · 280 kcal</text>
+
+    <rect x="14" y="58" width="166" height="58" rx="10" fill="#F4EFE6"/>
+    <text x="24" y="78" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Tortitas de arroz</text>
+    <text x="24" y="94" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">2 unidades · pavo</text>
+    <text x="24" y="108" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#4E5D3F">280 kcal · P24 C32 G6</text>
+
+    <rect x="14" y="124" width="166" height="58" rx="10" fill="#F4EFE6" opacity="0.6" stroke="#D8D2C4" stroke-dasharray="2 2"/>
+    <text x="24" y="144" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Batido de plátano</text>
+    <text x="24" y="160" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">con whey y avena</text>
+    <text x="24" y="174" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">320 kcal</text>
+  </g>
+
+  <!-- Cena -->
+  <g transform="translate(1066, 90)">
+    <rect x="0" y="0" width="194" height="200" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="16" y="26" font-family="'Fraunces', Georgia, serif" font-size="16" font-weight="600" fill="#2F3D26">Cena</text>
+    <text x="16" y="42" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">20:30 · 520 kcal</text>
+
+    <rect x="14" y="58" width="166" height="58" rx="10" fill="#F4EFE6"/>
+    <text x="24" y="78" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Merluza al vapor</text>
+    <text x="24" y="94" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">200g · verduras salteadas</text>
+    <text x="24" y="108" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#4E5D3F">520 kcal · P46 C28 G12</text>
+
+    <rect x="14" y="124" width="166" height="58" rx="10" fill="#F4EFE6" opacity="0.6" stroke="#D8D2C4" stroke-dasharray="2 2"/>
+    <text x="24" y="144" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Tortilla de patata</text>
+    <text x="24" y="160" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">2 huevos · 100g patata</text>
+    <text x="24" y="174" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">480 kcal</text>
+  </g>
+
+  <!-- Daily summary card -->
+  <rect x="250" y="306" width="500" height="180" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="270" y="332" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Resumen del día</text>
+
+  <!-- Macro bars -->
+  <g transform="translate(270, 350)">
+    <text x="0" y="14" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Calorías</text>
+    <text x="450" y="14" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">1.940 / 2.120 kcal</text>
+    <rect x="0" y="22" width="450" height="10" rx="5" fill="#E6E0D2"/>
+    <rect x="0" y="22" width="412" height="10" rx="5" fill="#4E5D3F"/>
+  </g>
+
+  <g transform="translate(270, 392)">
+    <text x="0" y="14" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Proteínas</text>
+    <text x="450" y="14" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">156 / 170 g</text>
+    <rect x="0" y="22" width="450" height="10" rx="5" fill="#E6E0D2"/>
+    <rect x="0" y="22" width="413" height="10" rx="5" fill="#C75B3B"/>
+  </g>
+
+  <g transform="translate(270, 434)">
+    <text x="0" y="14" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Carbohidratos</text>
+    <text x="450" y="14" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">186 / 220 g</text>
+    <rect x="0" y="22" width="450" height="10" rx="5" fill="#E6E0D2"/>
+    <rect x="0" y="22" width="380" height="10" rx="5" fill="#4E5D3F"/>
+  </g>
+
+  <!-- Right: dishes list -->
+  <rect x="770" y="306" width="490" height="180" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="790" y="332" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Platos elaborados</text>
+
+  <g transform="translate(790, 350)">
+    <rect x="0" y="0" width="450" height="32" rx="6" fill="#F4EFE6"/>
+    <text x="14" y="20" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="500" fill="#2F3D26">Bowl de quinoa mediterráneo</text>
+    <text x="280" y="20" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">5 ingredientes</text>
+    <text x="436" y="20" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="12" font-weight="600" fill="#4E5D3F">480 kcal</text>
+  </g>
+
+  <g transform="translate(790, 386)">
+    <rect x="0" y="0" width="450" height="32" rx="6" fill="#F4EFE6"/>
+    <text x="14" y="20" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="500" fill="#2F3D26">Pollo al curry con arroz</text>
+    <text x="280" y="20" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">7 ingredientes</text>
+    <text x="436" y="20" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="12" font-weight="600" fill="#4E5D3F">610 kcal</text>
+  </g>
+
+  <g transform="translate(790, 422)">
+    <rect x="0" y="0" width="450" height="32" rx="6" fill="#F4EFE6"/>
+    <text x="14" y="20" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="500" fill="#2F3D26">Salmón con espárragos</text>
+    <text x="280" y="20" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">4 ingredientes</text>
+    <text x="436" y="20" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="12" font-weight="600" fill="#4E5D3F">540 kcal</text>
+  </g>
+
+  <g transform="translate(790, 458)">
+    <rect x="0" y="0" width="450" height="20" fill="none"/>
+    <text x="14" y="14" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">12 platos en biblioteca · 47 alimentos registrados</text>
+  </g>
+
+  <!-- Foods table -->
+  <rect x="250" y="502" width="1010" height="200" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="270" y="528" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Alimentos recientes</text>
+
+  <g transform="translate(270, 544)">
+    <rect x="0" y="0" width="970" height="32" rx="6" fill="#F4EFE6"/>
+    <text x="20" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">NOMBRE</text>
+    <text x="380" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">CATEGORÍA</text>
+    <text x="540" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">KCAL/100G</text>
+    <text x="680" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">PROTEÍNA</text>
+    <text x="820" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">CARBS</text>
+    <text x="940" y="20" text-anchor="end" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">GRASA</text>
+  </g>
+
+  <g transform="translate(270, 580)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#2F3D26">Pechuga de pollo</text>
+    <text x="380" y="22" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">Carne</text>
+    <text x="540" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="500" fill="#2F3D26">165</text>
+    <text x="680" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">31 g</text>
+    <text x="820" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">0 g</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">3.6 g</text>
+  </g>
+
+  <g transform="translate(270, 612)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#2F3D26">Quinoa cocida</text>
+    <text x="380" y="22" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">Cereal</text>
+    <text x="540" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="500" fill="#2F3D26">120</text>
+    <text x="680" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">4.4 g</text>
+    <text x="820" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">21 g</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">1.9 g</text>
+  </g>
+
+  <g transform="translate(270, 644)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#2F3D26">Salmón fresco</text>
+    <text x="380" y="22" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">Pescado</text>
+    <text x="540" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="500" fill="#2F3D26">208</text>
+    <text x="680" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">20 g</text>
+    <text x="820" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">0 g</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">13 g</text>
+  </g>
+
+  <g transform="translate(270, 676)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#2F3D26">Avena integral</text>
+    <text x="380" y="22" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">Cereal</text>
+    <text x="540" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="500" fill="#2F3D26">389</text>
+    <text x="680" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">16.9 g</text>
+    <text x="820" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">66 g</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">6.9 g</text>
+  </g>
+
+  <text x="270" y="724" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">Mostrando 4 de 47 alimentos · valores por 100g</text>
 </svg>

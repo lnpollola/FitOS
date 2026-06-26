@@ -1,112 +1,210 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 700" font-family="system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="'Source Sans 3', 'Inter', sans-serif">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a1a2e"/>
-      <stop offset="100%" stop-color="#16213e"/>
-    </linearGradient>
+    <pattern id="grain" x="0" y="0" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="#F4EFE6"/>
+      <rect width="160" height="160" filter="url(#n)" opacity="0.04"/>
+    </pattern>
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0 0.09  1 0"/>
+    </filter>
   </defs>
-  <rect width="800" height="700" fill="url(#bg)"/>
-  <text x="20" y="36" fill="white" font-size="18" font-weight="bold">Planificación Adaptativa de Pérdida de Grasa</text>
 
-  <!-- Target pace card -->
-  <rect x="20" y="55" width="760" height="90" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="40" y="80" fill="white" font-size="14" font-weight="600">Ritmo objetivo de pérdida</text>
-  <text x="40" y="100" fill="#9ca3af" font-size="12">Ritmo:</text>
-  <text x="90" y="100" fill="white" font-size="12" font-weight="bold">0.5 kg/semana</text>
-  <!-- Range slider -->
-  <rect x="200" y="93" width="500" height="6" rx="3" fill="#2d2d4a"/>
-  <circle cx="370" cy="96" r="8" fill="#0D9488"/>
-  <text x="720" y="100" fill="#6b7280" font-size="11">0.25 — 1.0</text>
-  <rect x="40" y="108" width="150" height="28" rx="6" fill="#0D9488"/>
-  <text x="115" y="127" text-anchor="middle" fill="white" font-size="12" font-weight="600">Calcular Déficit</text>
+  <rect width="1280" height="800" fill="#F4EFE6"/>
+  <rect width="1280" height="800" fill="url(#grain)"/>
 
-  <!-- Current status -->
-  <rect x="20" y="160" width="370" height="180" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="40" y="185" fill="white" font-size="14" font-weight="600">Estado Actual</text>
-  <text x="40" y="210" fill="#9ca3af" font-size="12">Mantenimiento Estimado (GET):</text>
-  <text x="200" y="210" fill="white" font-size="12" font-weight="bold">2,450 kcal</text>
-  <text x="40" y="230" fill="#9ca3af" font-size="12">Ritmo objetivo:</text>
-  <text x="160" y="230" fill="white" font-size="12" font-weight="bold">0.5 kg/semana</text>
-  <text x="40" y="250" fill="#9ca3af" font-size="12">Déficit diario objetivo:</text>
-  <text x="180" y="250" fill="#f59e0b" font-size="12" font-weight="bold">550 kcal</text>
-  <text x="40" y="270" fill="#9ca3af" font-size="12">Ingesta diaria objetivo:</text>
-  <text x="180" y="270" fill="white" font-size="12" font-weight="bold">1,900 kcal</text>
-  <text x="40" y="290" fill="#9ca3af" font-size="12">Mínimo seguro:</text>
-  <text x="140" y="290" fill="white" font-size="12">1,500 kcal</text>
-  <text x="40" y="310" fill="#10b981" font-size="12" font-weight="bold">Seguro ✓</text>
-  <line x1="40" y1="320" x2="370" y2="320" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="50" y="338" fill="#6b7280" font-size="11">TMB: 1,642 kcal | Deporte: 487 kcal | NEAT: 320 kcal</text>
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="220" height="800" fill="#FBF7EE"/>
+  <line x1="220" y1="0" x2="220" y2="800" stroke="#D8D2C4" stroke-width="1"/>
+  <text x="24" y="40" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#2F3D26" letter-spacing="-0.5">FitOS</text>
+  <text x="24" y="58" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Leandro Pollola</text>
 
-  <!-- Adherence card -->
-  <rect x="410" y="160" width="370" height="180" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="430" y="185" fill="white" font-size="14" font-weight="600">Evaluación de Adherencia</text>
-  <text x="430" y="210" fill="#9ca3af" font-size="12">Peso de Tendencia:</text>
-  <text x="560" y="210" fill="white" font-size="12" font-weight="bold">78.5 kg</text>
-  <text x="430" y="230" fill="#9ca3af" font-size="12">Ritmo de pérdida real:</text>
-  <text x="580" y="230" fill="white" font-size="12" font-weight="bold">0.48 kg/sem</text>
-  <!-- Gauge -->
-  <rect x="430" y="245" width="330" height="20" rx="10" fill="#1a1a2e"/>
-  <rect x="430" y="245" width="290" height="20" rx="10" fill="#0D9488"/>
-  <text x="595" y="259" text-anchor="middle" fill="white" font-size="10" font-weight="bold">96%</text>
-  <text x="430" y="278" fill="#6b7280" font-size="11">Consistencia:</text>
-  <text x="510" y="278" fill="white" font-size="14" font-weight="bold">83%</text>
-  <text x="550" y="278" fill="#6b7280" font-size="11">5 semanas en camino</text>
-  <!-- Recommendation -->
-  <rect x="430" y="290" width="330" height="30" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="445" y="310" fill="#10b981" font-size="11">✓ En camino — Mantener ritmo actual</text>
+  <text x="24" y="100" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">INICIO  ▾</text>
+  <text x="36" y="129" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Panel</text>
+  <text x="36" y="160" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Tendencias</text>
 
-  <!-- Recomp detection card -->
-  <rect x="20" y="355" width="370" height="180" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="40" y="380" fill="white" font-size="14" font-weight="600">Detección de Recomposición</text>
-  <text x="40" y="405" fill="#9ca3af" font-size="12">Período:</text>
-  <text x="100" y="405" fill="white" font-size="12">01/05 → 01/06 (4 mediciones)</text>
-  <text x="40" y="425" fill="#9ca3af" font-size="12">Cambio de peso:</text>
-  <text x="140" y="425" fill="white" font-size="12">+0.3 kg (estable ✓)</text>
-  <text x="40" y="445" fill="#9ca3af" font-size="12">Cambio de cintura:</text>
-  <text x="150" y="445" fill="#10b981" font-size="12">-2.3 cm (disminuyendo ✓)</text>
-  <text x="40" y="470" fill="#10b981" font-size="14" font-weight="bold">Recomposición detectada ✓</text>
-  <!-- Mini chart -->
-  <rect x="220" y="395" width="150" height="120" rx="4" fill="#1a1a2e"/>
-  <polyline points="230,480 260,470 290,475 320,465 350,460" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-  <polyline points="230,475 260,465 290,450 320,440 350,435" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="230" y="510" fill="#ef4444" font-size="9">peso</text>
-  <text x="300" y="510" fill="#3b82f6" font-size="9">cintura</text>
+  <text x="24" y="200" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">SALUD  ▾</text>
+  <text x="36" y="226" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Actividad</text>
+  <text x="36" y="252" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Sueño</text>
+  <rect x="14" y="260" width="192" height="34" rx="8" fill="#D7DAC7"/>
+  <rect x="14" y="260" width="3" height="34" rx="1.5" fill="#4E5D3F"/>
+  <path d="M 36 282 L 30 274 L 32 282 L 30 284" stroke="#2F3D26" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="52" y="281" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Balance Energético</text>
 
-  <!-- Deficit impact card -->
-  <rect x="410" y="355" width="370" height="180" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="430" y="380" fill="white" font-size="14" font-weight="600">Impacto vs Base PDF</text>
-  <text x="430" y="405" fill="#9ca3af" font-size="12">Base PDF:</text>
-  <text x="510" y="405" fill="white" font-size="12" font-weight="bold">2,100 kcal</text>
-  <text x="430" y="425" fill="#9ca3af" font-size="12">Tu dieta actual (hoy):</text>
-  <text x="600" y="425" fill="white" font-size="12" font-weight="bold">1,900 kcal</text>
-  <text x="430" y="450" fill="#9ca3af" font-size="12">Diferencia:</text>
-  <text x="520" y="450" fill="#10b981" font-size="14" font-weight="bold">-200 kcal (-10%)</text>
-  <rect x="430" y="465" width="330" height="12" rx="6" fill="#1a1a2e"/>
-  <rect x="430" y="465" width="65" height="12" rx="6" fill="#10b981"/>
+  <text x="24" y="330" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">ENTRENAMIENTO  ▾</text>
+  <text x="36" y="356" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Plan de Dieta</text>
+  <text x="36" y="382" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Mediciones</text>
+  <text x="36" y="408" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Entrenamiento</text>
 
-  <!-- Adjustments card -->
-  <rect x="20" y="550" width="370" height="135" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="40" y="575" fill="white" font-size="14" font-weight="600">Recomendaciones de Ajuste</text>
-  <text x="40" y="600" fill="#9ca3af" font-size="12">Déficit diario actual:</text>
-  <text x="170" y="600" fill="white" font-size="12">530 kcal</text>
-  <text x="40" y="620" fill="#9ca3af" font-size="12">Déficit diario objetivo:</text>
-  <text x="185" y="620" fill="white" font-size="12">550 kcal</text>
-  <text x="40" y="640" fill="#9ca3af" font-size="12">Ajuste necesario:</text>
-  <text x="165" y="640" fill="#f59e0b" font-size="12">+20 kcal</text>
-  <rect x="40" y="655" width="130" height="24" rx="6" fill="#0D9488"/>
-  <text x="105" y="672" text-anchor="middle" fill="white" font-size="11" font-weight="600">Aplicar</text>
+  <line x1="24" y1="700" x2="196" y2="700" stroke="#D8D2C4" stroke-width="1"/>
+  <text x="36" y="724" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Perfil y Ajustes</text>
 
-  <!-- History card -->
-  <rect x="410" y="550" width="370" height="135" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="430" y="575" fill="white" font-size="14" font-weight="600">Historial de Ajustes</text>
-  <rect x="430" y="588" width="330" height="20" rx="4" fill="#1a1a2e"/>
-  <text x="440" y="602" fill="#6b7280" font-size="10">Fecha</text>
-  <text x="500" y="602" fill="#6b7280" font-size="10">Ritmo</text>
-  <text x="560" y="602" fill="#6b7280" font-size="10">Déf. Objetivo</text>
-  <text x="650" y="602" fill="#6b7280" font-size="10">Brecha</text>
-  <line x1="430" y1="610" x2="760" y2="610" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="440" y="630" fill="white" font-size="11">15/06</text>
-  <text x="500" y="630" fill="white" font-size="11">0.5</text>
-  <text x="570" y="630" fill="white" font-size="11">550 kcal</text>
-  <text x="660" y="630" fill="#10b981" font-size="11">+20 kcal</text>
+  <!-- Main content -->
+  <text x="250" y="48" font-family="'Fraunces', Georgia, serif" font-size="28" font-weight="600" fill="#2F3D26" letter-spacing="-0.6">Balance Energético</text>
+  <text x="250" y="68" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">Ritmo objetivo: −400 kcal/día · déficit conservador</text>
+
+  <g transform="translate(1130, 36)">
+    <rect x="0" y="0" width="120" height="32" rx="8" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="60" y="20" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#2F3D26">Última semana ▾</text>
+  </g>
+
+  <!-- TDEE breakdown card -->
+  <rect x="250" y="90" width="380" height="320" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="270" y="118" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Desglose del GET (gasto total)</text>
+
+  <!-- Stacked bar -->
+  <g transform="translate(270, 144)">
+    <rect x="0" y="0" width="340" height="44" rx="6" fill="#F4EFE6"/>
+    <!-- TMB: 1.642 (64%) -->
+    <rect x="0" y="0" width="218" height="44" rx="6" fill="#4E5D3F"/>
+    <!-- Sport: 487 (19%) -->
+    <rect x="218" y="0" width="65" height="44" fill="#C75B3B"/>
+    <!-- NEAT: 423 (17%) -->
+    <rect x="283" y="0" width="57" height="44" rx="6" fill="#8A8870"/>
+  </g>
+
+  <g transform="translate(270, 200)">
+    <rect x="0" y="0" width="12" height="12" rx="2" fill="#4E5D3F"/>
+    <text x="20" y="10" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="600" fill="#2F3D26">TMB</text>
+    <text x="60" y="10" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Mifflin-St Jeor</text>
+    <text x="340" y="10" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="18" font-weight="600" fill="#2F3D26">1.642 kcal</text>
+    <text x="340" y="26" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">64% del total</text>
+  </g>
+
+  <g transform="translate(270, 250)">
+    <rect x="0" y="0" width="12" height="12" rx="2" fill="#C75B3B"/>
+    <text x="20" y="10" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="600" fill="#2F3D26">Deporte</text>
+    <text x="80" y="10" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">5.2 sesiones/sem</text>
+    <text x="340" y="10" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="18" font-weight="600" fill="#2F3D26">487 kcal</text>
+    <text x="340" y="26" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">19% del total</text>
+  </g>
+
+  <g transform="translate(270, 300)">
+    <rect x="0" y="0" width="12" height="12" rx="2" fill="#8A8870"/>
+    <text x="20" y="10" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="600" fill="#2F3D26">NEAT</text>
+    <text x="58" y="10" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">8.542 pasos/día</text>
+    <text x="340" y="10" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="18" font-weight="600" fill="#2F3D26">423 kcal</text>
+    <text x="340" y="26" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">17% del total</text>
+  </g>
+
+  <line x1="270" y1="346" x2="610" y2="346" stroke="#E6E0D2"/>
+  <text x="270" y="376" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">GET total</text>
+  <text x="610" y="376" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#4E5D3F">2.552 kcal/día</text>
+  <text x="270" y="396" font-family="'Fraunces', serif" font-style="italic" font-size="11" fill="#8A8870">calculado desde datos reales de Apple Watch</text>
+
+  <!-- Adherence gauge card -->
+  <rect x="650" y="90" width="280" height="320" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="670" y="118" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Adherencia al objetivo</text>
+
+  <!-- Half-circle gauge -->
+  <g transform="translate(790, 280)">
+    <path d="M -100 0 A 100 100 0 0 1 100 0" stroke="#E6E0D2" stroke-width="22" fill="none" stroke-linecap="round"/>
+    <path d="M -100 0 A 100 100 0 0 1 78.5 -62.3" stroke="#4E5D3F" stroke-width="22" fill="none" stroke-linecap="round"/>
+    <text x="0" y="-12" text-anchor="middle" font-family="'Fraunces', Georgia, serif" font-size="34" font-weight="600" fill="#2F3D26">87%</text>
+    <text x="0" y="10" text-anchor="middle" font-family="'Fraunces', serif" font-style="italic" font-size="11" fill="#8A8870">adherencia</text>
+  </g>
+
+  <g transform="translate(670, 312)">
+    <text x="0" y="14" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Consumo medio</text>
+    <text x="240" y="14" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">2.118 kcal</text>
+  </g>
+  <g transform="translate(670, 340)">
+    <text x="0" y="14" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Objetivo</text>
+    <text x="240" y="14" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">2.120 kcal</text>
+  </g>
+  <g transform="translate(670, 368)">
+    <text x="0" y="14" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Déficit realizado</text>
+    <text x="240" y="14" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#4E5D3F">−434 kcal/día</text>
+  </g>
+
+  <!-- Status card -->
+  <rect x="950" y="90" width="310" height="320" rx="14" fill="#4E5D3F"/>
+  <text x="970" y="118" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#D7DAC7">Estado del plan</text>
+
+  <text x="970" y="160" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#FBF7EE">En recomposición</text>
+  <text x="970" y="180" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#D7DAC7">23 semanas · ritmo adecuado</text>
+
+  <g transform="translate(970, 220)">
+    <text x="0" y="0" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#D7DAC7">Peso perdido</text>
+    <text x="0" y="22" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#FBF7EE">−3.4 kg</text>
+  </g>
+  <g transform="translate(970, 280)">
+    <text x="0" y="0" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#D7DAC7">Cintura</text>
+    <text x="0" y="22" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#FBF7EE">−3.8 cm</text>
+  </g>
+
+  <line x1="970" y1="324" x2="1240" y2="324" stroke="#D7DAC7" stroke-width="1" opacity="0.3"/>
+  <text x="970" y="346" font-family="'Fraunces', serif" font-style="italic" font-size="11" fill="#D7DAC7">Próxima revisión: 4 jul</text>
+  <text x="970" y="370" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#D7DAC7">Mantener déficit 3 semanas más</text>
+  <text x="970" y="388" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#D7DAC7">y re-evaluar</text>
+
+  <!-- Weekly chart -->
+  <rect x="250" y="426" width="1010" height="260" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="270" y="452" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Balance diario — últimas 12 semanas</text>
+
+  <g transform="translate(280, 470)">
+    <line x1="0" y1="0" x2="0" y2="180" stroke="#D8D2C4" stroke-width="1"/>
+    <line x1="0" y1="180" x2="950" y2="180" stroke="#D8D2C4" stroke-width="1"/>
+    <line x1="0" y1="50" x2="950" y2="50" stroke="#E6E0D2" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="0" y1="100" x2="950" y2="100" stroke="#E6E0D2" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="0" y1="150" x2="950" y2="150" stroke="#E6E0D2" stroke-width="1" stroke-dasharray="3 3"/>
+
+    <!-- Target line: −400 -->
+    <line x1="0" y1="40" x2="950" y2="40" stroke="#C75B3B" stroke-width="1.4" stroke-dasharray="6 4"/>
+    <text x="956" y="44" font-family="'Source Sans 3', sans-serif" font-size="10" font-weight="600" fill="#C75B3B">−400</text>
+
+    <!-- Zero line -->
+    <line x1="0" y1="0" x2="950" y2="0" stroke="#8A8870" stroke-width="0.8"/>
+
+    <!-- 12 weekly bars (4 weeks ago to current) -->
+    <rect x="20" y="46" width="50" height="134" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="92" y="42" width="50" height="138" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="164" y="38" width="50" height="142" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="236" y="50" width="50" height="130" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="308" y="34" width="50" height="146" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="380" y="44" width="50" height="136" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="452" y="32" width="50" height="148" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="524" y="48" width="50" height="132" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="596" y="40" width="50" height="140" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="668" y="36" width="50" height="144" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="740" y="44" width="50" height="136" rx="3" fill="#4E5D3F" opacity="0.7"/>
+    <rect x="812" y="38" width="50" height="142" rx="3" fill="#C75B3B" opacity="0.9"/>
+    <rect x="884" y="42" width="50" height="138" rx="3" fill="#4E5D3F" opacity="0.7"/>
+
+    <!-- Trend line -->
+    <path d="M 45 42 L 117 38 L 189 34 L 261 46 L 333 30 L 405 40 L 477 28 L 549 44 L 621 36 L 693 32 L 765 40 L 837 34 L 909 38" stroke="#2F3D26" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <circle cx="909" cy="38" r="2.6" fill="#2F3D26" stroke="#FBF7EE" stroke-width="1.2"/>
+
+    <!-- Week labels -->
+    <text x="45" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">15</text>
+    <text x="117" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">16</text>
+    <text x="189" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">17</text>
+    <text x="261" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">18</text>
+    <text x="333" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">19</text>
+    <text x="405" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">20</text>
+    <text x="477" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">21</text>
+    <text x="549" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">22</text>
+    <text x="621" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">23</text>
+    <text x="693" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">24</text>
+    <text x="765" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">25</text>
+    <text x="837" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">26</text>
+    <text x="909" y="200" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">27</text>
+
+    <!-- Y axis labels -->
+    <text x="-6" y="3" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">0</text>
+    <text x="-6" y="53" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">−200</text>
+    <text x="-6" y="103" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">−400</text>
+    <text x="-6" y="153" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="9" fill="#8A8870">−600</text>
+  </g>
+
+  <g transform="translate(280, 668)">
+    <rect x="0" y="0" width="14" height="14" rx="2" fill="#4E5D3F" opacity="0.7"/>
+    <text x="20" y="11" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#2F3D26">déficit semanal</text>
+    <rect x="140" y="0" width="14" height="14" rx="2" fill="#C75B3B" opacity="0.7"/>
+    <text x="160" y="11" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#2F3D26">semana actual</text>
+    <line x1="280" y1="7" x2="320" y2="7" stroke="#C75B3B" stroke-width="1.4" stroke-dasharray="6 4"/>
+    <text x="328" y="11" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#2F3D26">objetivo −400</text>
+  </g>
+
+  <text x="950" y="724" font-family="'Fraunces', serif" font-style="italic" font-size="11" fill="#8A8870">Promedio 12 semanas: −436 kcal/día</text>
 </svg>

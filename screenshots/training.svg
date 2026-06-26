@@ -1,105 +1,219 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" font-family="system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="'Source Sans 3', 'Inter', sans-serif">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a1a2e"/>
-      <stop offset="100%" stop-color="#16213e"/>
-    </linearGradient>
+    <pattern id="grain" x="0" y="0" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="#F4EFE6"/>
+      <rect width="160" height="160" filter="url(#n)" opacity="0.04"/>
+    </pattern>
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 0.12  0 0 0 0 0.10  0 0 0 0 0.09  1 0"/>
+    </filter>
   </defs>
-  <rect width="800" height="600" fill="url(#bg)"/>
 
-  <text x="20" y="36" fill="white" font-size="18" font-weight="bold">Entrenamiento de Fuerza</text>
+  <rect width="1280" height="800" fill="#F4EFE6"/>
+  <rect width="1280" height="800" fill="url(#grain)"/>
 
-  <!-- Workout plans -->
-  <rect x="20" y="55" width="370" height="530" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="40" y="80" fill="white" font-size="14" font-weight="600">Planes de Entrenamiento</text>
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="220" height="800" fill="#FBF7EE"/>
+  <line x1="220" y1="0" x2="220" y2="800" stroke="#D8D2C4" stroke-width="1"/>
+  <text x="24" y="40" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#2F3D26" letter-spacing="-0.5">FitOS</text>
+  <text x="24" y="58" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Leandro Pollola</text>
 
-  <rect x="30" y="92" width="350" height="40" rx="6" fill="#1a1a2e" stroke="#0D9488" stroke-width="1"/>
-  <text x="50" y="114" fill="white" font-size="12" font-weight="bold">4x Superior/Inferior</text>
-  <text x="320" y="114" fill="#0D9488" font-size="11">Activo</text>
+  <text x="24" y="100" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">INICIO  ▾</text>
+  <text x="36" y="129" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Panel</text>
+  <text x="36" y="160" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Tendencias</text>
 
-  <rect x="30" y="140" width="350" height="40" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="50" y="162" fill="#9ca3af" font-size="12">3x Push/Pull/Legs</text>
+  <text x="24" y="200" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">SALUD  ▾</text>
+  <text x="36" y="226" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Actividad</text>
+  <text x="36" y="252" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Sueño</text>
+  <text x="36" y="278" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Balance Energético</text>
 
-  <rect x="30" y="188" width="350" height="40" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="50" y="210" fill="#9ca3af" font-size="12">2x Superior/Inferior</text>
+  <text x="24" y="318" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="1">ENTRENAMIENTO  ▾</text>
+  <text x="36" y="344" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Plan de Dieta</text>
+  <text x="36" y="370" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Mediciones</text>
+  <rect x="14" y="378" width="192" height="34" rx="8" fill="#D7DAC7"/>
+  <rect x="14" y="378" width="3" height="34" rx="1.5" fill="#4E5D3F"/>
+  <rect x="30" y="392" width="10" height="10" rx="1" stroke="#2F3D26" stroke-width="1.6" fill="none"/>
+  <text x="52" y="399" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Entrenamiento</text>
 
-  <rect x="30" y="236" width="350" height="40" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="50" y="258" fill="#9ca3af" font-size="12">5x Push/Pull/Legs/Upper/Lower</text>
+  <line x1="24" y1="700" x2="196" y2="700" stroke="#D8D2C4" stroke-width="1"/>
+  <text x="36" y="724" font-family="'Source Sans 3', sans-serif" font-size="13" fill="#8A8870">Perfil y Ajustes</text>
 
-  <rect x="30" y="284" width="350" height="40" rx="6" fill="#1a1a2e" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="50" y="306" fill="#9ca3af" font-size="12">6x Full Body</text>
+  <!-- Main content -->
+  <text x="250" y="48" font-family="'Fraunces', Georgia, serif" font-size="28" font-weight="600" fill="#2F3D26" letter-spacing="-0.6">Entrenamiento de Fuerza</text>
+  <text x="250" y="68" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">5 planes predefinidos · 55 ejercicios · registro con RPE</text>
 
-  <!-- Active plan detail -->
-  <rect x="30" y="340" width="350" height="220" rx="6" fill="#1a1a2e"/>
-  <text x="50" y="365" fill="#0D9488" font-size="13" font-weight="600">4x Superior/Inferior — Días</text>
-  <line x1="50" y1="375" x2="360" y2="375" stroke="#2d2d4a" stroke-width="1"/>
+  <g transform="translate(1100, 36)">
+    <rect x="0" y="0" width="150" height="32" rx="8" fill="#4E5D3F"/>
+    <text x="75" y="20" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="12" font-weight="600" fill="#FBF7EE">+ Nueva sesión</text>
+  </g>
 
-  <rect x="40" y="385" width="330" height="32" rx="4" fill="#1e293b"/>
-  <text x="55" y="406" fill="white" font-size="11">Día 1: Superior — Empuje</text>
-  <text x="320" y="406" fill="#6b7280" font-size="10">6 ejer.</text>
+  <!-- Plan selector -->
+  <rect x="250" y="90" width="320" height="280" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="270" y="118" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Plan activo</text>
 
-  <rect x="40" y="422" width="330" height="32" rx="4" fill="#1e293b"/>
-  <text x="55" y="443" fill="white" font-size="11">Día 2: Inferior — Cuádriceps, Glúteos</text>
-  <text x="340" y="443" fill="#6b7280" font-size="10">6 ejer.</text>
+  <text x="270" y="156" font-family="'Fraunces', Georgia, serif" font-size="22" font-weight="600" fill="#2F3D26">4× Superior / Inferior</text>
+  <text x="270" y="178" font-family="'Source Sans 3', sans-serif" font-size="12" fill="#8A8870">4 días por semana · intermedio</text>
 
-  <rect x="40" y="459" width="330" height="32" rx="4" fill="#1e293b"/>
-  <text x="55" y="480" fill="white" font-size="11">Día 3: Superior — Tracción</text>
-  <text x="320" y="480" fill="#6b7280" font-size="10">6 ejer.</text>
+  <g transform="translate(270, 200)">
+    <rect x="0" y="0" width="280" height="6" rx="3" fill="#E6E0D2"/>
+    <rect x="0" y="0" width="195" height="6" rx="3" fill="#4E5D3F"/>
+  </g>
+  <text x="270" y="226" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">Semana 7 de 12 · 70% completado</text>
 
-  <rect x="40" y="496" width="330" height="32" rx="4" fill="#1e293b"/>
-  <text x="55" y="517" fill="white" font-size="11">Día 4: Inferior — Isquios, Core</text>
-  <text x="330" y="517" fill="#6b7280" font-size="10">6 ejer.</text>
+  <line x1="270" y1="244" x2="550" y2="244" stroke="#E6E0D2"/>
+  <g transform="translate(270, 264)">
+    <text x="0" y="0" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Día actual</text>
+    <text x="280" y="0" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">Empuje — Pecho, Hombros, Tríceps</text>
+  </g>
+  <g transform="translate(270, 290)">
+    <text x="0" y="0" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Ejercicios</text>
+    <text x="280" y="0" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">6 · 45 min</text>
+  </g>
+  <g transform="translate(270, 316)">
+    <text x="0" y="0" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Próxima sesión</text>
+    <text x="280" y="0" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">Mié 28 jun · 19:00</text>
+  </g>
+  <g transform="translate(270, 342)">
+    <text x="0" y="0" font-family="'Source Sans 3', sans-serif" font-size="11" fill="#8A8870">Racha</text>
+    <text x="280" y="0" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#C75B3B">🔥 5 semanas</text>
+  </g>
 
-  <!-- Exercise library -->
-  <rect x="410" y="55" width="370" height="240" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="430" y="80" fill="white" font-size="14" font-weight="600">Biblioteca de Ejercicios</text>
-  <!-- Filter chips -->
-  <rect x="430" y="92" width="60" height="22" rx="4" fill="#0D9488"/>
-  <text x="460" y="107" text-anchor="middle" fill="white" font-size="10">Todos</text>
-  <rect x="496" y="92" width="60" height="22" rx="4" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="526" y="107" text-anchor="middle" fill="#9ca3af" font-size="10">Pecho</text>
-  <rect x="562" y="92" width="60" height="22" rx="4" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="592" y="107" text-anchor="middle" fill="#9ca3af" font-size="10">Espalda</text>
-  <rect x="628" y="92" width="60" height="22" rx="4" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="658" y="107" text-anchor="middle" fill="#9ca3af" font-size="10">Piernas</text>
-  <!-- Table -->
-  <rect x="430" y="122" width="330" height="20" rx="4" fill="#1a1a2e"/>
-  <text x="440" y="136" fill="#6b7280" font-size="10">Ejercicio</text>
-  <text x="580" y="136" fill="#6b7280" font-size="10">Grupo</text>
-  <text x="660" y="136" fill="#6b7280" font-size="10">Equipo</text>
-  <line x1="430" y1="144" x2="760" y2="144" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="440" y="162" fill="white" font-size="11">Press Banca con Barra</text>
-  <text x="580" y="162" fill="#9ca3af" font-size="11">Pecho</text>
-  <text x="660" y="162" fill="#9ca3af" font-size="11">Barra</text>
-  <text x="440" y="182" fill="white" font-size="11">Dominadas</text>
-  <text x="580" y="182" fill="#9ca3af" font-size="11">Espalda</text>
-  <text x="660" y="182" fill="#9ca3af" font-size="11">Bodyweight</text>
-  <text x="440" y="202" fill="white" font-size="11">Sentadilla en Multipower</text>
-  <text x="580" y="202" fill="#9ca3af" font-size="11">Quads</text>
-  <text x="660" y="202" fill="#9ca3af" font-size="11">Smith</text>
-  <text x="440" y="222" fill="white" font-size="11">Peso Muerto Rumano</text>
-  <text x="580" y="222" fill="#9ca3af" font-size="11">Isquios</text>
-  <text x="660" y="222" fill="#9ca3af" font-size="11">Barra</text>
-  <text x="440" y="242" fill="white" font-size="11">Curl de Bíceps</text>
-  <text x="580" y="242" fill="#9ca3af" font-size="11">Bíceps</text>
-  <text x="660" y="242" fill="#9ca3af" font-size="11">Mancuerna</text>
+  <!-- Plan carousel -->
+  <rect x="590" y="90" width="670" height="280" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="610" y="118" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Planes disponibles</text>
 
-  <!-- Session logging -->
-  <rect x="410" y="310" width="370" height="275" rx="8" fill="#1e293b" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="430" y="335" fill="white" font-size="14" font-weight="600">Registro de Sesiones</text>
+  <g transform="translate(610, 140)">
+    <rect x="0" y="0" width="148" height="200" rx="10" fill="#4E5D3F"/>
+    <text x="14" y="22" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#D7DAC7">2× SEMANA</text>
+    <text x="14" y="48" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#FBF7EE">Full Body</text>
+    <text x="14" y="62" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">principiante</text>
+    <line x1="14" y1="80" x2="134" y2="80" stroke="#D7DAC7" stroke-width="1" opacity="0.3"/>
+    <text x="14" y="100" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">8 ejercicios</text>
+    <text x="14" y="116" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">3 series × 8-12</text>
+    <text x="14" y="132" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">~50 min</text>
+    <rect x="14" y="172" width="60" height="20" rx="4" fill="#FBF7EE"/>
+    <text x="44" y="186" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="10" font-weight="600" fill="#4E5D3F">Activar</text>
+  </g>
 
-  <rect x="430" y="350" width="330" height="110" rx="6" fill="#1a1a2e"/>
-  <text x="450" y="372" fill="#0D9488" font-size="12" font-weight="600">Última Sesión — 19/06/2026</text>
-  <line x1="450" y1="380" x2="740" y2="380" stroke="#2d2d4a" stroke-width="1"/>
-  <text x="450" y="398" fill="#9ca3af" font-size="11">Rutina: 4x Superior/Inferior (Día 1)</text>
-  <text x="450" y="418" fill="#9ca3af" font-size="11">Ejercicios: 6 · Volumen total: 4,850 kg</text>
-  <text x="450" y="438" fill="#10b981" font-size="11">Volumen +8% vs sesión anterior ✓</text>
+  <g transform="translate(770, 140)">
+    <rect x="0" y="0" width="148" height="200" rx="10" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="14" y="22" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">3× SEMANA</text>
+    <text x="14" y="48" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">Push/Pull/Legs</text>
+    <text x="14" y="62" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">intermedio</text>
+    <line x1="14" y1="80" x2="134" y2="80" stroke="#E6E0D2"/>
+    <text x="14" y="100" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">9 ejercicios</text>
+    <text x="14" y="116" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">3-4 series × 6-12</text>
+    <text x="14" y="132" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">~60 min</text>
+    <rect x="14" y="172" width="60" height="20" rx="4" fill="#4E5D3F"/>
+    <text x="44" y="186" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="10" font-weight="600" fill="#FBF7EE">Activar</text>
+  </g>
 
-  <rect x="430" y="470" width="330" height="100" rx="6" fill="#1a1a2e"/>
-  <text x="450" y="490" fill="white" font-size="12" font-weight="600">Progresión — Press Banca</text>
-  <!-- Progression mini chart -->
-  <polyline points="460,530 490,525 520,535 550,520 580,515 610,525 640,510" fill="none" stroke="#0D9488" stroke-width="2"/>
-  <polyline points="460,550 490,545 520,555 550,540 580,530 610,540 640,525" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
-  <text x="650" y="530" fill="#0D9488" font-size="9">kg</text>
-  <text x="650" y="550" fill="#f59e0b" font-size="9">RPE</text>
+  <g transform="translate(930, 140)">
+    <rect x="0" y="0" width="148" height="200" rx="10" fill="#4E5D3F"/>
+    <rect x="6" y="6" width="136" height="22" rx="4" fill="#FBF7EE"/>
+    <text x="74" y="20" text-anchor="middle" font-family="'Fraunces', serif" font-style="italic" font-size="9" fill="#4E5D3F" letter-spacing="0.4">ACTIVO</text>
+    <text x="14" y="48" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#D7DAC7">4× SEMANA</text>
+    <text x="14" y="68" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#FBF7EE">Sup/Inf</text>
+    <text x="14" y="82" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">intermedio</text>
+    <line x1="14" y1="100" x2="134" y2="100" stroke="#D7DAC7" stroke-width="1" opacity="0.3"/>
+    <text x="14" y="120" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">8 ejercicios</text>
+    <text x="14" y="136" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">4 series × 6-10</text>
+    <text x="14" y="152" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#D7DAC7">~60 min</text>
+  </g>
+
+  <g transform="translate(1090, 140)">
+    <rect x="0" y="0" width="148" height="200" rx="10" fill="#FBF7EE" stroke="#D8D2C4"/>
+    <text x="14" y="22" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870">5× SEMANA</text>
+    <text x="14" y="48" font-family="'Fraunces', Georgia, serif" font-size="14" font-weight="600" fill="#2F3D26">Bro Split</text>
+    <text x="14" y="62" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">avanzado</text>
+    <line x1="14" y1="80" x2="134" y2="80" stroke="#E6E0D2"/>
+    <text x="14" y="100" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">10 ejercicios</text>
+    <text x="14" y="116" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">4 series × 8-12</text>
+    <text x="14" y="132" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">~75 min</text>
+    <rect x="14" y="172" width="60" height="20" rx="4" fill="#4E5D3F"/>
+    <text x="44" y="186" text-anchor="middle" font-family="'Source Sans 3', sans-serif" font-size="10" font-weight="600" fill="#FBF7EE">Activar</text>
+  </g>
+
+  <!-- Session detail with RPE -->
+  <rect x="250" y="386" width="1010" height="280" rx="14" fill="#FBF7EE" stroke="#D8D2C4"/>
+  <text x="270" y="412" font-family="'Fraunces', serif" font-style="italic" font-size="13" fill="#4E5D3F">Sesión más reciente · 24 jun 2026 · Empuje</text>
+
+  <g transform="translate(270, 430)">
+    <rect x="0" y="0" width="970" height="32" rx="6" fill="#F4EFE6"/>
+    <text x="20" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">EJERCICIO</text>
+    <text x="320" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">SERIE 1</text>
+    <text x="460" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">SERIE 2</text>
+    <text x="600" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">SERIE 3</text>
+    <text x="740" y="20" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">SERIE 4</text>
+    <text x="940" y="20" text-anchor="end" font-family="'Fraunces', serif" font-style="italic" font-size="10" fill="#8A8870" letter-spacing="0.5">RPE</text>
+  </g>
+
+  <g transform="translate(270, 466)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Press banca</text>
+    <text x="320" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">70kg × 8</text>
+    <text x="460" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">75kg × 8</text>
+    <text x="600" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">75kg × 7</text>
+    <text x="740" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">72.5kg × 8</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="600" fill="#4E5D3F">8 / 10</text>
+  </g>
+
+  <g transform="translate(270, 498)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Press inclinado mancuernas</text>
+    <text x="320" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">28kg × 10</text>
+    <text x="460" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">28kg × 10</text>
+    <text x="600" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">30kg × 9</text>
+    <text x="740" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">30kg × 8</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="600" fill="#4E5D3F">8 / 10</text>
+  </g>
+
+  <g transform="translate(270, 530)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Aperturas con cable</text>
+    <text x="320" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">15kg × 12</text>
+    <text x="460" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">15kg × 12</text>
+    <text x="600" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">17.5kg × 11</text>
+    <text x="740" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">17.5kg × 10</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="600" fill="#4E5D3F">7 / 10</text>
+  </g>
+
+  <g transform="translate(270, 562)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Press militar</text>
+    <text x="320" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">45kg × 8</text>
+    <text x="460" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">45kg × 8</text>
+    <text x="600" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">47.5kg × 7</text>
+    <text x="740" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">47.5kg × 7</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="600" fill="#C75B3B">9 / 10</text>
+  </g>
+
+  <g transform="translate(270, 594)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Elevaciones laterales</text>
+    <text x="320" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">10kg × 12</text>
+    <text x="460" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">10kg × 12</text>
+    <text x="600" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">10kg × 12</text>
+    <text x="740" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">10kg × 11</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="600" fill="#4E5D3F">7 / 10</text>
+  </g>
+
+  <g transform="translate(270, 626)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="22" font-family="'Source Sans 3', sans-serif" font-size="13" font-weight="500" fill="#2F3D26">Fondos en paralelas</text>
+    <text x="320" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">× 10</text>
+    <text x="460" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">× 10</text>
+    <text x="600" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">× 9</text>
+    <text x="740" y="22" font-family="'Fraunces', Georgia, serif" font-size="13" fill="#2F3D26">× 8</text>
+    <text x="940" y="22" text-anchor="end" font-family="'Fraunces', Georgia, serif" font-size="13" font-weight="600" fill="#4E5D3F">8 / 10</text>
+  </g>
+
+  <g transform="translate(270, 650)">
+    <line x1="0" y1="0" x2="970" y2="0" stroke="#E6E0D2"/>
+    <text x="20" y="0" font-family="'Fraunces', serif" font-style="italic" font-size="11" fill="#4E5D3F">Volumen total · 9.840 kg · 6 ejercicios · 55 min</text>
+  </g>
+
+  <text x="270" y="688" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#8A8870">RPE (Rate of Perceived Exertion) · Borg CR10 scale</text>
+  <text x="1100" y="688" text-anchor="end" font-family="'Source Sans 3', sans-serif" font-size="10" fill="#4E5D3F">📈 +5% vs sesión anterior</text>
 </svg>
