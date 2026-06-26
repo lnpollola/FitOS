@@ -25,6 +25,7 @@ build/
 # Apple Health Export
 apple-health-export/
 workout-routes/
+ImportData/
 
 # Build artifacts (Electron AppImage, unpacked binaries)
 release/
