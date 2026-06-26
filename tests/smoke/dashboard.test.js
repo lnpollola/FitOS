@@ -4,6 +4,9 @@ const mockApi = {
   getDashboardData: () => Promise.resolve({ weekBalance: -3500, todayCalories: 1850, nextWorkout: 'Push A' }),
   getHealthDashboardMetrics: () => Promise.resolve({ ok: true, data: {} }),
   getActivityKcalByType: () => Promise.resolve([]),
+  getSportSummaryByRange: () => Promise.resolve([]),
+  getActivityComparison: () => Promise.resolve({ current: [], previous: [], currentActiveDays: 0, previousActiveDays: 0, currentDurationMin: 0, previousDurationMin: 0, currentDistanceKm: 0, previousDistanceKm: 0, currentActiveDates: [], previousActiveDates: [], periodLengthDays: 15 }),
+  getSportLifetimeStats: () => Promise.resolve({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 }),
   getSleepAnalysis: () => Promise.resolve({ ok: true, dailySeries: [], trendArrow: null, consistency: null, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null }),
   getLastImportTimestamp: () => Promise.resolve(null),
   getWeightStats: () => Promise.resolve({ first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0 }),
@@ -91,5 +94,74 @@ describe('Dashboard view smoke test', () => {
     await init();
     const html = document.getElementById('view-dashboard').innerHTML;
     expect(html).not.toContain('▲');
+  });
+
+  it('sports accent card shows active days and distance with PoP', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getSportSummaryByRange: () => Promise.resolve([
+        { sport_type: 'cycling', count: 5, avg_kcal: 300, total_kcal: 1500, total_duration: 180, total_distance_km: 42.5 },
+        { sport_type: 'HIIT', count: 3, avg_kcal: 200, total_kcal: 600, total_duration: 60, total_distance_km: 0 },
+      ]),
+      getActivityComparison: () => Promise.resolve({
+        current: [],
+        previous: [],
+        currentActiveDays: 5,
+        previousActiveDays: 3,
+        currentDurationMin: 240,
+        previousDurationMin: 180,
+        currentDistanceKm: 42.5,
+        previousDistanceKm: 30.0,
+        currentActiveDates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-19', '2026-06-22'],
+        previousActiveDates: ['2026-06-01', '2026-06-02', '2026-06-03'],
+        periodLengthDays: 15,
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    await new Promise((r) => setTimeout(r, 200));
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).toMatch(/Días activos/);
+    expect(html).toMatch(/42\.5/);
+    expect(html).toMatch(/Distancia/);
+    expect(html).toMatch(/Minutos totales/);
+    expect(html).toMatch(/Mejor racha/);
+    expect(html).toMatch(/3 días seguidos/);
+    expect(html).toMatch(/240/);
+  });
+
+  it('per-sport card shows distance km for distance-bearing sports', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getSportSummaryByRange: () => Promise.resolve([
+        { sport_type: 'cycling', count: 5, avg_kcal: 300, total_kcal: 1500, total_duration: 180, total_distance_km: 42.5 },
+        { sport_type: 'HIIT', count: 3, avg_kcal: 200, total_kcal: 600, total_duration: 60, total_distance_km: 0 },
+      ]),
+    };
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    await new Promise((r) => setTimeout(r, 200));
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).toMatch(/Ciclismo/);
+    expect(html).toMatch(/42\.5 km/);
+    expect(html).toMatch(/HIIT/);
+  });
+
+  it('consistency badge shows total weeks and current streak', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getSportSummaryByRange: () => Promise.resolve([
+        { sport_type: 'cycling', count: 5, avg_kcal: 300, total_kcal: 1500, total_duration: 180, total_distance_km: 42.5 },
+      ]),
+      getSportLifetimeStats: () => Promise.resolve({ totalWeeks: 47, currentStreak: 5, totalSessions: 312 }),
+    };
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    await new Promise((r) => setTimeout(r, 200));
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).toMatch(/Consistencia/);
+    expect(html).toMatch(/47/);
+    expect(html).toMatch(/Racha actual/);
+    expect(html).toMatch(/Racha activa/);
   });
 });

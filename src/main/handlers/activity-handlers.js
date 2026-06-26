@@ -1,8 +1,56 @@
 const { dialog } = require('electron');
 const { refreshCaches } = require('../../db/database');
-const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData } = require('../apple-health-import');
+const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthData, getHealthsyncDbInfo, fullSync, getCacheStats, syncAppleHealth, resetAndSyncHealthsync } = require('../apple-health-import');
 
 const HEALTHSYNC_DB_PATH = require('path').join(require('os').homedir(), '.healthsync', 'healthsync.db');
+
+function weekKeyToSunday(key) {
+  const match = key.match(/^(\d{4})-W(\d{2})$/);
+  if (!match) return null;
+  const y = parseInt(match[1], 10);
+  const w = parseInt(match[2], 10);
+  const jan1 = new Date(y, 0, 1);
+  const jan1Day = jan1.getDay();
+  const firstSunday = new Date(jan1);
+  firstSunday.setDate(jan1.getDate() + (7 - jan1Day) % 7);
+  firstSunday.setDate(firstSunday.getDate() + (w - 1) * 7);
+  return firstSunday;
+}
+
+function getCurrentWeekKey() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const jan1 = new Date(y, 0, 1);
+  const jan1Day = jan1.getDay();
+  const firstSunday = new Date(jan1);
+  firstSunday.setDate(jan1.getDate() + (7 - jan1Day) % 7);
+  const daysSinceFirstSunday = Math.floor((now - firstSunday) / 86400000);
+  const w = Math.floor(daysSinceFirstSunday / 7) + 1;
+  return `${y}-W${String(w).padStart(2, '0')}`;
+}
+
+function computeWeekStreak(activeWeekKeys) {
+  if (!activeWeekKeys || activeWeekKeys.length === 0) return 0;
+  const activeSet = new Set(
+    activeWeekKeys.map(weekKeyToSunday).filter(Boolean).map(d => d.getTime())
+  );
+  const currentSunday = weekKeyToSunday(getCurrentWeekKey());
+  if (!currentSunday) return 0;
+  let checkDate = new Date(currentSunday);
+  let streak = 0;
+  if (!activeSet.has(checkDate.getTime())) {
+    checkDate.setDate(checkDate.getDate() - 7);
+  }
+  for (let i = 0; i < 500; i++) {
+    if (activeSet.has(checkDate.getTime())) {
+      streak++;
+    } else {
+      break;
+    }
+    checkDate.setDate(checkDate.getDate() - 7);
+  }
+  return streak;
+}
 
 function register(ipcMain, getDb, getHS, notifyDomain) {
   ipcMain.handle('db:getActivityDays', () => {
@@ -61,7 +109,11 @@ function register(ipcMain, getDb, getHS, notifyDomain) {
   ipcMain.handle('db:getSportSummaryByRange', (_event, fromDate, toDate) => {
     const db = getDb();
     return db.prepare(`
-      SELECT sport_type, COUNT(*) as count, COALESCE(ROUND(AVG(calories), 0), 0) as avg_kcal, COALESCE(SUM(calories), 0) as total_kcal, COALESCE(SUM(duration_minutes), 0) as total_duration
+      SELECT sport_type, COUNT(*) as count,
+             COALESCE(ROUND(AVG(calories), 0), 0) as avg_kcal,
+             COALESCE(SUM(calories), 0) as total_kcal,
+             COALESCE(SUM(duration_minutes), 0) as total_duration,
+             ROUND(COALESCE(SUM(distance_km), 0), 2) as total_distance_km
       FROM sport_activities WHERE date >= ? AND date <= ? GROUP BY sport_type ORDER BY count DESC
     `).all(fromDate, toDate);
   });
@@ -69,17 +121,75 @@ function register(ipcMain, getDb, getHS, notifyDomain) {
   ipcMain.handle('db:getActivityComparison', (_event, from, to) => {
     const db = getDb();
     const current = db.prepare(`
-      SELECT sport_type, COUNT(*) as count, COALESCE(SUM(calories), 0) as total_kcal, COALESCE(SUM(duration_minutes), 0) as total_duration
+      SELECT sport_type, COUNT(*) as count,
+             COALESCE(SUM(calories), 0) as total_kcal,
+             COALESCE(SUM(duration_minutes), 0) as total_duration,
+             ROUND(COALESCE(SUM(distance_km), 0), 2) as total_distance_km
       FROM sport_activities WHERE date >= ? AND date <= ? GROUP BY sport_type
     `).all(from, to);
     const periodMs = new Date(to) - new Date(from);
     const prevFrom = new Date(new Date(from).getTime() - periodMs).toISOString().split('T')[0];
     const prevTo = new Date(new Date(from).getTime() - 86400000).toISOString().split('T')[0];
     const previous = db.prepare(`
-      SELECT sport_type, COUNT(*) as count, COALESCE(SUM(calories), 0) as total_kcal, COALESCE(SUM(duration_minutes), 0) as total_duration
+      SELECT sport_type, COUNT(*) as count,
+             COALESCE(SUM(calories), 0) as total_kcal,
+             COALESCE(SUM(duration_minutes), 0) as total_duration,
+             ROUND(COALESCE(SUM(distance_km), 0), 2) as total_distance_km
       FROM sport_activities WHERE date >= ? AND date <= ? GROUP BY sport_type
     `).all(prevFrom, prevTo);
-    return { current, previous };
+    const currentActiveDays = db.prepare(`
+      SELECT COUNT(DISTINCT date) as days FROM sport_activities WHERE date >= ? AND date <= ?
+    `).get(from, to);
+    const previousActiveDays = db.prepare(`
+      SELECT COUNT(DISTINCT date) as days FROM sport_activities WHERE date >= ? AND date <= ?
+    `).get(prevFrom, prevTo);
+    const currentDuration = db.prepare(`
+      SELECT COALESCE(SUM(duration_minutes), 0) as min FROM sport_activities WHERE date >= ? AND date <= ?
+    `).get(from, to);
+    const previousDuration = db.prepare(`
+      SELECT COALESCE(SUM(duration_minutes), 0) as min FROM sport_activities WHERE date >= ? AND date <= ?
+    `).get(prevFrom, prevTo);
+    const currentDistance = db.prepare(`
+      SELECT ROUND(COALESCE(SUM(distance_km), 0), 2) as km FROM sport_activities WHERE date >= ? AND date <= ?
+    `).get(from, to);
+    const previousDistance = db.prepare(`
+      SELECT ROUND(COALESCE(SUM(distance_km), 0), 2) as km FROM sport_activities WHERE date >= ? AND date <= ?
+    `).get(prevFrom, prevTo);
+    const currentActiveDates = db.prepare(`
+      SELECT DISTINCT date FROM sport_activities WHERE date >= ? AND date <= ? ORDER BY date
+    `).all(from, to).map(r => r.date);
+    const previousActiveDates = db.prepare(`
+      SELECT DISTINCT date FROM sport_activities WHERE date >= ? AND date <= ? ORDER BY date
+    `).all(prevFrom, prevTo).map(r => r.date);
+    return {
+      current,
+      previous,
+      currentActiveDays: currentActiveDays.days,
+      previousActiveDays: previousActiveDays.days,
+      currentDurationMin: currentDuration.min,
+      previousDurationMin: previousDuration.min,
+      currentDistanceKm: currentDistance.km,
+      previousDistanceKm: previousDistance.km,
+      currentActiveDates,
+      previousActiveDates,
+      periodLengthDays: Math.max(1, Math.round(periodMs / 86400000)),
+    };
+  });
+
+  ipcMain.handle('db:getSportLifetimeStats', () => {
+    const db = getDb();
+    const totalSessionsRow = db.prepare('SELECT COUNT(*) as c FROM sport_activities').get();
+    const totalSessions = totalSessionsRow.c;
+    const weeks = db.prepare(`
+      SELECT strftime('%Y-%W', date) as week
+      FROM sport_activities
+      GROUP BY strftime('%Y-%W', date)
+      HAVING COUNT(*) >= 2
+      ORDER BY week DESC
+    `).all().map(r => r.week);
+    const totalWeeks = weeks.length;
+    const currentStreak = computeWeekStreak(weeks);
+    return { totalWeeks, currentStreak, totalSessions };
   });
 
   ipcMain.handle('db:importActivityCSV', async () => {
@@ -146,15 +256,17 @@ function register(ipcMain, getDb, getHS, notifyDomain) {
 
   ipcMain.handle('db:checkHealthsync', () => !!getHealthsyncPath());
   ipcMain.handle('db:installHealthsync', () => installHealthsync().then(() => true).catch(() => false));
+  ipcMain.handle('db:getHealthsyncDbInfo', () => getHealthsyncDbInfo());
 
-  ipcMain.handle('db:importAppleHealthXML', async (_event, xmlPath) => {
-    const result = { created: 0, skipped: 0, errors: [] };
-    try {
-      await parseHealthsyncXML(xmlPath);
-      const migration = migrateHealthData(global._mainWindow);
-      Object.assign(result, migration);
-      refreshCaches(); if (notifyDomain) notifyDomain("activity");
-    } catch (e) { result.errors.push(e.message); }
+  ipcMain.handle('db:syncAppleHealth', async (_event, options) => {
+    const result = await syncAppleHealth(global._mainWindow, options || {});
+    if (result.ok && notifyDomain) notifyDomain("activity");
+    return result;
+  });
+
+  ipcMain.handle('db:resetAndSyncHealthsync', async () => {
+    const result = await resetAndSyncHealthsync(global._mainWindow);
+    if (result.sync && result.sync.ok && notifyDomain) notifyDomain("activity");
     return result;
   });
 }

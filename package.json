@@ -13,7 +13,9 @@
     "preview": "vite preview",
     "start": "electron .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sync:healthsync": "electron scripts/sync-healthsync.js",
+    "reset:healthsync": "electron scripts/reset-healthsync.js"
   },
   "build": {
     "appId": "com.personalpollo.app",

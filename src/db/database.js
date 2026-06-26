@@ -413,6 +413,26 @@ function createTables() {
     const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('food_items') WHERE name='${col}'`).get();
     if (exists.cnt === 0) db.exec(`ALTER TABLE food_items ADD COLUMN ${col} ${type}`);
   }
+
+  // Idempotent: ensure activity_summary_cache has sleep stage columns for populateCache()
+  const cacheSleepCols = [
+    ['sleep_deep', 'REAL'],
+    ['sleep_rem', 'REAL'],
+    ['sleep_light', 'REAL'],
+  ];
+  const hasCacheTable = db.prepare("SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name='activity_summary_cache'").get().cnt;
+  if (hasCacheTable) {
+    for (const [col, type] of cacheSleepCols) {
+      const exists = db.prepare(`SELECT COUNT(*) as cnt FROM pragma_table_info('activity_summary_cache') WHERE name='${col}'`).get();
+      if (exists.cnt === 0) db.exec(`ALTER TABLE activity_summary_cache ADD COLUMN ${col} ${type}`);
+    }
+  }
+
+  // Idempotent: ensure sport_activities has distance_km column for km-based sport metrics
+  const sportDistanceCol = db.prepare("SELECT COUNT(*) as cnt FROM pragma_table_info('sport_activities') WHERE name='distance_km'").get();
+  if (sportDistanceCol.cnt === 0) {
+    db.exec("ALTER TABLE sport_activities ADD COLUMN distance_km REAL DEFAULT NULL");
+  }
 }
 
 function getDb() {

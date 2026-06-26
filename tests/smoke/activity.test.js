@@ -8,8 +8,10 @@ const mockApi = {
   getLastImportTimestamp: () => Promise.resolve(null),
   checkHealthsync: () => Promise.resolve(false),
   installHealthsync: () => Promise.resolve(false),
-  importAppleHealthXML: () => Promise.resolve({ created: 0, skipped: 0 }),
+  syncAppleHealth: () => Promise.resolve({ ok: true, action: 'sync-only', migration: { created: 0, skipped: 0, errors: [] }, cache: { periods: {} } }),
+  resetAndSyncHealthsync: () => Promise.resolve({ reset: { before: {}, after: {}, deleted: {} }, sync: { ok: true, migration: { created: 0, skipped: 0, errors: [] } } }),
   setLastImportTimestamp: () => Promise.resolve(true),
+  getHealthsyncDbInfo: () => Promise.resolve({ available: false, path: '', lastModified: null, xmlPath: null, xmlMtime: null, tables: {} }),
   onHealthImportProgress: () => {},
   removeHealthImportProgressListener: () => {},
 };
@@ -59,5 +61,98 @@ describe('Activity view smoke test', () => {
     const html = document.getElementById('view-activity').innerHTML;
     const emojiRegex = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{2700}-\u{27BF}]/u;
     expect(html).not.toMatch(emojiRegex);
+  });
+
+  it('renders a single unified sync button + refresh button', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    expect(document.getElementById('btn-sync-apple-health')).toBeTruthy();
+    expect(document.getElementById('btn-refresh-apple-health')).toBeTruthy();
+    expect(document.getElementById('btn-import-health')).toBeFalsy();
+    expect(document.getElementById('btn-sync-healthsync')).toBeFalsy();
+  });
+
+  it('refresh button re-runs loaders and shows updating label', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getHealthsyncDbInfo: () => Promise.resolve({ available: true, path: '/x', lastModified: new Date().toISOString(), xmlMtime: new Date().toISOString(), tables: { steps: 5 } }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const btn = document.getElementById('btn-refresh-apple-health');
+    const label = document.getElementById('btn-refresh-label');
+    expect(label.textContent).toBeTruthy();
+    btn.click();
+    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 50));
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('renders reset-and-sync button', async () => {
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    expect(document.getElementById('btn-reset-sync-healthsync')).toBeTruthy();
+  });
+
+  it('shows anomaly banner when sportDuplicates > 0', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getHealthsyncDbInfo: () => Promise.resolve({
+        available: true,
+        path: '/x',
+        lastModified: new Date().toISOString(),
+        xmlMtime: new Date().toISOString(),
+        tables: { steps: 5 },
+        anomalies: { sportDuplicates: 42, weightDuplicates: 0, hasAnomaly: true },
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const banner = document.getElementById('anomaly-banner');
+    expect(banner.style.display).toBe('block');
+    expect(banner.textContent).toMatch(/42/);
+  });
+
+  it('hides anomaly banner when no anomalies', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getHealthsyncDbInfo: () => Promise.resolve({
+        available: true,
+        path: '/x',
+        lastModified: new Date().toISOString(),
+        xmlMtime: new Date().toISOString(),
+        tables: { steps: 5 },
+        anomalies: { sportDuplicates: 0, weightDuplicates: 0, hasAnomaly: false },
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const banner = document.getElementById('anomaly-banner');
+    expect(banner.style.display).toBe('none');
+  });
+
+  it('shows distance km and active days KPIs in sport panel', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getSportSummaryByRange: () => Promise.resolve([
+        { sport_type: 'cycling', count: 5, avg_kcal: 300, total_kcal: 1500, total_duration: 180, total_distance_km: 42.5 },
+        { sport_type: 'HIIT', count: 3, avg_kcal: 200, total_kcal: 600, total_duration: 60, total_distance_km: 0 },
+      ]),
+      getActivityComparison: () => Promise.resolve({
+        current: [],
+        previous: [],
+        currentActiveDays: 5,
+        previousActiveDays: 3,
+        currentDistanceKm: 42.5,
+        previousDistanceKm: 30.0,
+        periodLengthDays: 7,
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    await new Promise((r) => setTimeout(r, 200));
+    const html = document.getElementById('view-activity').innerHTML;
+    expect(html).toMatch(/42\.5/);
+    expect(html).toMatch(/Días activos/);
   });
 });
