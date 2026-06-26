@@ -93,4 +93,66 @@ describe('Activity view smoke test', () => {
     await init();
     expect(document.getElementById('btn-reset-sync-healthsync')).toBeTruthy();
   });
+
+  it('shows anomaly banner when sportDuplicates > 0', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getHealthsyncDbInfo: () => Promise.resolve({
+        available: true,
+        path: '/x',
+        lastModified: new Date().toISOString(),
+        xmlMtime: new Date().toISOString(),
+        tables: { steps: 5 },
+        anomalies: { sportDuplicates: 42, weightDuplicates: 0, hasAnomaly: true },
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const banner = document.getElementById('anomaly-banner');
+    expect(banner.style.display).toBe('block');
+    expect(banner.textContent).toMatch(/42/);
+  });
+
+  it('hides anomaly banner when no anomalies', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getHealthsyncDbInfo: () => Promise.resolve({
+        available: true,
+        path: '/x',
+        lastModified: new Date().toISOString(),
+        xmlMtime: new Date().toISOString(),
+        tables: { steps: 5 },
+        anomalies: { sportDuplicates: 0, weightDuplicates: 0, hasAnomaly: false },
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    const banner = document.getElementById('anomaly-banner');
+    expect(banner.style.display).toBe('none');
+  });
+
+  it('shows distance km and active days KPIs in sport panel', async () => {
+    window.electronAPI = {
+      ...mockApi,
+      getSportSummaryByRange: () => Promise.resolve([
+        { sport_type: 'cycling', count: 5, avg_kcal: 300, total_kcal: 1500, total_duration: 180, total_distance_km: 42.5 },
+        { sport_type: 'HIIT', count: 3, avg_kcal: 200, total_kcal: 600, total_duration: 60, total_distance_km: 0 },
+      ]),
+      getActivityComparison: () => Promise.resolve({
+        current: [],
+        previous: [],
+        currentActiveDays: 5,
+        previousActiveDays: 3,
+        currentDistanceKm: 42.5,
+        previousDistanceKm: 30.0,
+        periodLengthDays: 7,
+      }),
+    };
+    const { init } = await import('../../src/renderer/views/activity.js');
+    await init();
+    await new Promise((r) => setTimeout(r, 200));
+    const html = document.getElementById('view-activity').innerHTML;
+    expect(html).toMatch(/42\.5/);
+    expect(html).toMatch(/Días activos/);
+  });
 });

@@ -72,68 +72,61 @@ The system SHALL map HealthSync tables to the application's existing schema via 
 
 ### Requirement: Full import flow from XML/ZIP
 
-The system SHALL support importing activity data from a fresh Apple Health export file (`exportar.xml` or `.zip`) using the HealthSync CLI's `parse` subcommand, then migrate the parsed data into the app's local database.
+The system SHALL support importing activity data from a fresh Apple Health export file (`exportar.xml` or `.zip`) using the HealthSync CLI's `parse` subcommand, then migrate the parsed data into the app's local database. The full import flow is exposed as a single "Sincronizar Apple Health" action that auto-detects whether the XML needs re-parsing (see the new `apple-health-data-integrity` capability for the detection rules).
 
-#### Scenario: XML import triggers parse + migrate
-- **WHEN** a user clicks "Importar desde Apple Health"
-- **THEN** the system SHALL execute `healthsync parse <xmlPath>` via child_process
-- **THEN** on successful parse, the system SHALL run the migration to copy data from `~/.healthsync/healthsync.db` into `activity_days`, `sport_activities`, and `weight_entries`
-- **THEN** the system SHALL record the import timestamp in `settings` (`health_last_import`)
+#### Scenario: Unified sync action auto-detects parse vs migrate
+- **WHEN** the user clicks "Sincronizar Apple Health"
+- **THEN** the system SHALL run `syncAppleHealth()` which:
+  - resolves the XML path (cwd/ImportData, ~/ImportData, ~/.healthsync/ImportData)
+  - compares the XML mtime to `~/.healthsync/healthsync.db` mtime
+  - if XML is newer OR `forceReparse` is set, runs `healthsync parse <xmlPath>` first
+  - then runs the migration to copy data from `healthsync.db` into `activity_days`, `sport_activities`, and `weight_entries`
+  - refreshes the `activity_summary_cache` for 7d/15d/30d
+  - records the sync timestamp in `settings.health_last_import`
+- **THEN** the result SHALL include the action taken (`parse-and-sync` or `sync-only`) plus migration counts, cache state, and any errors
 
-#### Scenario: Progress displayed during migration
-- **WHEN** the migration runs
-- **THEN** the system SHALL display progress messages ("Importando pasos...", "Importando calorías activas...", etc.) via the `health-import-progress` IPC channel
+#### Scenario: Progress displayed during parse and migration
+- **WHEN** the user clicks "Sincronizar Apple Health"
+- **THEN** the system SHALL emit progress messages during the parse step (real-time, at least once per second) via the `health-import-progress` IPC channel
+- **THEN** the system SHALL emit progress messages during the migration step ("Importando pasos...", "Importando calorías activas...", etc.)
+- **THEN** the renderer SHALL show these in the existing progress bar
+- **THEN** the sync button SHALL be disabled until the operation completes (success or failure)
 
-#### Scenario: Duplicate records handled via UPSERT
+#### Scenario: Parse is atomic against healthsync.db corruption
+- **WHEN** the parse step runs
+- **THEN** the system SHALL parse the XML to a staging DB at a temp path
+- **THEN** on successful parse, the system SHALL atomically rename the staging DB to `~/.healthsync/healthsync.db`
+- **THEN** if the parse fails, `~/.healthsync/healthsync.db` SHALL be left untouched
+
+#### Scenario: Duplicate records handled via source-tagged UPSERT
 - **WHEN** a migrated record matches an existing record by date and type
 - **THEN** the system SHALL upsert (overwrite with the new value) since aggregation is deterministic
 - **THEN** the system SHALL report the count of inserted/updated records as `created`
+- **THEN** the dedup SHALL only touch rows with `created_at LIKE 'healthsync:%'`, leaving manual entries untouched
 
 ### Requirement: Incremental sync from existing HealthSync DB
 
-The system SHALL support a "Sincronizar con HealthSync" action that runs the **full sync pipeline** (`fullSync()`):
-
-1. Verify `~/.healthsync/healthsync.db` exists
-2. Run the migration routine (UPSERT into `activity_days`, `sport_activities`, `weight_entries`)
-3. Refresh derived caches (`activity_summary_cache` for 7d/15d/30d periods)
-4. Save the sync timestamp in `settings` (`health_last_import`)
-
-This allows users to run `healthsync parse` externally (e.g., via a script or scheduled task) and then sync the latest parsed data into the app with one click. The full pipeline runs in a single Electron process invocation, atomic per row group via `db.transaction()`.
+The system SHALL support syncing from an already-parsed `~/.healthsync/healthsync.db` produced by a previous `healthsync parse` run. This is now the `sync-only` branch of the unified "Sincronizar Apple Health" action (not a separate button).
 
 #### Scenario: Sync from existing DB
-- **WHEN** a user clicks "Sincronizar con HealthSync"
-- **THEN** the system SHALL run `fullSync()` which performs migration + cache refresh + timestamp save
-- **THEN** the system SHALL report the result (`created`, `skipped`, `errors`, `cache` state) to the UI
+- **WHEN** the XML mtime is older than or equal to the `healthsync.db` mtime (and `forceReparse` is not set)
+- **THEN** the system SHALL skip the parse and run only the migration
+- **THEN** the system SHALL report `action: "sync-only"` in the result
 - **THEN** the dashboard views SHALL reflect the new data on next load
 
 #### Scenario: Sync disabled when healthsync.db missing
 - **WHEN** `~/.healthsync/healthsync.db` does not exist
-- **THEN** the "Sincronizar con HealthSync" button SHALL be disabled
+- **AND** no XML is found in the standard locations
+- **THEN** the "Sincronizar Apple Health" button SHALL be disabled
 - **THEN** a message SHALL indicate the user must run `healthsync parse <export.zip>` first
 
-#### Scenario: HealthSync DB info displayed
+#### Scenario: Source info displayed in activity view
 - **WHEN** the Activity view loads
-- **THEN** the system SHALL show the healthsync.db last-modified timestamp and per-table record counts
+- **THEN** the system SHALL show the `healthsync.db` last-modified timestamp AND the XML last-modified timestamp
+- **THEN** the system SHALL indicate which action the next sync will take (parse-and-sync or sync-only)
 - **THEN** the user SHALL see how fresh the source data is before syncing
 
 #### Scenario: Cache refresh populates sleep stage columns
 - **WHEN** the cache is refreshed after migration
 - **THEN** the `activity_summary_cache` table SHALL have `sleep_deep`, `sleep_rem`, and `sleep_light` columns populated for each day
 - **THEN** the cache SHALL be repopulated for 7d, 15d, and 30d periods
-
-### Requirement: Future data entry via frontend
-
-After the one-time historical import, the system SHALL provide a frontend form for manually adding new daily metrics, sport activities, and weight entries.
-
-#### Scenario: Manual entry for new data
-- **WHEN** a user has new health data after the historical import
-- **THEN** the system SHALL allow adding individual records via the existing manual entry forms
-
-### Requirement: Read-only access to HealthSync DB
-
-The system SHALL open `~/.healthsync/healthsync.db` in read-only mode when querying it directly (for live analytics in the dashboard, health view, etc.), and SHALL only open it in read-write mode in the `migrateHealthData` flow (which writes to the app's local DB, not to healthsync.db). The system SHALL never INSERT, UPDATE, DELETE, DROP, or ALTER the healthsync.db — it is owned and managed by the HealthSync CLI.
-
-#### Scenario: Direct healthsync.db queries are read-only
-- **WHEN** the app queries `~/.healthsync/healthsync.db` for analytics
-- **THEN** the connection SHALL be opened with `{ readonly: true }`
-- **THEN** no write operations SHALL be issued against the healthsync DB

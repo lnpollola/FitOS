@@ -1,4 +1,4 @@
-const { execFile, exec } = require('child_process');
+const { execFile, exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -9,6 +9,32 @@ const HEALTHSYNC_RELEASE_URL = `https://api.github.com/repos/${HEALTHSYNC_REPO}/
 const HEALTHSYNC_INSTALL_SCRIPT = 'https://healthsync.sidv.dev/install';
 const HEALTHSYNC_DIR = path.join(os.homedir(), '.healthsync');
 const HEALTHSYNC_DB = path.join(HEALTHSYNC_DIR, 'healthsync.db');
+
+function buildStagingPath() {
+  return path.join(os.tmpdir(), `healthsync-staging-${process.pid}-${Date.now()}.db`);
+}
+
+function safeUnlink(p) {
+  try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } catch {}
+}
+
+function atomicSwap(src, dst) {
+  try {
+    fs.renameSync(src, dst);
+    return true;
+  } catch (e) {
+    if (e.code === 'EXDEV') {
+      try {
+        fs.copyFileSync(src, dst);
+        fs.unlinkSync(src);
+        return true;
+      } catch (copyErr) {
+        return false;
+      }
+    }
+    return false;
+  }
+}
 
 function isValidHealthsyncBinary(filePath) {
   if (!fs.existsSync(filePath)) return false;
@@ -73,7 +99,7 @@ function installHealthsync() {
   });
 }
 
-function parseHealthsyncXML(xmlPath) {
+function parseHealthsyncXML(xmlPath, options = {}) {
   return new Promise((resolve, reject) => {
     const binary = getHealthsyncPath();
     if (!binary) {
@@ -83,20 +109,78 @@ function parseHealthsyncXML(xmlPath) {
       return reject(new Error(`No se encontró el XML: ${xmlPath}`));
     }
 
-    const proc = execFile(binary, ['parse', xmlPath], {
+    const dbPath = options.dbPath || HEALTHSYNC_DB;
+    const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+    const args = ['parse', xmlPath, '--db', dbPath];
+
+    const proc = spawn(binary, args, {
       cwd: HEALTHSYNC_DIR,
-      maxBuffer: 1024 * 1024 * 100,
-    }, (error, stdout, stderr) => {
-      if (error) {
-        const msg = (stderr || stdout || error.message || '').toString().trim();
-        return reject(new Error(`HealthSync parse falló: ${msg || error.message}`));
+    });
+
+    let stderrBuf = '';
+    let stdoutBuf = '';
+    let lastProgressAt = 0;
+    const progressInterval = 1000;
+    const fallbackMsg = 'Parseando XML... (puede tardar 1-2 min)';
+
+    const emitFallback = () => {
+      if (!onProgress) return;
+      const now = Date.now();
+      if (now - lastProgressAt >= progressInterval) {
+        onProgress(fallbackMsg);
+        lastProgressAt = now;
       }
-      if (!fs.existsSync(HEALTHSYNC_DB)) {
-        return reject(new Error(`HealthSync parse terminó sin errores pero no se creó ${HEALTHSYNC_DB}`));
+    };
+
+    const fallbackTimer = setInterval(emitFallback, progressInterval);
+
+    const handleChunk = (chunk, isStderr) => {
+      const text = chunk.toString();
+      if (isStderr) stderrBuf += text;
+      else stdoutBuf += text;
+      if (onProgress) {
+        const m = text.match(/(\d{1,3})\s*%/);
+        if (m) {
+          const pct = Math.min(100, parseInt(m[1], 10));
+          onProgress(`Parseando XML: ${pct}%`);
+          lastProgressAt = Date.now();
+        }
+      }
+    };
+
+    proc.stdout.on('data', (chunk) => handleChunk(chunk, false));
+    proc.stderr.on('data', (chunk) => handleChunk(chunk, true));
+
+    proc.on('error', (err) => {
+      clearInterval(fallbackTimer);
+      if (dbPath !== HEALTHSYNC_DB) safeUnlink(dbPath);
+      reject(new Error(`HealthSync spawn falló: ${err.message}`));
+    });
+
+    proc.on('close', (code) => {
+      clearInterval(fallbackTimer);
+      if (code !== 0) {
+        if (dbPath !== HEALTHSYNC_DB) safeUnlink(dbPath);
+        const msg = (stderrBuf || stdoutBuf || `exit code ${code}`).trim();
+        return reject(new Error(`HealthSync parse falló: ${msg || `exit code ${code}`}`));
+      }
+      if (!fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0) {
+        if (dbPath !== HEALTHSYNC_DB) safeUnlink(dbPath);
+        return reject(new Error(`HealthSync parse terminó sin errores pero no se creó ${dbPath}`));
       }
       resolve(true);
     });
   });
+}
+
+function parseHealthsyncXMLToStaging(xmlPath, onProgress) {
+  const stagingPath = buildStagingPath();
+  return parseHealthsyncXML(xmlPath, { dbPath: stagingPath, onProgress })
+    .then(() => stagingPath)
+    .catch((err) => {
+      safeUnlink(stagingPath);
+      throw err;
+    });
 }
 
 const ACTIVITY_TYPE_MAP = {
@@ -143,7 +227,26 @@ function getHealthsyncDbInfo() {
   if (xmlPath) {
     try { xmlMtime = fs.statSync(xmlPath).mtime.toISOString(); } catch {}
   }
-  return { available: true, path: HEALTHSYNC_DB, lastModified: stats.mtime, sizeBytes: stats.size, xmlPath, xmlMtime, tables };
+  return { available: true, path: HEALTHSYNC_DB, lastModified: stats.mtime, sizeBytes: stats.size, xmlPath, xmlMtime, tables, anomalies: getHealthsyncDataAnomalies() };
+}
+
+function getHealthsyncDataAnomalies() {
+  const db = getDb();
+  try {
+    const sportTotal = db.prepare('SELECT COUNT(*) as c FROM sport_activities').get().c;
+    const sportDistinct = db.prepare("SELECT COUNT(DISTINCT date || '|' || sport_type) as c FROM sport_activities").get().c;
+    const sportDuplicates = Math.max(0, sportTotal - sportDistinct);
+    const weightTotal = db.prepare('SELECT COUNT(*) as c FROM weight_entries').get().c;
+    const weightDistinct = db.prepare('SELECT COUNT(DISTINCT date) as c FROM weight_entries').get().c;
+    const weightDuplicates = Math.max(0, weightTotal - weightDistinct);
+    return {
+      sportDuplicates,
+      weightDuplicates,
+      hasAnomaly: sportDuplicates > 0 || weightDuplicates > 0,
+    };
+  } catch (e) {
+    return { sportDuplicates: 0, weightDuplicates: 0, hasAnomaly: false, error: e.message };
+  }
 }
 
 function migrateHealthData(mainWindow) {
@@ -271,20 +374,23 @@ function migrateHealthData(mainWindow) {
         SELECT date(start_date) as dia, activity_type,
                ROUND(SUM(COALESCE(total_energy_burned, 0))) as kcal,
                ROUND(SUM(COALESCE(duration, 0))) as duration,
+               ROUND(SUM(COALESCE(total_distance, 0)), 2) as distance,
                COUNT(*) as sessions
         FROM workouts
+        WHERE total_distance_unit = 'km' OR total_distance_unit IS NULL
         GROUP BY dia, activity_type
         ORDER BY dia DESC
       `).all();
       const deleteHealthsyncSport = db.prepare("DELETE FROM sport_activities WHERE date = ? AND sport_type = ? AND created_at LIKE 'healthsync:%'");
-      const insertSport = db.prepare("INSERT INTO sport_activities (date, sport_type, calories, duration_minutes, created_at) VALUES (@dia, @sport_type, @kcal, @duration, @created_at)");
+      const insertSport = db.prepare("INSERT INTO sport_activities (date, sport_type, calories, duration_minutes, distance_km, created_at) VALUES (@dia, @sport_type, @kcal, @duration, @distance, @created_at)");
       const txn = db.transaction(() => {
         for (const w of workouts) {
           const sportType = ACTIVITY_TYPE_MAP[w.activity_type] || 'other';
           const kcal = Math.round(w.kcal || 0);
           const duration = Math.round(w.duration || 0);
+          const distance = w.distance > 0 ? w.distance : null;
           deleteHealthsyncSport.run(w.dia, sportType);
-          insertSport.run({ dia: w.dia, sport_type: sportType, kcal, duration, created_at: `healthsync:${w.activity_type}:${w.sessions}s` });
+          insertSport.run({ dia: w.dia, sport_type: sportType, kcal, duration, distance, created_at: `healthsync:${w.activity_type}:${w.sessions}s` });
           results.created++;
         }
       });
@@ -439,9 +545,16 @@ async function syncAppleHealth(mainWindow, options = {}) {
     }
     result.action = 'parse-and-sync';
     sendProgress('Parseando XML de Apple Health...');
+    let stagingPath = null;
     try {
-      await parseHealthsyncXML(xmlPath);
+      stagingPath = await parseHealthsyncXMLToStaging(xmlPath, sendProgress);
+      if (!atomicSwap(stagingPath, HEALTHSYNC_DB)) {
+        safeUnlink(stagingPath);
+        throw new Error('No se pudo hacer el swap atómico del DB parseado');
+      }
+      stagingPath = null;
       result.parsed = true;
+      sendProgress('Parse completo, migrando datos a la app...');
     } catch (e) {
       result.errors.push('parseHealthsyncXML: ' + e.message);
       result.finishedAt = new Date().toISOString();
@@ -531,7 +644,11 @@ async function resetAndSyncHealthsync(mainWindow) {
 module.exports = {
   getHealthsyncPath,
   installHealthsync,
+  isValidHealthsyncBinary,
   parseHealthsyncXML,
+  parseHealthsyncXMLToStaging,
+  buildStagingPath,
+  atomicSwap,
   migrateHealthData,
   fullSync,
   syncAppleHealth,
@@ -539,6 +656,7 @@ module.exports = {
   resetAndSyncHealthsync,
   resolveAppleHealthXml,
   getHealthsyncDbInfo,
+  getHealthsyncDataAnomalies,
   getCacheStats,
   HEALTHSYNC_DB,
   HEALTHSYNC_REPO,

@@ -15,6 +15,10 @@ export async function init() {
     const container = document.getElementById('view-activity');
     container.innerHTML = `
     <h2 class="view-title">${strings.activity.title}</h2>
+    <div id="anomaly-banner" class="card" style="display:none;background:var(--warning-bg, #fef3c7);border-left:4px solid var(--warning, #d97706);margin-bottom:12px;padding:12px 16px">
+      <p id="anomaly-banner-text" style="margin:0 0 8px 0;font-size:14px"></p>
+      <button class="btn-link" id="anomaly-banner-reset" style="font-size:13px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;font-weight:600"></button>
+    </div>
     <div class="card">
       <h2>${strings.activity.syncAppleHealth}</h2>
       <p class="text-sm text-muted" style="margin-bottom:8px">${strings.activity.syncAppleHealthHint}</p>
@@ -126,6 +130,38 @@ export async function init() {
       }
     }
 
+    const anomalyBanner = document.getElementById('anomaly-banner');
+    const anomalyBannerText = document.getElementById('anomaly-banner-text');
+    const anomalyBannerReset = document.getElementById('anomaly-banner-reset');
+
+    function renderAnomalyBanner(anomalies) {
+      if (!anomalies || !anomalies.hasAnomaly) {
+        anomalyBanner.style.display = 'none';
+        return;
+      }
+      const { sportDuplicates, weightDuplicates } = anomalies;
+      const parts = [];
+      if (sportDuplicates > 0) {
+        parts.push(strings.activity.anomalyBannerSport.replace('{n}', sportDuplicates.toLocaleString()));
+      }
+      if (weightDuplicates > 0) {
+        parts.push(strings.activity.anomalyBannerWeight.replace('{n}', weightDuplicates.toLocaleString()));
+      }
+      const msg = parts.length === 2
+        ? strings.activity.anomalyBannerBoth.replace('{a}', parts[0]).replace('{b}', parts[1])
+        : parts[0];
+      anomalyBannerText.textContent = msg;
+      anomalyBannerReset.textContent = strings.activity.resetAndSync;
+      anomalyBanner.style.display = 'block';
+    }
+
+    if (anomalyBannerReset) {
+      anomalyBannerReset.addEventListener('click', () => {
+        const resetSyncBtn = document.getElementById('btn-reset-sync-healthsync');
+        if (resetSyncBtn) resetSyncBtn.click();
+      });
+    }
+
     async function loadSourceInfo() {
       const info = await safeCall(api.getHealthsyncDbInfo(), null);
       const fmt = (d) => d ? new Date(d).toLocaleString() : null;
@@ -136,6 +172,7 @@ export async function init() {
       const counts = info && info.tables
         ? Object.entries(info.tables).filter(([, c]) => c > 0).map(([t, c]) => `${t}:${c}`).join(', ')
         : '';
+      renderAnomalyBanner(info?.anomalies);
       if (!xmlStr && !dbStr) {
         sourceInfoEl.textContent = strings.activity.healthsyncDbMissing;
         syncAppleHealthBtn.disabled = true;
@@ -529,31 +566,40 @@ export async function init() {
         totalKcal: s.total_kcal || 0,
         totalMin: s.total_duration || 0,
         avgKcal: s.avg_kcal || 0,
+        distanceKm: s.total_distance_km || 0,
       }]);
 
       const totalSessions = types.reduce((s, [, d]) => s + d.count, 0);
       const totalKcal = types.reduce((s, [, d]) => s + d.totalKcal, 0);
-      const totalMin = types.reduce((s, [, d]) => s + d.totalMin, 0);
-      const uniqueTypes = types.length;
+      const totalDistance = types.reduce((s, [, d]) => s + (d.distanceKm || 0), 0);
+      const comparisonTip = strings.activity.periodComparisonTooltip;
 
       const prevByType = {};
       const prevArr = comparison?.previous || [];
       for (const p of prevArr) prevByType[p.sport_type] = p;
 
-      function getTrendArrow(currentKcal, prevKcal) {
-        if (prevKcal == null || prevKcal === 0) return { arrow: icon('minus', 12), cls: 'text-muted' };
-        const pct = ((currentKcal - prevKcal) / prevKcal) * 100;
-        if (pct > 5) return { arrow: icon('arrow-up', 12), cls: 'text-success' };
-        if (pct < -5) return { arrow: icon('arrow-down', 12), cls: 'text-danger' };
-        return { arrow: icon('minus', 12), cls: 'text-muted' };
+      const currentActiveDays = comparison?.currentActiveDays || 0;
+      const previousActiveDays = comparison?.previousActiveDays || 0;
+      const currentDistanceKm = comparison?.currentDistanceKm || 0;
+      const previousDistanceKm = comparison?.previousDistanceKm || 0;
+
+      function getTrendArrow(current, prev) {
+        if (prev == null || prev === 0) return { arrow: icon('minus', 12), cls: 'text-muted' };
+        const diff = current - prev;
+        if (Math.abs(diff) < 0.5) return { arrow: icon('minus', 12), cls: 'text-muted' };
+        if (diff > 0) return { arrow: icon('arrow-up', 12), cls: 'text-success' };
+        return { arrow: icon('arrow-down', 12), cls: 'text-danger' };
       }
+
+      const activeDaysTrend = getTrendArrow(currentActiveDays, previousActiveDays);
+      const distanceTrend = getTrendArrow(currentDistanceKm, previousDistanceKm);
 
       const kpiHtml = `
       <div class="analytics-kpis" style="margin-bottom:12px">
         <div class="analytics-kpi-card">
           <div class="kpi-label">${strings.dashboard.sessions}</div>
           <div class="kpi-value">${totalSessions}</div>
-          <div class="kpi-sub">${strings.dashboard.sessions}</div>
+          <div class="kpi-sub" title="${comparisonTip}">${strings.activity.periodComparison}</div>
         </div>
         <div class="analytics-kpi-card">
           <div class="kpi-label">${strings.activity.calories}</div>
@@ -561,14 +607,14 @@ export async function init() {
           <div class="kpi-sub">${strings.dashboard.kcalTotal}</div>
         </div>
         <div class="analytics-kpi-card">
-          <div class="kpi-label">${strings.activity.durationMin}</div>
-          <div class="kpi-value">${totalMin}</div>
-          <div class="kpi-sub">${strings.activity.minUnit}</div>
+          <div class="kpi-label">${strings.activity.activeDays}</div>
+          <div class="kpi-value">${currentActiveDays} <span class="${activeDaysTrend.cls}" style="font-size:14px;margin-left:4px" title="${comparisonTip}">${activeDaysTrend.arrow}</span></div>
+          <div class="kpi-sub">${strings.activity.activeDaysOf.replace('{total}', L)}</div>
         </div>
         <div class="analytics-kpi-card">
-          <div class="kpi-label">${strings.activity.types}</div>
-          <div class="kpi-value">${uniqueTypes}</div>
-          <div class="kpi-sub">${strings.activity.differentTypes}</div>
+          <div class="kpi-label">${strings.activity.distanceKm}</div>
+          <div class="kpi-value">${totalDistance.toFixed(1)} <span class="${distanceTrend.cls}" style="font-size:14px;margin-left:4px" title="${comparisonTip}">${distanceTrend.arrow}</span></div>
+          <div class="kpi-sub">${strings.activity.distanceKmUnit}</div>
         </div>
       </div>`;
 
@@ -579,7 +625,7 @@ export async function init() {
           let va, vb;
           if (sortCol === 'name') { va = getSportDisplayName(a[0]); vb = getSportDisplayName(b[0]); }
           else if (sortCol === 'count') { va = a[1].count; vb = b[1].count; }
-          else if (sortCol === 'avgKcal') { va = a[1].count ? a[1].totalKcal / a[1].count : 0; vb = b[1].count ? b[1].totalKcal / b[1].count : 0; }
+          else if (sortCol === 'distanceKm') { va = a[1].distanceKm; vb = b[1].distanceKm; }
           else { va = a[1].totalKcal; vb = b[1].totalKcal; }
           return sortAsc ? (va > vb ? 1 : va < vb ? -1 : 0) : (va < vb ? 1 : va > vb ? -1 : 0);
         });
@@ -590,17 +636,18 @@ export async function init() {
             <thead><tr>
               <th style="cursor:pointer" data-sort="name">${strings.activity.rankingType} ${sortCol === 'name' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
               <th style="cursor:pointer" data-sort="count">${strings.activity.rankingCount} ${sortCol === 'count' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
-              <th style="cursor:pointer" data-sort="avgKcal">${strings.dashboard.avgKcal} ${sortCol === 'avgKcal' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
+              <th style="cursor:pointer" data-sort="distanceKm">${strings.activity.rankingDistanceKm} ${sortCol === 'distanceKm' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
               <th style="cursor:pointer" data-sort="totalKcal">${strings.activity.rankingTotalKcal} ${sortCol === 'totalKcal' ? (sortAsc ? icon('arrow-up', 12) : icon('arrow-down', 12)) : ''}</th>
             </tr></thead>
             <tbody>
               ${maxRows.map(([type, data]) => {
                 const trend = getTrendArrow(data.totalKcal, prevByType[type]?.total_kcal);
+                const kmCell = data.distanceKm > 0 ? `${data.distanceKm.toFixed(1)} ${strings.activity.distanceKmUnit}` : '—';
                 return `<tr>
                   <td><strong>${sportIcon(type, 14)} ${getSportDisplayName(type)}</strong></td>
                   <td>${data.count}</td>
-                  <td>${data.count ? Math.round(data.totalKcal / data.count) : 0}</td>
-                  <td>${data.totalKcal.toLocaleString()} <span class="${trend.cls}" style="font-size:10px;margin-left:2px" title="${strings.activity.periodComparison}">${trend.arrow}</span></td>
+                  <td>${kmCell}</td>
+                  <td>${data.totalKcal.toLocaleString()} <span class="${trend.cls}" style="font-size:10px;margin-left:2px" title="${comparisonTip}">${trend.arrow}</span></td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -639,11 +686,15 @@ export async function init() {
 
       const currentSessions = summary.reduce((s, x) => s + x.count, 0);
       const currentMin = summary.reduce((s, x) => s + (x.total_duration || 0), 0);
+      const currentDistance = summary.reduce((s, x) => s + (x.total_distance_km || 0), 0);
       const currentAvg = currentSessions ? currentMin / currentSessions : 0;
       const prevArr = comparison?.previous || [];
       const prevSessions = prevArr.reduce((s, x) => s + x.count, 0);
       const prevMin = prevArr.reduce((s, x) => s + (x.total_duration || 0), 0);
+      const prevDistance = prevArr.reduce((s, x) => s + (x.total_distance_km || 0), 0);
       const prevAvg = prevSessions ? prevMin / prevSessions : 0;
+      const currentActiveDays = comparison?.currentActiveDays || 0;
+      const previousActiveDays = comparison?.previousActiveDays || 0;
 
       const compEl = document.getElementById('session-comparison');
       if (compEl) {
@@ -652,7 +703,10 @@ export async function init() {
           compEl.innerHTML = `
             ${comparisonKpi(strings.dashboard.sessions, currentSessions, prevSessions, n => n.toLocaleString())}
             ${comparisonKpi(strings.activity.totalHours, currentMin / 60, prevSessions ? prevMin / 60 : null, n => n.toFixed(1))}
-            ${comparisonKpi(strings.activity.avgSessionMin, currentAvg, prevSessions ? prevAvg : null, n => Math.round(n))}`;
+            ${comparisonKpi(strings.activity.activeDays, currentActiveDays, previousActiveDays, n => n.toString())}
+            ${currentDistance > 0 || prevDistance > 0
+              ? comparisonKpi(strings.activity.distanceKm, currentDistance, prevDistance, n => n.toFixed(1))
+              : ''}`;
         } else {
           compEl.style.display = 'block';
           compEl.innerHTML = `<div class="empty-state"><p>${strings.activity.noActivities}</p></div>`;

@@ -427,6 +427,12 @@ function createTables() {
       if (exists.cnt === 0) db.exec(`ALTER TABLE activity_summary_cache ADD COLUMN ${col} ${type}`);
     }
   }
+
+  // Idempotent: ensure sport_activities has distance_km column for km-based sport metrics
+  const sportDistanceCol = db.prepare("SELECT COUNT(*) as cnt FROM pragma_table_info('sport_activities') WHERE name='distance_km'").get();
+  if (sportDistanceCol.cnt === 0) {
+    db.exec("ALTER TABLE sport_activities ADD COLUMN distance_km REAL DEFAULT NULL");
+  }
 }
 
 function getDb() {
