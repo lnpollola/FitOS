@@ -159,8 +159,8 @@ Los comandos están en `.opencode/commands/opsx-*.md`. Skills en `.opencode/skil
 Roadmap incremental sobre el dashboard, definido durante explore-mode el 27 Jun 2026:
 
 - **Phase 1 — `panel-ux-ui-kpis-summarized`** (en curso): Paneles Strava-style sobre el dashboard actual (PR banner, weekly goal ring, relative effort, training log bubble, streak, monthly calendar). Ajustes: migración a semanas ISO en `getSportLifetimeStats`, mejora de sport icons (paddle/football/boxing/yoga), utility `kpi-derivation.js`.
-- **Phase 2 — `summary-insights-view`** (próximo): Nueva vista `insights` entre Panel y Tendencias. Year-in-motion heatmap, time-of-day, day-of-week, sport distribution, recovery score composite, weight velocity, WHR, auto-insights. Code name en inglés, UI en español.
-- **Phase 3 — `strength-training-insights`** (después): 1RM Epley, PR por ejercicio, plateau detector, volume PR, strength score.
+- **Phase 2 — `summary-insights-view`** (implementado): Nueva vista `insights` entre Panel y Tendencias. Year-in-motion heatmap, day-of-week histogram, sport distribution donut, recovery score composite (HRV+RHR+sleep), weight velocity chart, waist-to-hip ratio card, auto-insight cards. Code name en inglés, UI en español.
+- **Phase 3 — `strength-training-insights`** (próximo): 1RM Epley, PR por ejercicio, plateau detector, volume PR, strength score.
 - **Phase 4 — `goals-tracker`** (después): Goals configurables con progress rings y countdown, persistidos en `settings`.
 
 ## Notas Importantes

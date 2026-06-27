@@ -141,6 +141,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMonthlyCalendar: (yearMonth) => ipcRenderer.invoke('db:getMonthlyCalendar', yearMonth),
   getStreak: () => ipcRenderer.invoke('db:getStreak'),
 
+  // Summary insights
+  getYearInMotion: (from, to) => ipcRenderer.invoke('db:getYearInMotion', from, to),
+  getDayOfWeekStats: (from, to) => ipcRenderer.invoke('db:getDayOfWeekStats', from, to),
+  getSportDistribution: () => ipcRenderer.invoke('db:getSportDistribution'),
+  getRecoveryScore: () => ipcRenderer.invoke('db:getRecoveryScore'),
+  getWeightVelocity: (from, to) => ipcRenderer.invoke('db:getWeightVelocity', from, to),
+  getWHR: () => ipcRenderer.invoke('db:getWHR'),
+  getAutoInsights: () => ipcRenderer.invoke('db:getAutoInsights'),
+
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),
   importData: () => ipcRenderer.invoke('import:data'),

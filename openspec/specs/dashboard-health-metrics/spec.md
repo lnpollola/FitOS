@@ -475,3 +475,23 @@ If any of the 6 IPC calls in the Strava block fails, the corresponding panel SHA
 - **THEN** each panel SHALL display its error state
 - **THEN** the existing health-metrics grid SHALL also display error states
 - **THEN** the user SHALL see consistent "Reintentar" affordances across the dashboard
+
+## ADDED Requirements (2026-06-27 — summary-insights-view)
+
+
+### Requirement: Insights view exists as a navigational companion to the dashboard
+
+The dashboard SHALL navigate to a companion `insights` view (defined in the `insights-view` spec) when the user clicks the "Patrones" nav item in the INICIO sidebar section. The dashboard itself SHALL NOT link to the insights view from any dashboard section — the entry point is exclusively the sidebar nav. The dashboard's existing layout, panels, and behavior SHALL be unchanged by the addition of the insights view.
+
+#### Scenario: Insights view exists in navigation
+- **WHEN** the user opens the sidebar
+- **THEN** the INICIO section SHALL contain three nav items: Panel, Patrones, Tendencias
+- **WHEN** the user clicks "Patrones" from the dashboard
+- **THEN** the insights view SHALL activate
+- **THEN** the dashboard view SHALL be unmounted (no longer `active-view`)
+
+#### Scenario: Dashboard is unaffected by insights view addition
+- **WHEN** the `summary-insights-view` change is merged
+- **THEN** the dashboard's layout, panels, and IPC calls SHALL be unchanged
+- **THEN** the dashboard SHALL NOT import or reference the insights view
+- **THEN** the dashboard SHALL continue to function identically for users who never click "Patrones"

@@ -2,7 +2,7 @@ export const strings = {
   // Navigation
   nav: {
     sections: {
-      inicio: 'INICIO',
+      inicio: { label: 'INICIO', insights: 'Patrones' },
       salud: 'SALUD',
       entrenamiento: 'ENTRENAMIENTO',
     },
@@ -834,6 +834,127 @@ export const strings = {
     confirmImport: 'Esto reemplazará todos los datos existentes. ¿Estás seguro?',
     importSuccess: 'Datos importados correctamente',
     exportSuccess: 'Datos exportados correctamente',
+  },
+
+  insights: {
+    title: 'Patrones',
+
+    dateRange: {
+      label90d: '3 meses',
+      label6m: '6 meses',
+      label1y: '1 año',
+    },
+
+    heatmap: {
+      title: 'Año en Movimiento',
+      caption: 'Patrón parcial ({n} días con actividad)',
+      tooltip: '{date} — {min} min',
+      empty: 'Sin actividades deportivas registradas. Si haces entrenamiento de fuerza, los patrones de pesas llegan en una próxima versión.',
+      cta: 'Ir a Actividad',
+    },
+
+    dayOfWeek: {
+      title: 'Tu Semana Típica',
+      bestDay: 'Tu mejor día',
+      partialPattern: 'Patrón parcial ({n} semanas de datos)',
+      empty: 'Necesitas al menos 2 semanas de datos para identificar tu día favorito',
+      dayLabels: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
+    },
+
+    sportDistribution: {
+      title: 'Distribución de Deportes',
+      totalLabel: 'Total',
+      otherSports: 'Otros ({n} deportes)',
+      empty: 'No hay actividades en los últimos 90 días',
+      percentFormat: '{pct}%',
+      minutesFormat: '{min} min',
+      sessionsFormat: '{n} sesiones',
+    },
+
+    recovery: {
+      title: 'Recuperación',
+      baseline: 'Línea base personal (30 días)',
+      subMeters: {
+        hrv: 'HRV',
+        rhr: 'RHR',
+        sleep: 'Sueño',
+      },
+      sparklineLabel: 'Recuperación últimos 7 días',
+      empty: 'Necesitas al menos 30 días de datos de HRV, RHR y sueño para calcular tu línea base personal',
+      daysUntil: 'Faltan {n} días para tu primera puntuación de recuperación',
+      partialSignal: 'Composite calculado con 2/3 señales',
+    },
+
+    recoveryZones: {
+      low: 'Bajo',
+      moderate: 'Moderado',
+      high: 'Alto',
+    },
+
+    weightVelocity: {
+      title: 'Velocidad de Peso',
+      axisLabel: 'kg/semana',
+      referenceLabel: 'Ritmo objetivo',
+      prLabel: 'PR {weight} kg — {date}',
+      empty: 'Registra tu peso regularmente para ver tu velocidad de cambio',
+      partialWindow: 'Necesitas al menos 28 días entre pesajes para calcular velocidad',
+      prMarkerFormat: 'PR {weight}',
+    },
+
+    whr: {
+      title: 'Ratio Cintura-Cadera',
+      latest: 'Última medición',
+      zone: 'Zona',
+      history: 'Historial 90 días',
+      empty: 'Registra medidas corporales (cintura y cadera) para ver tu WHR',
+      noHips: 'Falta la medida de cadera. Registra cadera y cintura en la misma fecha',
+      noProfile: 'Completa tu perfil (sexo) para clasificar tu WHR',
+      cta: 'Ir a Mediciones',
+    },
+
+    whrZones: {
+      low: 'Bajo',
+      moderate: 'Moderado',
+      high: 'Alto',
+      unknown: 'Sin clasificar',
+    },
+
+    autoInsights: {
+      title: 'Insights Automáticos',
+      seeDetail: 'Ver detalle',
+      viewLabel: 'Ir a {view}',
+      empty: 'Sin insights esta semana — sigue registrando actividades para descubrirlos',
+      severityLabels: {
+        positive: 'Positivo',
+        info: 'Info',
+        alert: 'Alerta',
+      },
+      templates: {
+        bestWeekStreak: 'Llevas {n} semanas consecutivas con actividad — tu mejor racha desde {month}.',
+        hrvDeviation: 'HRV {pct}% {direction} tu promedio de 30 días.',
+        hrvAbove: 'por encima de',
+        hrvBelow: 'por debajo de',
+        restDayStreak: 'Llevas {n} días sin actividad — ¿descanso planificado o rutina perdida?',
+        weightDirectionMatch: 'Tu ritmo actual ({velocity} kg/sem) está {relation} tu objetivo ({target} kg/sem).',
+        weightBelow: 'por debajo de',
+        weightAbove: 'por encima de',
+        sportVariety: 'Has entrenado {n} deportes distintos en los últimos 90 días. Diversidad alta.',
+        recoveryTrend: 'Tu recuperación ha {direction} un {pct}% en los últimos 7 días.',
+        recoveryImproved: 'mejorado',
+        recoveryDeclined: 'empeorado',
+        whrImprovement: 'Tu ratio cintura-cadera ha {direction} de {a} a {b} en 12 semanas.',
+        whrImproved: 'mejorado',
+        whrDeclined: 'empeorado',
+        sportPRWeek: 'Has establecido {n} récords personales en deporte esta semana.',
+      },
+    },
+
+    fixedWindowLabels: {
+      recovery: 'Basado en los últimos 7 días',
+      whr: 'Última medición',
+    },
+
+    globalEmpty: 'Importa datos de Apple Health o registra actividades para desbloquear los patrones',
   },
 
   stravaPanels: {

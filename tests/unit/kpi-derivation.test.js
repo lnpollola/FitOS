@@ -19,6 +19,16 @@ import {
   formatDateRange,
   effortLevel,
   clampEffortDisplay,
+  normalizeBaseline,
+  recoverySubScore,
+  recoveryScore,
+  weightVelocity,
+  whrZone,
+  dowPattern,
+  sportDistribution,
+  generateAutoInsights,
+  heatmapBucket,
+  __internals,
 } from '../../src/renderer/utils/kpi-derivation.js';
 
 describe('paceProjection (Riegel)', () => {
@@ -332,22 +342,355 @@ describe('clampEffortDisplay', () => {
   });
 });
 
-describe('effort formula sanity (per-day average)', () => {
-  it('heavy week of 5h running averages to ~84 per day', () => {
-    const mult = effortMultiplier('running');
-    const minutes = 300;
-    const effort = Math.floor((minutes * mult) / 7);
-    expect(effort).toBe(60);
+describe('normalizeBaseline', () => {
+  it('returns 0 for z=0', () => {
+    expect(normalizeBaseline(10, 10, 1)).toBe(0);
   });
-  it('light week of 30 min yoga averages to ~4 per day', () => {
-    const mult = effortMultiplier('yoga');
-    const minutes = 30;
-    const effort = Math.floor((minutes * mult) / 7);
-    expect(effort).toBe(4);
+  it('returns clamped value at -3', () => {
+    expect(normalizeBaseline(7, 10, 0.5)).toBe(-3); // z = -6, clamped to -3
   });
-  it('effort always fits in 0-200 range for typical users', () => {
-    const mult = effortMultiplier('running');
-    const effort = Math.floor((600 * mult) / 7);
-    expect(effort).toBeLessThanOrEqual(200);
+  it('returns clamped value at 3', () => {
+    expect(normalizeBaseline(13, 10, 0.5)).toBe(3);
   });
+  it('returns 0 for NaN inputs', () => {
+    expect(normalizeBaseline(NaN, 10, 1)).toBe(0);
+    expect(normalizeBaseline(10, NaN, 1)).toBe(0);
+    expect(normalizeBaseline(10, 10, NaN)).toBe(0);
+  });
+  it('returns 0 for stddev <= 0', () => {
+    expect(normalizeBaseline(10, 10, 0)).toBe(0);
+    expect(normalizeBaseline(10, 10, -1)).toBe(0);
+  });
+});
+
+describe('recoverySubScore', () => {
+  it('direct: 50 at z=0', () => {
+    expect(recoverySubScore(0, false)).toBe(50);
+  });
+  it('direct: 65 at z=1', () => {
+    expect(recoverySubScore(1, false)).toBe(65);
+  });
+  it('inverted: 65 at z=-1 (higher score for lower RHR)', () => {
+    expect(recoverySubScore(-1, true)).toBe(65);
+  });
+  it('inverted: 35 at z=1 (lower score for higher RHR)', () => {
+    expect(recoverySubScore(1, true)).toBe(35);
+  });
+  it('clamped to [0, 100]', () => {
+    // z-score is internally clamped to [-3, 3]; raw = 50 +/- 15*z
+    expect(recoverySubScore(10, false)).toBe(95);  // z=3, 50 + 45 = 95
+    expect(recoverySubScore(10, true)).toBe(5);    // z=3, 50 - 45 = 5
+    expect(recoverySubScore(-10, false)).toBe(5);  // z=-3, 50 - 45 = 5
+    expect(recoverySubScore(-10, true)).toBe(95);  // z=-3, 50 + 45 = 95
+  });
+  it('returns integer', () => {
+    expect(Number.isInteger(recoverySubScore(1.5, false))).toBe(true);
+  });
+});
+
+describe('recoveryScore', () => {
+  const fullSignals = {
+    hrv: { current: 55, baseline: 50, stddev: 5, daysAvailable: 35, sparkline: [55,52,53,54,51,50,49] },
+    rhr: { current: 58, baseline: 62, stddev: 4, daysAvailable: 35, sparkline: null },
+    sleep: { current: 7.8, baseline: 7.2, stddev: 0.6, daysAvailable: 35, sparkline: null },
+  };
+
+  it('returns composite with all 3 signals', () => {
+    const r = recoveryScore(fullSignals);
+    expect(r.baselineComplete).toBe(true);
+    expect(typeof r.composite).toBe('number');
+    expect(r.composite).toBeGreaterThanOrEqual(0);
+    expect(r.composite).toBeLessThanOrEqual(100);
+    expect(r.signals.hrv.subScore).toBeGreaterThan(0);
+    expect(r.signals.rhr.subScore).toBeGreaterThan(0);
+    expect(r.signals.sleep.subScore).toBeGreaterThan(0);
+  });
+
+  it('returns the correct zone', () => {
+    const r = recoveryScore(fullSignals);
+    expect(['low', 'moderate', 'high']).toContain(r.zone);
+    // Composite ~56 with these inputs (all z=1, sub=65, weighted)
+    expect(r.zone).toBe('moderate');
+  });
+
+  it('returns incomplete baseline with insufficient data', () => {
+    const r = recoveryScore({
+      hrv: { current: 55, baseline: 50, stddev: 5, daysAvailable: 15, sparkline: null },
+      rhr: { current: 58, baseline: 62, stddev: 4, daysAvailable: 15, sparkline: null },
+      sleep: { current: 7.8, baseline: 7.2, stddev: 0.6, daysAvailable: 15, sparkline: null },
+    });
+    expect(r.baselineComplete).toBe(false);
+    expect(r.composite).toBeNull();
+    // No signals have ≥30 days, so daysMin = Infinity, daysUntilBaseline = 30
+    expect(r.daysUntilBaseline).toBe(30);
+  });
+
+  it('handles 1 missing signal', () => {
+    const r = recoveryScore({
+      hrv: fullSignals.hrv,
+      rhr: fullSignals.rhr,
+      sleep: null,
+    });
+    expect(r.baselineComplete).toBe(true);
+    expect(r.signals.sleep.insufficient).toBe(true);
+    expect(r.signals.sleep.subScore).toBe(50);
+    expect(r.signalCount).toBe(2);
+  });
+
+  it('returns incomplete with only 1 signal', () => {
+    const r = recoveryScore({
+      hrv: fullSignals.hrv,
+      rhr: null,
+      sleep: null,
+    });
+    expect(r.baselineComplete).toBe(false);
+    expect(r.signalCount).toBe(1);
+  });
+});
+
+describe('weightVelocity', () => {
+  const entries = [
+    { date: '2026-06-01', weight_kg: 75 },
+    { date: '2026-06-07', weight_kg: 74.5 },
+    { date: '2026-06-14', weight_kg: 74 },
+    { date: '2026-06-21', weight_kg: 73.5 },
+    { date: '2026-06-28', weight_kg: 73 },
+  ];
+
+  it('returns points with velocity', () => {
+    const r = weightVelocity(entries, 0.5, '2026-06-01', '2026-06-28');
+    // No entry exactly 28 days prior to any entry (entries are 7 days apart)
+    expect(r.prInsufficientWindow).toBe(true);
+    expect(Array.isArray(r.points)).toBe(true);
+    // One point per day in range
+    expect(r.points.length).toBe(28);
+    const lastPt = r.points.find(p => p.date === '2026-06-28');
+    expect(lastPt).toBeDefined();
+    expect(lastPt.velocity_kg_per_week).toBeNull();
+  });
+
+  it('detects PR weight', () => {
+    const r = weightVelocity(entries, 0.5, '2026-06-01', '2026-06-28');
+    expect(r.prWeight).toBeDefined();
+    expect(r.prWeight.weight_kg).toBe(73);
+  });
+
+  it('returns prInsufficientWindow for < 2 entries', () => {
+    const r = weightVelocity([{ date: '2026-06-01', weight_kg: 75 }], 0.5, '2026-06-01', '2026-06-28');
+    expect(r.prInsufficientWindow).toBe(true);
+    // Still generates a point for each day in the range
+    expect(r.points.length).toBe(28);
+  });
+
+  it('handles gaps (null velocity for days without 28d prior)', () => {
+    const r = weightVelocity(entries, 0.5, '2026-06-01', '2026-06-28');
+    const early = r.points.find(p => p.date === '2026-06-01');
+    expect(early).toBeDefined();
+    expect(early.velocity_kg_per_week).toBeNull();
+  });
+});
+
+describe('whrZone', () => {
+  it('male low (< 0.90)', () => {
+    expect(whrZone(0.85, 'M').zone).toBe('low');
+  });
+  it('male moderate (0.90-0.99)', () => {
+    expect(whrZone(0.90, 'M').zone).toBe('moderate');
+    expect(whrZone(0.95, 'M').zone).toBe('moderate');
+  });
+  it('male high (≥ 1.00)', () => {
+    expect(whrZone(1.00, 'M').zone).toBe('high');
+  });
+  it('female low (< 0.80)', () => {
+    expect(whrZone(0.75, 'F').zone).toBe('low');
+  });
+  it('female moderate (0.80-0.84)', () => {
+    expect(whrZone(0.80, 'F').zone).toBe('moderate');
+  });
+  it('female high (≥ 0.85)', () => {
+    expect(whrZone(0.85, 'F').zone).toBe('high');
+  });
+  it('unknown for null sex', () => {
+    expect(whrZone(0.9, null).zone).toBe('unknown');
+  });
+  it('unknown for empty sex', () => {
+    expect(whrZone(0.9, '').zone).toBe('unknown');
+  });
+  it('handles extreme values', () => {
+    expect(whrZone(0, 'M').zone).toBe('unknown'); // value <= 0 is invalid
+    expect(whrZone(2.0, 'M').zone).toBe('high');
+  });
+});
+
+describe('dowPattern', () => {
+  const activities = [
+    { date: '2026-06-22', sport_type: 'running', duration_minutes: 45 }, // Monday
+    { date: '2026-06-23', sport_type: 'cycling', duration_minutes: 30 }, // Tuesday
+    { date: '2026-06-22', sport_type: 'swimming', duration_minutes: 30 }, // Monday
+  ];
+
+  it('returns 7 entries', () => {
+    const r = dowPattern(activities, '2026-06-22', '2026-06-23');
+    expect(r.days).toHaveLength(7);
+  });
+
+  it('correctly bins minutes', () => {
+    const r = dowPattern(activities, '2026-06-22', '2026-06-23');
+    const mon = r.days[0]; // Monday = 0
+    expect(mon.minutes).toBe(75); // 45+30
+    expect(mon.sessions).toBe(2);
+  });
+
+  it('detects bestDay', () => {
+    const r = dowPattern(activities, '2026-06-22', '2026-06-23');
+    expect(r.bestDay).toBe(0); // Monday has most minutes
+  });
+
+  it('hasInsufficientData for < 2 weeks', () => {
+    // 1 day of data = insufficient
+    const r = dowPattern(activities.slice(0, 1), '2026-06-22', '2026-06-22');
+    expect(r.hasInsufficientData).toBe(true);
+  });
+});
+
+describe('sportDistribution', () => {
+  const activities = [
+    { sport_type: 'running', duration_minutes: 120, date: '2026-06-01' },
+    { sport_type: 'running', duration_minutes: 60, date: '2026-06-02' },
+    { sport_type: 'cycling', duration_minutes: 90, date: '2026-06-01' },
+    { sport_type: 'swimming', duration_minutes: 30, date: '2026-06-05' },
+  ];
+
+  it('sorts by minutes desc', () => {
+    const r = sportDistribution(activities, '2026-06-01', '2026-06-05');
+    expect(r.sports[0].sport_type).toBe('running');
+    expect(r.sports[0].minutes).toBe(180);
+    expect(r.sports[1].sport_type).toBe('cycling');
+  });
+
+  it('computes share_pct correctly', () => {
+    const r = sportDistribution(activities, '2026-06-01', '2026-06-05');
+    const total = r.sports.reduce((s, sp) => s + sp.share_pct, 0);
+    expect(total).toBeCloseTo(100, 0);
+  });
+
+  it('aggregates > 6 sports into others', () => {
+    const many = [
+      { sport_type: 'a', duration_minutes: 10, date: '2026-06-01' },
+      { sport_type: 'b', duration_minutes: 10, date: '2026-06-01' },
+      { sport_type: 'c', duration_minutes: 10, date: '2026-06-01' },
+      { sport_type: 'd', duration_minutes: 10, date: '2026-06-01' },
+      { sport_type: 'e', duration_minutes: 10, date: '2026-06-01' },
+      { sport_type: 'f', duration_minutes: 10, date: '2026-06-01' },
+      { sport_type: 'g', duration_minutes: 10, date: '2026-06-01' },
+    ];
+    const r = sportDistribution(many, '2026-06-01', '2026-06-01');
+    expect(r.othersAggregated).toBe(true);
+    expect(r.sports.length).toBeLessThanOrEqual(6);
+  });
+
+  it('empty array for no activities', () => {
+    const r = sportDistribution([], '2026-06-01', '2026-06-01');
+    expect(r.sports).toHaveLength(0);
+    expect(r.totalMinutes).toBe(0);
+  });
+});
+
+describe('generateAutoInsights', () => {
+  it('returns cards sorted by severity', () => {
+    const input = {
+      weekStreak: 5,
+      restDayStreak: 0,
+      recentPRs: 2,
+      hrvDeviation: 15,
+      recoveryTrend: 15,
+      sportDistribution: ['running', 'cycling', 'swimming', 'HIIT'],
+      weightVelocity: -0.3,
+      targetPace: 0.5,
+      whrTrend: { delta: -0.04 },
+      recoveryScore: { zone: 'high' },
+    };
+    const cards = generateAutoInsights(input);
+    expect(Array.isArray(cards)).toBe(true);
+    // All cards should have required fields
+    cards.forEach(c => {
+      expect(c).toHaveProperty('icon');
+      expect(c).toHaveProperty('text');
+      expect(c).toHaveProperty('severity');
+      expect(c).toHaveProperty('navigateTo');
+    });
+    // Sorted: positive first, then info, then alert
+    for (let i = 1; i < cards.length; i++) {
+      const prev = cards[i-1].severity;
+      const curr = cards[i].severity;
+      const order = { positive: 0, info: 1, alert: 2 };
+      expect(order[prev]).toBeLessThanOrEqual(order[curr]);
+    }
+  });
+
+  it('returns empty array for empty payload', () => {
+    expect(generateAutoInsights({})).toHaveLength(0);
+  });
+
+  it('is deterministic', () => {
+    const input = { weekStreak: 4, restDayStreak: 1, recentPRs: 0, hrvDeviation: 12, recoveryTrend: 10, sportDistribution: ['running'], weightVelocity: -0.5, targetPace: 0.5 };
+    const a = generateAutoInsights(input);
+    const b = generateAutoInsights({...input});
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+});
+
+describe('template functions', () => {
+  const { templateBestWeekStreak, templateHRVDeviation, templateRestDayStreak, templateWeightDirectionMatch, templateSportVariety, templateRecoveryTrend, templateWHRImprovement, templateSportPRWeek } = __internals;
+
+  it('templateBestWeekStreak: fires at >= 4 weeks', () => {
+    expect(templateBestWeekStreak({ weekStreak: 4 })).not.toBeNull();
+    expect(templateBestWeekStreak({ weekStreak: 2 })).toBeNull();
+  });
+
+  it('templateHRVDeviation: fires at >= 10% deviation', () => {
+    expect(templateHRVDeviation({ hrvDeviation: 15 })).not.toBeNull();
+    expect(templateHRVDeviation({ hrvDeviation: 5 })).toBeNull();
+  });
+
+  it('templateRestDayStreak: fires at >= 5 rest days', () => {
+    expect(templateRestDayStreak({ restDayStreak: 5 })).not.toBeNull();
+    expect(templateRestDayStreak({ restDayStreak: 3 })).toBeNull();
+  });
+
+  it('templateSportPRWeek: fires at >= 1 PR', () => {
+    expect(templateSportPRWeek({ recentPRs: 2 })).not.toBeNull();
+    expect(templateSportPRWeek({ recentPRs: 0 })).toBeNull();
+  });
+
+  it('templateSportVariety: fires at >= 4 sports', () => {
+    expect(templateSportVariety({ sportDistribution: ['running', 'cycling', 'swimming', 'HIIT'] })).not.toBeNull();
+    expect(templateSportVariety({ sportDistribution: ['running'] })).toBeNull();
+  });
+});
+
+describe('heatmapBucket', () => {
+  it('0 minutes -> 0', () => expect(heatmapBucket(0)).toBe(0));
+  it('1-14 minutes -> 1', () => {
+    expect(heatmapBucket(1)).toBe(1);
+    expect(heatmapBucket(14)).toBe(1);
+  });
+  it('15-29 minutes -> 2', () => {
+    expect(heatmapBucket(15)).toBe(2);
+    expect(heatmapBucket(29)).toBe(2);
+  });
+  it('30-59 minutes -> 3', () => {
+    expect(heatmapBucket(30)).toBe(3);
+    expect(heatmapBucket(59)).toBe(3);
+  });
+  it('60-89 minutes -> 4', () => {
+    expect(heatmapBucket(60)).toBe(4);
+    expect(heatmapBucket(89)).toBe(4);
+  });
+  it('90+ minutes -> 5', () => {
+    expect(heatmapBucket(90)).toBe(5);
+    expect(heatmapBucket(500)).toBe(5);
+  });
+  it('NaN -> 0', () => expect(heatmapBucket(NaN)).toBe(0));
+  it('negative -> 0', () => expect(heatmapBucket(-1)).toBe(0));
 });

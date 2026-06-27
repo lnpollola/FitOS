@@ -6,6 +6,7 @@ import { init as initMeasurements } from './views/measurements.js';
 import { init as initTraining } from './views/training.js';
 import { init as initProfile } from './views/profile.js';
 import { init as initAnalytics } from './views/analytics.js';
+import { init as initInsights } from './views/insights.js';
 import { init as initSleep } from './views/sleep.js';
 import { icon } from './utils/icons.js';
 import { cacheStore } from './utils/cache-store.js';
@@ -16,7 +17,7 @@ function renderNavIcons() {
     const iconMap = {
       dashboard: 'layout-dashboard', activity: 'activity', diet: 'heart',
       energy: 'trending-up', measurements: 'scale', training: 'dumbbell',
-      analytics: 'trending-up', profile: 'heart', sleep: 'moon',
+      analytics: 'trending-up', insights: 'sparkles', profile: 'heart', sleep: 'moon',
     };
     const iconName = iconMap[name] || 'activity';
     el.innerHTML = icon(iconName, 18);
@@ -32,6 +33,7 @@ const views = {
   measurements: initMeasurements,
   training: initTraining,
   analytics: initAnalytics,
+  insights: initInsights,
   profile: initProfile,
   sleep: initSleep,
 };
