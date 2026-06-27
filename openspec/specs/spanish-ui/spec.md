@@ -282,3 +282,32 @@ The system SHALL use the Spanish label "Patrones" for the `insights` nav item, s
 - **WHEN** the sidebar renders
 - **THEN** the insights nav item SHALL display "Patrones" as its label
 - **THEN** the `aria-label` attribute SHALL also be "Patrones"
+
+## ADDED Requirements (2026-06-27 — goals-tracker)
+
+### Requirement: Goals view locale namespace
+
+The system SHALL define a new `strings.goals` namespace in `src/renderer/locales/es.js` with all UI strings for the goals view, goal cards, celebration overlay, confetti, empty states, and form labels. The namespace SHALL include: view title, section headers (Activos, Completados, Archivados), form labels and placeholders (type options, label, target value, unit, start date, target date), action buttons (Nuevo objetivo, Guardar, Cancelar, Editar, Archivar, Eliminar, Cerrar), empty state messages, celebration text, countdown labels with singular/plural forms, confirmation dialogs (delete, archive), type option labels, and status labels.
+
+#### Scenario: All goals strings in the namespace
+- **WHEN** a developer reads `src/renderer/views/goals.js`
+- **THEN** all user-facing strings SHALL be imported from `strings.goals.*`
+- **THEN** no hardcoded Spanish strings SHALL appear in template literals
+
+#### Scenario: Goals type options in Spanish
+- **WHEN** the goal creation form renders type options
+- **THEN** the four options SHALL be "Peso corporal", "Distancia", "Frecuencia semanal", "Personalizado"
+- **THEN** these labels SHALL be sourced from `strings.goals.form.typeOptions`
+
+#### Scenario: Goals empty state in Spanish
+- **WHEN** the goals view renders with no goals
+- **THEN** the empty state SHALL display "Aún no tienes objetivos" sourced from `strings.goals.empty`
+- **THEN** the action button SHALL display "Crear objetivo" sourced from `strings.goals.createFirst`
+
+#### Scenario: Goals countdown in Spanish
+- **WHEN** a goal has days remaining
+- **THEN** the countdown SHALL display "N días restantes" using key `strings.goals.countdown.remaining`
+- **WHEN** a goal is overdue
+- **THEN** the countdown SHALL display "En curso" using `strings.goals.countdown.overdue`
+- **WHEN** a goal is due today
+- **THEN** the countdown SHALL display "¡Último día!" using `strings.goals.countdown.lastDay`

@@ -495,3 +495,26 @@ The dashboard SHALL navigate to a companion `insights` view (defined in the `ins
 - **THEN** the dashboard's layout, panels, and IPC calls SHALL be unchanged
 - **THEN** the dashboard SHALL NOT import or reference the insights view
 - **THEN** the dashboard SHALL continue to function identically for users who never click "Patrones"
+
+## ADDED Requirements (2026-06-27 — goals-tracker)
+
+### Requirement: Dashboard goals summary card
+
+The dashboard SHALL render a compact goals summary row between the Strava-style summary panels block and the hero card (energy balance growth ring). The card SHALL show up to 3 active goal progress rings in a horizontal row, each at 28 px radius (56×56 px SVG), with a short truncated label below each ring. Each ring SHALL be clickable and navigate to the goals view. The goals card SHALL be loaded within the dashboard's `Promise.allSettled` batch.
+
+#### Scenario: Goals summary between Strava panels and hero card
+- **WHEN** the dashboard renders with active goals
+- **THEN** the goals summary card SHALL appear between the Strava summary panels block and the hero card
+- **THEN** up to 3 progress rings SHALL render horizontally at 56×56 px each
+- **THEN** more than 3 goals SHALL display a "+N más" overflow indicator
+- **THEN** clicking any ring or "+N más" SHALL navigate to the goals view
+
+#### Scenario: Goals summary empty state
+- **WHEN** the user has no active goals
+- **THEN** the summary card SHALL display "Define tu primer objetivo" with a Lucide `target` icon
+- **THEN** the empty state SHALL be clickable to navigate to the goals view
+
+#### Scenario: Goals loaded in dashboard batch
+- **WHEN** the dashboard loads
+- **THEN** `db:getGoals` and `db:getGoalProgress` for active goals SHALL be called within the batch
+- **THEN** IPC failures SHALL display a fallback without breaking the dashboard

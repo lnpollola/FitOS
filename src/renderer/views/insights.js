@@ -11,6 +11,12 @@ import {
   heatmapBucket,
   recoveryScore,
 } from '../utils/kpi-derivation.js';
+import {
+  mountStrengthPRs,
+  mountStrengthPlateaus,
+  mountStrengthScore,
+  mountWeeklyTonnage,
+} from './panels/strength-insights-panels.js';
 import Chart from 'chart.js/auto';
 
 function toIsoDate(d) {
@@ -78,6 +84,16 @@ export async function init() {
           <h3 class="insights-section-title">${SI.recovery.title}</h3>
           <div id="recovery-content" aria-live="polite"></div>
         </section>
+        <section class="insights-section" id="section-strength">
+          <p class="insights-section-label">${strings.strengthInsights.fixedWindowLabel}</p>
+          <h3 class="insights-section-title">${strings.strengthInsights.title}</h3>
+          <div class="strength-grid">
+            <div id="strength-pr-content" aria-live="polite"></div>
+            <div id="strength-plateau-content" aria-live="polite"></div>
+            <div id="strength-score-content" aria-live="polite"></div>
+            <div id="strength-tonnage-content" aria-live="polite"></div>
+          </div>
+        </section>
         <section class="insights-section" id="section-velocity">
           <h3 class="insights-section-title">${SI.weightVelocity.title}</h3>
           <div id="velocity-content" aria-live="polite"></div>
@@ -139,6 +155,10 @@ export async function init() {
       document.getElementById('velocity-content').innerHTML = skeletonChart();
       document.getElementById('whr-content').innerHTML = skeletonCard();
       document.getElementById('auto-insights-content').innerHTML = skeletonCard();
+      document.getElementById('strength-pr-content').innerHTML = skeletonCard();
+      document.getElementById('strength-plateau-content').innerHTML = skeletonCard();
+      document.getElementById('strength-score-content').innerHTML = skeletonCard();
+      document.getElementById('strength-tonnage-content').innerHTML = skeletonChart();
 
       const { from, to } = getRangeDates(_state.range);
 
@@ -164,6 +184,11 @@ export async function init() {
       emptySections += renderWeightVelocity(velocityRes.status === 'fulfilled' ? velocityRes.value : null) ? 1 : 0;
       emptySections += renderWHR(whrRes.status === 'fulfilled' ? whrRes.value : null) ? 1 : 0;
       emptySections += renderAutoInsights(insightsRes.status === 'fulfilled' ? insightsRes.value : null) ? 1 : 0;
+
+      mountStrengthPRs(document.getElementById('strength-pr-content'));
+      mountStrengthPlateaus(document.getElementById('strength-plateau-content'));
+      mountStrengthScore(document.getElementById('strength-score-content'));
+      mountWeeklyTonnage(document.getElementById('strength-tonnage-content'));
 
       const banner = document.getElementById('insights-global-banner');
       if (banner) banner.style.display = emptySections === totalSections ? '' : 'none';

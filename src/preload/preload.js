@@ -150,6 +150,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getWHR: () => ipcRenderer.invoke('db:getWHR'),
   getAutoInsights: () => ipcRenderer.invoke('db:getAutoInsights'),
 
+  // Strength insights
+  getStrengthPersonalRecords: () => ipcRenderer.invoke('db:getStrengthPersonalRecords'),
+  getStrengthPlateau: () => ipcRenderer.invoke('db:getStrengthPlateau'),
+  getStrengthScore: () => ipcRenderer.invoke('db:getStrengthScore'),
+  getWeeklyTonnage: () => ipcRenderer.invoke('db:getWeeklyTonnage'),
+
+  // Goals
+  getGoals: () => ipcRenderer.invoke('db:getGoals'),
+  saveGoal: (goal) => ipcRenderer.invoke('db:saveGoal', goal),
+  deleteGoal: (id) => ipcRenderer.invoke('db:deleteGoal', id),
+  archiveGoal: (id) => ipcRenderer.invoke('db:archiveGoal', id),
+  getGoalProgress: (goalId) => ipcRenderer.invoke('db:getGoalProgress', goalId),
+
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),
   importData: () => ipcRenderer.invoke('import:data'),

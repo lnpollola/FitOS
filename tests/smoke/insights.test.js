@@ -57,6 +57,10 @@ const mockApi = {
     restDayStreak: 1,
     recentSportPRs: 2,
   }),
+  getStrengthPersonalRecords: () => Promise.resolve({ exercises: [], volumePRs: [], muscleGroups: [] }),
+  getStrengthPlateau: () => Promise.resolve([]),
+  getStrengthScore: () => Promise.resolve({ muscle_groups: [], composite_score: null, insufficient_muscle_groups: true, body_weight_kg: null, total_muscle_groups: 0 }),
+  getWeeklyTonnage: () => Promise.resolve({ weeks: [], current_12w_total: null, previous_12w_total: null, delta_kg: null, delta_pct: null, direction: null }),
   onDataChanged: () => {},
   navigate: () => {},
 };
@@ -133,7 +137,7 @@ describe('Insights view smoke test', () => {
     await init();
     await new Promise(r => setTimeout(r, 100));
     const sections = document.querySelectorAll('.insights-section');
-    expect(sections.length).toBe(7);
+    expect(sections.length).toBe(8);
   });
 
   it('renders error state when IPC call throws', async () => {

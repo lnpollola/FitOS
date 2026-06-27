@@ -13,6 +13,8 @@ const { register: registerHealth } = require('./handlers/health-handlers');
 const { register: registerDashboard } = require('./handlers/dashboard-handlers');
 const { register: registerStravaPanels } = require('./handlers/strava-panels-handlers');
 const { register: registerInsights } = require('./handlers/insights-handlers');
+const { register: registerStrengthInsights } = require('./handlers/strength-insights-handlers');
+const { register: registerGoals } = require('./handlers/goals-handlers');
 
 function getHS() {
   let hs = getHealthsyncDb();
@@ -42,6 +44,8 @@ function registerIpcHandlers(mainWindow) {
   registerDashboard(ipcMain, _getDb, _getHS, _notifyDomain);
   registerStravaPanels(ipcMain, _getDb, _getHS, _notifyDomain);
   registerInsights(ipcMain, _getDb, _getHS, _notifyDomain);
+  registerStrengthInsights(ipcMain, _getDb, _getHS, _notifyDomain);
+  registerGoals(ipcMain, _getDb, _getHS, _notifyDomain);
 }
 
 module.exports = { registerIpcHandlers };

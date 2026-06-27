@@ -15,7 +15,7 @@
 <img src="https://img.shields.io/badge/FitOS-v0.5.0-4E5D3F?style=for-the-badge&logo=data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%23F4EFE6%22%20d%3D%22M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm-1%2014v-4H7l5-8v4h4l-5%208z%22%2F%3E%3C%2Fsvg%3E" alt="FitOS v0.5.0"/>
 <img src="https://img.shields.io/badge/Electron-28.1-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron 28.1"/>
 <img src="https://img.shields.io/badge/SQLite-WAL_Mode-2F3D26?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite WAL"/>
-<img src="https://img.shields.io/badge/Vitest-127_passing-4E5D3F?style=for-the-badge&logo=vitest&logoColor=white" alt="127 Tests"/>
+<img src="https://img.shields.io/badge/Vitest-299_passing-4E5D3F?style=for-the-badge&logo=vitest&logoColor=white" alt="299 Tests"/>
 <img src="https://img.shields.io/badge/license-MIT-C75B3B?style=for-the-badge" alt="MIT License"/>
 <img src="https://img.shields.io/badge/dise%C3%B1o-libreta_de_campo-8A8870?style=for-the-badge" alt="Diseño Libreta de Campo"/>
 
@@ -84,7 +84,7 @@ Tokens definidos en `body.organic` y propagados a las 9 vistas via `#view-<nombr
 
 ---
 
-## 🖥️ Vistas (9)
+## 🖥️ Vistas (10)
 
 | Vista | ID | Qué verás |
 |---|---|---|
@@ -97,6 +97,7 @@ Tokens definidos en `body.organic` y propagados a las 9 vistas via `#view-<nombr
 | **Mediciones** | `measurements` | 10 métricas + peso, método Navy body fat, charts históricos, comparativa antes/después con delta por métrica |
 | **Entrenamiento** | `training` | 5 planes predefinidos (2x–6x semana), biblioteca de 55 ejercicios con filtros, registro de sesiones con series/reps/RPE, gráficos de progresión |
 | **Perfil** | `profile` | Perfil usuario (edad, sexo, altura, peso), export/import JSON completo, umbrales de cumplimiento |
+| **Objetivos** | `goals` | Metas configurables con anillos de progreso (peso, distancia, frecuencia, personalizado), cuenta regresiva por fecha límite, celebración con confeti al completar, resumen compacto en el Panel con hasta 3 anillos clickables |
 
 ---
 
@@ -109,7 +110,7 @@ Tokens definidos en `body.organic` y propagados a las 9 vistas via `#view-<nombr
 | **UI** | Chart.js 4.4 + Lucide SVG | 20 íconos tree-shakeados, microcharts reutilizables |
 | **Tipografía** | Fraunces + Source Sans 3 | Cargadas via Google Fonts, fallback a Georgia/Inter |
 | **Base de datos** | better-sqlite3 9.6 | SQLite WAL mode, foreign keys ON, schema v5 |
-| **Tests** | Vitest + jsdom | 127 tests en 21 archivos: unitarios + smoke |
+| **Tests** | Vitest + jsdom | 299 tests en 30 archivos: unitarios + smoke |
 | **Salud** | HealthSync CLI (Go) | Parseo de XML Apple Health |
 | **Build** | Vite + electron-builder | AppImage / NSIS / dmg |
 
@@ -125,7 +126,7 @@ npm install
 
 npm run dev          # Electron + Vite concurrente
 npm run dev:web      # Solo frontend en navegador (sin Electron)
-npm test             # 127 tests
+npm test             # 299 tests
 npm run build        # Vite build + electron-builder
 ```
 
@@ -165,7 +166,7 @@ Electron tiene un modelo de seguridad particular: el **renderer** (lo que ve el 
 |---|---|---|
 | `renderer/` | Interfaz de usuario | Vanilla JS sin framework — sin migraciones futuras, cada vista exporta `init()` |
 | `preload/` | Puente de seguridad | `contextBridge` expone solo funciones necesarias. Cero lógica de negocio |
-| `main/` | Lógica de negocio | 9 módulos por dominio — `ipc-handlers.js` mantiene 30 líneas |
+| `main/` | Lógica de negocio | 10 módulos por dominio — `ipc-handlers.js` mantiene 30 líneas |
 | `db/` | Persistencia y modelo | SQLite con migraciones versionadas, foreign keys, WAL mode y caches agregados |
 
 ### Flujo de datos — ejemplo concreto
@@ -228,7 +229,7 @@ src/
 ├── renderer/                  # Frontend SPA
 │   ├── index.html             # Shell HTML con sidebar navegable
 │   ├── app.js                 # Router manual, init global, eventos
-│   ├── views/                 # 9 vistas — cada una exporta init()
+│   ├── views/                 # 10 vistas — cada una exporta init()
 │   │   ├── dashboard.js
 │   │   ├── activity.js
 │   │   ├── diet.js
@@ -237,7 +238,8 @@ src/
 │   │   ├── measurements.js
 │   │   ├── training.js
 │   │   ├── analytics.js
-│   │   └── profile.js
+│   │   ├── profile.js
+│   │   └── goals.js
 │   ├── locales/
 │   │   └── es.js              # ~650 strings organizados por dominio
 │   ├── utils/                 # Utilidades reutilizables
@@ -251,7 +253,10 @@ src/
 │   │   ├── body-fat.js        # Método Navy body fat
 │   │   ├── skeleton.js        # Skeletons animados por tipo
 │   │   ├── state-card.js      # Sistema tri-estado loading/empty/error
-│   │   └── validation.js      # Validación de formularios
+│   │   ├── validation.js      # Validación de formularios
+│   │   ├── goal-progress-ring.js  # SVG donut de progreso configurable
+│   │   ├── goals.js           # Helpers: progreso, cuenta regresiva, filtros
+│   │   └── confetti.js        # Animación canvas de confeti
 │   └── styles/                # CSS modular (6 archivos + main)
 │       ├── main.css           # Solo @imports en orden de cascada
 │       ├── base.css
@@ -266,7 +271,7 @@ src/
 │
 ├── main/
 │   ├── main.js                # Ventana Electron, menú nativo
-│   ├── ipc-handlers.js        # Registro de 9 módulos (30 líneas)
+│   ├── ipc-handlers.js        # Registro de 10 módulos (30 líneas)
 │   ├── apple-health-import.js
 │   ├── healthsync-cli.js
 │   └── handlers/              # Handlers IPC por dominio
@@ -278,7 +283,8 @@ src/
 │       ├── profile-handlers.js
 │       ├── dashboard-handlers.js
 │       ├── health-handlers.js
-│       └── settings-handlers.js
+│       ├── settings-handlers.js
+│       └── goals-handlers.js
 │
 ├── db/
 │   ├── database.js            # Schema v5, migraciones, populateCache
@@ -290,8 +296,8 @@ src/
 │   └── reset-healthsync.js
 │
 └── tests/
-    ├── unit/                  # 14 archivos de tests unitarios
-    └── smoke/                 # 7 tests de integración de vistas
+    ├── unit/                  # 17 archivos de tests unitarios
+    └── smoke/                 # 8 tests de integración de vistas
 ```
 
 ---
@@ -309,6 +315,18 @@ src/
 ---
 
 ## 📦 Changelog
+
+### v0.6.0 — Goals Tracker *(27 Jun 2026)*
+
+- **Nueva vista: Objetivos** (`goals`) — metas configurables con 4 tipos: peso corporal, distancia, frecuencia semanal y personalizado
+- **Anillos de progreso SVG** — `goalProgressRing()` en `utils/goal-progress-ring.js`, donut configurable con color verde (<100%) y ámbar (≥100%, overshoot)
+- **Cuenta regresiva** — días restantes con codificación por urgencia: normal (>30 días), próximo (8–30), urgente (≤7)
+- **Celebración con confeti** — animación Canvas (150–300 partículas) al completar un objetivo, overlay con mensaje "¡Objetivo conseguido!"
+- **CRUD completo** — crear, editar, archivar y eliminar objetivos. Persistencia como JSON en tabla `settings` (clave `goals`), sin cambios de schema
+- **Card resumen en el Panel** — hasta 3 anillos compactos (56×56 px) entre los paneles Strava y el hero de balance energético, clickeables para navegar a Objetivos
+- **6 IPC handlers nuevos** — `db:getGoals`, `db:saveGoal`, `db:deleteGoal`, `db:archiveGoal`, `db:getGoalProgress` en `src/main/handlers/goals-handlers.js`
+- **3 utilidades nuevas** — `goal-progress-ring.js`, `goals.js` (helpers puros), `confetti.js` (animación canvas)
+- **299 tests** (30 archivos) — 23 tests nuevos, 0 regresiones
 
 ### v0.5.0 — Crecimiento, integridad y refinamiento *(27 Jun 2026)*
 

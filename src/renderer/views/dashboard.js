@@ -1,6 +1,7 @@
 import { strings, getSportDisplayName } from '../locales/es.js';
 import { sportIcon } from '../utils/sport-icons.js';
 import { icon } from '../utils/icons.js';
+import { goalProgressRing } from '../utils/goal-progress-ring.js';
 import { chartColors } from '../utils/chart-theme.js';
 import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 import { getRangeDates } from '../utils/date-range.js';
@@ -36,6 +37,7 @@ export async function init() {
       </div>
       <div id="last-update" class="text-xs text-muted" style="margin-bottom:var(--space-3)" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-consistency" aria-live="polite"></div>
+      <div class="dashboard-grid" id="row-goals" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-hero" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-kpis-1" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-kpis-2" aria-live="polite"></div>
@@ -99,6 +101,7 @@ export async function init() {
 
     async function render() {
       const consistencyRow = document.getElementById('row-consistency');
+      const goalsRow = document.getElementById('row-goals');
       const heroRow = document.getElementById('row-hero');
       const kpis1Row = document.getElementById('row-kpis-1');
       const kpis2Row = document.getElementById('row-kpis-2');
@@ -108,6 +111,7 @@ export async function init() {
       const daysInPeriod = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
 
       consistencyRow.innerHTML = skeletonCard();
+      goalsRow.innerHTML = skeletonCard();
       heroRow.innerHTML = skeletonCard();
       kpis1Row.innerHTML = skeletonCard().repeat(5);
       kpis2Row.innerHTML = skeletonCard().repeat(4);
@@ -146,6 +150,7 @@ export async function init() {
       const prevSportPromise = api.getSportSummaryByRange ? api.getSportSummaryByRange(prevFromStr, prevToStr).catch(() => []) : Promise.resolve([]);
       const activityComparisonPromise = api.getActivityComparison ? api.getActivityComparison(from, to).catch(() => null) : Promise.resolve(null);
       const lifetimeStatsPromise = api.getSportLifetimeStats ? api.getSportLifetimeStats().catch(() => ({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 })) : Promise.resolve({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 });
+      const goalsPromise = api.getGoals ? api.getGoals().catch(() => []) : Promise.resolve([]);
 
       const now = new Date();
       const weeklyBalancePromises = [];
@@ -169,6 +174,7 @@ export async function init() {
         prevSportPromise,
         activityComparisonPromise,
         lifetimeStatsPromise,
+        goalsPromise,
         ...weeklyBalancePromises,
       ]);
 
@@ -183,7 +189,8 @@ export async function init() {
       const prevSportSummary = results[8].status === 'fulfilled' ? results[8].value : [];
       const activityComparison = results[9].status === 'fulfilled' ? results[9].value : null;
       const lifetimeStats = results[10].status === 'fulfilled' ? results[10].value : { totalWeeks: 0, currentStreak: 0, totalSessions: 0 };
-      const weeklyBalances = results.slice(11).map(r => r.status === 'fulfilled' ? r.value : null);
+      const dashboardGoals = results[11].status === 'fulfilled' ? results[11].value : [];
+      const weeklyBalances = results.slice(12).map(r => r.status === 'fulfilled' ? r.value : null);
 
       await lastImportPromise;
 
@@ -370,6 +377,58 @@ export async function init() {
       let balanceDetail = '';
       if (appData?.weekBalance != null) {
         balanceDetail = `<span class="text-xs text-muted">${strings.dashboard.avgDay}</span>`;
+      }
+
+      // Goals summary card
+      const activeDashboardGoals = Array.isArray(dashboardGoals)
+        ? dashboardGoals.filter(g => !g.archived && g.progress_pct < 100).slice(0, 3)
+        : [];
+      if (activeDashboardGoals.length > 0) {
+        const goalRings = activeDashboardGoals.map(g => {
+          const ring = goalProgressRing(g.progress_pct, { size: 56, strokeWidth: 6 });
+          const label = (g.label || '').length > 20 ? (g.label || '').slice(0, 19) + '…' : (g.label || '');
+          return `<div class="goal-ring-mini" data-goal-id="${g.id}" tabindex="0" role="button" aria-label="${strings.goals.goalProgress} ${label}: ${g.progress_pct}%">
+            ${ring}
+            <span class="goal-ring-mini-label">${label}</span>
+          </div>`;
+        }).join('');
+        const overflow = dashboardGoals.filter(g => !g.archived && g.progress_pct < 100).length;
+        if (overflow > 3) {
+          goalRings += `<div class="goal-ring-mini goal-ring-more" tabindex="0" role="button" aria-label="${strings.goals.moreGoals.replace('{n}', overflow - 3)}">
+            <div class="goal-ring-more-text">+${overflow - 3}</div>
+            <span class="goal-ring-mini-label">${strings.goals.more}</span>
+          </div>`;
+        }
+        goalsRow.innerHTML = `
+          <div class="dashboard-card" style="grid-column:1/-1">
+            <div class="goals-summary">
+              ${goalRings}
+            </div>
+          </div>
+        `;
+        goalsRow.querySelectorAll('.goal-ring-mini').forEach(el => {
+          el.addEventListener('click', () => {
+            if (window.electronAPI) window.electronAPI.navigate('goals');
+          });
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (window.electronAPI) window.electronAPI.navigate('goals');
+            }
+          });
+        });
+      } else {
+        goalsRow.innerHTML = `
+          <div class="dashboard-card" style="grid-column:1/-1;cursor:pointer" tabindex="0" role="button" aria-label="${strings.goals.emptyDashboard}">
+            <div class="goals-summary-empty" id="goals-dash-empty">
+              ${icon('target', 24)}
+              <span>${strings.goals.emptyDashboard}</span>
+            </div>
+          </div>
+        `;
+        goalsRow.querySelector('.dashboard-card').addEventListener('click', () => {
+          if (window.electronAPI) window.electronAPI.navigate('goals');
+        });
       }
 
       // Build hero
