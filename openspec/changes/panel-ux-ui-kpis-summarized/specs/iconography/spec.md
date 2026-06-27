@@ -54,3 +54,35 @@ The system SHALL use the Lucide `arrow-up`, `arrow-down`, and `minus` icons (alr
 #### Scenario: Effort trend flat
 - **WHEN** the current and previous week efforts are equal
 - **THEN** the trend indicator SHALL use `icon('minus', 12)` with class `.trend-flat` (gray/text-secondary)
+
+### Requirement: Distinct icons for every sport type
+
+The system SHALL map every `sport_type` value in the database to a distinct Lucide icon. The current `SPORT_ICON_MAP` in `src/renderer/utils/sport-icons.js` collapses `paddle`, `football`, `walking`, and `other` to the generic `activity` icon, and maps `boxing` to the same `dumbbell` icon as `strength`. In the monthly calendar grid (introduced in the Strava panels) this collision would make padel indistinguishable from walking, and boxing indistinguishable from strength training. The system SHALL use a unique Lucide icon per sport type, with `circle-dot`, `circle`, `swords`, and `flower-2` as the contextual choices for `paddle`, `football`, `boxing`, and `yoga` respectively.
+
+#### Scenario: Paddle has a distinct icon
+- **WHEN** `sportIcon('paddle')` is called
+- **THEN** the function SHALL return the Lucide `circle-dot` icon
+- **THEN** the icon SHALL NOT equal the icon for `walking`, `other`, or any other sport type
+- **THEN** the `circle-dot` icon SHALL be registered as a tree-shaken import in `src/renderer/utils/icons.js`
+
+#### Scenario: Football has a distinct icon
+- **WHEN** `sportIcon('football')` is called
+- **THEN** the function SHALL return the Lucide `circle` icon
+- **THEN** the icon SHALL be visually distinct from `running` (footprints), `cycling` (bike), and `swimming` (waves)
+
+#### Scenario: Boxing icon is distinct from strength
+- **WHEN** `sportIcon('boxing')` is called
+- **THEN** the function SHALL return the Lucide `swords` icon
+- **THEN** the icon SHALL NOT equal the icon for `strength` (dumbbell)
+- **THEN** the `swords` icon SHALL be registered as a tree-shaken import in `src/renderer/utils/icons.js`
+
+#### Scenario: Yoga icon is peaceful
+- **WHEN** `sportIcon('yoga')` is called
+- **THEN** the function SHALL return the Lucide `flower-2` icon
+- **THEN** the icon SHALL NOT be a cardio-themed glyph (heart, activity, footprints)
+- **THEN** the `flower-2` icon SHALL be registered as a tree-shaken import in `src/renderer/utils/icons.js`
+
+#### Scenario: All sport icons are pairwise distinct
+- **WHEN** a developer iterates the 11 known sport types (`running`, `cycling`, `walking`, `swimming`, `yoga`, `HIIT`, `strength`, `football`, `paddle`, `boxing`, `other`) and calls `sportIcon(type)` for each
+- **THEN** every returned SVG SHALL have a unique path signature (no two sport types share the same icon)
+- **THEN** the only acceptable collision is `walking` and `other`, both falling back to `activity` (documented in the map as an explicit "best-effort" assignment)

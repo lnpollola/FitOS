@@ -51,3 +51,18 @@ FitOS currently exposes a **data-dense** dashboard: flat grids of cards with raw
 - **Tests** (`tests/`): new `tests/unit/kpi-derivation.test.js` (pace projection, effort formula, streak calc, week-bounded math). New `tests/smoke/strava-panels.test.js` (5 panels render with seed data, calendar shows month grid, streak shows 0 when no activities). Existing 52 tests must still pass.
 - **Performance**: 5 panels + calendar render at most ~50 DOM nodes per panel. Bubble chart and calendar are pure SVG/CSS — no extra Chart.js instances. KPI derivation is pure SQL + JS; estimated < 50 ms per panel.
 - **No breaking changes**: all additions are additive. Existing dashboard cards, date-range selector, and all other views continue to function identically.
+
+## Phased delivery
+
+This change is **Phase 1** of a multi-phase plan to progressively deepen the dashboard's summary layer. Each phase is a self-contained `/opsx-propose` change with its own specs, tasks, and tests, and can be implemented, tested, and deployed independently.
+
+| Phase | Change name | Scope |
+|---|---|---|
+| **1 (this change)** | `panel-ux-ui-kpis-summarized` | Strava-style summary panels on the dashboard: PR banner, weekly-goal ring, relative-effort card, training-log bubble chart, streak header, monthly activity calendar. Plus ISO-week migration, sport-icon improvements, and the `kpi-derivation` utility module. |
+| **2 (next)** | `summary-insights-view` | A new `insights` view positioned between `dashboard` and `analytics` in the sidebar. Contains year-in-motion heatmap, "tu semana típica" weekly pattern, time-of-day heatmap, sport distribution donut, recovery score composite (HRV + RHR + sleep), weight velocity chart, and auto-generated insight cards. Code name in English; UI strings remain in Spanish. |
+| **3 (later)** | `strength-training-insights` | 1RM estimation per exercise (Epley formula), PR banner per exercise, volume PR per session, plateau detector (no PR in ≥ 4 weeks), strength score per muscle group. Depends on training_sets being well-populated. |
+| **4 (later)** | `goals-tracker` | User-configurable goals (weight target, monthly distance, exercise PR target), progress rings with countdown, achievement badges. Persisted in `settings` table. |
+
+**Phase 2 exists to keep the dashboard from becoming too dense.** Once Phase 1 lands, the dashboard will have ~960 lines (560 existing + 400 from `views/panels/strava-panels.js`). The Phase 2 view provides a curated middle tier: more than the at-a-glance dashboard, less than the power-user `analytics` view.
+
+**Data sources for all 4 phases already exist** in the database. No new IPC layer, no new tables, no new dependencies. The phases differ only in the renderer layer and the derived-KPI computations.

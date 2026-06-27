@@ -69,6 +69,7 @@ export function init() {
   - `resetSeedTemplates(db)`: reset completo de meal_components, exercise_library, workout_plans, elaborated_dishes (FK-safe), bumpea `seed_template_version`
 - **`import-export.js`**: Backup/restore full JSON
 - **Ver `docs/SEED_DATA.md`** para guía completa de cómo actualizar alimentos, ejercicios, planes, plantillas y platos elaborados
+- **Ver `docs/KPIS.md`** para inventario vivo de KPIs (qué se computa, qué data hay disponible, qué está en backlog). Útil para descubrir features que se pueden implementar sin nueva data
 
 ## Tablas Principales
 `user_profile`, `activity_days`, `sport_activities`, `food_items`, `meal_templates`, `meal_components`, `meal_options`, `daily_plans`, `daily_plan_entries`, `measurement_sets`, `weight_entries`, `training_routines`, `training_routine_days`, `exercise_library`, `training_sessions`, `training_sets`, `settings`, `elaborated_dishes`, `dish_ingredients`, `meal_dish_options`, `workout_plans`, `workout_plan_days`
@@ -153,12 +154,37 @@ Los comandos están en `.opencode/commands/opsx-*.md`. Skills en `.opencode/skil
 | Entrenamiento | `training` | Planes 2-6 días, librería de ejercicios, sesiones con series/reps/RPE, charts progresión |
 | Perfil | `profile` | Formulario perfil (edad, sexo, altura, peso, baseline), export/import JSON |
 
+## Cambios Planificados (multiphase)
+
+Roadmap incremental sobre el dashboard, definido durante explore-mode el 27 Jun 2026:
+
+- **Phase 1 — `panel-ux-ui-kpis-summarized`** (en curso): Paneles Strava-style sobre el dashboard actual (PR banner, weekly goal ring, relative effort, training log bubble, streak, monthly calendar). Ajustes: migración a semanas ISO en `getSportLifetimeStats`, mejora de sport icons (paddle/football/boxing/yoga), utility `kpi-derivation.js`.
+- **Phase 2 — `summary-insights-view`** (próximo): Nueva vista `insights` entre Panel y Tendencias. Year-in-motion heatmap, time-of-day, day-of-week, sport distribution, recovery score composite, weight velocity, WHR, auto-insights. Code name en inglés, UI en español.
+- **Phase 3 — `strength-training-insights`** (después): 1RM Epley, PR por ejercicio, plateau detector, volume PR, strength score.
+- **Phase 4 — `goals-tracker`** (después): Goals configurables con progress rings y countdown, persistidos en `settings`.
+
 ## Notas Importantes
 - La app funciona en **modo web** (sin Electron) con `npm run dev:web`, pero `window.electronAPI` será undefined
 - Los alimentos se miden en kcal/macros **por 100g**
 - Validación de forms en `src/renderer/validation.js`
 - Todos los datos son **local-first**: 0 dependencia cloud, 0 APIs externas
 - HealthSync es un CLI Go que se descarga e instala bajo demanda
+
+## Sesión — panel-ux-ui-kpis-summarized (27 Jun 2026) [IMPLEMENTADO]
+
+### Estado: Completo — listo para archivar vía `/opsx-archive`
+- **126/126 tareas** implementadas (PR banner, weekly-goal ring, relative-effort, training-log bubble, monthly calendar, streak)
+- 6 specs nuevas: `personal-records`, `weekly-goal-ring`, `relative-effort-card`, `training-log-bubble`, `monthly-activity-calendar`, `streak-tracker`
+- 4 specs modificadas: `dashboard-health-metrics`, `organic-aesthetic`, `spanish-ui`, `iconography`
+- Nuevos IPC handlers (`db:getPersonalRecords`, `db:getWeeklyGoal`, `db:getRelativeEffort`, `db:getTrainingLogWeek`, `db:getMonthlyCalendar`, `db:getStreak`) en `src/main/handlers/strava-panels-handlers.js`
+- Migración a semanas ISO en `db:getSportLifetimeStats` y `computeWeekStreak()` (antes Sunday-Saturday)
+- Sport icon improvements: `paddle`→`circle-dot`, `football`→`circle`, `boxing`→`swords`, `yoga`→`flower-2`
+- Nuevo utility `src/renderer/utils/kpi-derivation.js` (322 líneas, 11 funciones puras, testables)
+- Nuevo módulo `src/renderer/views/panels/strava-panels.js` (654 líneas, 6 mount functions)
+- CSS `src/renderer/styles/cards.css` extendido con bloque Strava (~270 líneas de clases, todas token-based)
+- Strings `strings.stravaPanels.*` (~30 keys) en `src/renderer/locales/es.js`
+- **180/180 tests pasan** (45 unit nuevos en `kpi-derivation.test.js` + 8 smoke en `strava-panels.test.js` + 127 existentes)
+- 0 breaking changes, 0 nuevas dependencias, 0 schema changes
 
 ## Sesión — organic-redesign-all-views (22 Jun 2026)
 

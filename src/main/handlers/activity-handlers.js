@@ -4,50 +4,61 @@ const { getHealthsyncPath, installHealthsync, parseHealthsyncXML, migrateHealthD
 
 const HEALTHSYNC_DB_PATH = require('path').join(require('os').homedir(), '.healthsync', 'healthsync.db');
 
-function weekKeyToSunday(key) {
-  const match = key.match(/^(\d{4})-W(\d{2})$/);
-  if (!match) return null;
-  const y = parseInt(match[1], 10);
-  const w = parseInt(match[2], 10);
-  const jan1 = new Date(y, 0, 1);
-  const jan1Day = jan1.getDay();
-  const firstSunday = new Date(jan1);
-  firstSunday.setDate(jan1.getDate() + (7 - jan1Day) % 7);
-  firstSunday.setDate(firstSunday.getDate() + (w - 1) * 7);
-  return firstSunday;
+function isoWeekFromDate(date) {
+  const d = date instanceof Date ? new Date(date) : new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+  return { year: target.getUTCFullYear(), week: weekNum };
+}
+
+function isoWeekKey(date) {
+  const w = isoWeekFromDate(date);
+  if (!w) return null;
+  return `${w.year}-W${String(w.week).padStart(2, '0')}`;
+}
+
+function currentIsoWeekRange(now = new Date()) {
+  const d = new Date(now);
+  const day = d.getDay() || 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - (day - 1));
+  monday.setHours(0, 0, 0, 0);
+  return { start: monday };
 }
 
 function getCurrentWeekKey() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const jan1 = new Date(y, 0, 1);
-  const jan1Day = jan1.getDay();
-  const firstSunday = new Date(jan1);
-  firstSunday.setDate(jan1.getDate() + (7 - jan1Day) % 7);
-  const daysSinceFirstSunday = Math.floor((now - firstSunday) / 86400000);
-  const w = Math.floor(daysSinceFirstSunday / 7) + 1;
-  return `${y}-W${String(w).padStart(2, '0')}`;
+  return isoWeekKey(currentIsoWeekRange().start);
 }
 
 function computeWeekStreak(activeWeekKeys) {
   if (!activeWeekKeys || activeWeekKeys.length === 0) return 0;
   const activeSet = new Set(
-    activeWeekKeys.map(weekKeyToSunday).filter(Boolean).map(d => d.getTime())
+    activeWeekKeys.filter(k => typeof k === 'string' && /^\d{4}-W\d{2}$/.test(k))
   );
-  const currentSunday = weekKeyToSunday(getCurrentWeekKey());
-  if (!currentSunday) return 0;
-  let checkDate = new Date(currentSunday);
+  const currentKey = getCurrentWeekKey();
+  if (!currentKey) return 0;
+  const currentMonday = currentIsoWeekRange().start;
+  let cursor = new Date(currentMonday);
   let streak = 0;
-  if (!activeSet.has(checkDate.getTime())) {
-    checkDate.setDate(checkDate.getDate() - 7);
+  if (!activeSet.has(currentKey)) {
+    cursor.setDate(cursor.getDate() - 7);
   }
-  for (let i = 0; i < 500; i++) {
-    if (activeSet.has(checkDate.getTime())) {
+  const cap = new Date(cursor);
+  cap.setFullYear(cap.getFullYear() - 10);
+  let iterations = 0;
+  while (cursor >= cap && iterations < 520) {
+    const key = isoWeekKey(cursor);
+    if (activeSet.has(key)) {
       streak++;
     } else {
       break;
     }
-    checkDate.setDate(checkDate.getDate() - 7);
+    cursor.setDate(cursor.getDate() - 7);
+    iterations++;
   }
   return streak;
 }
@@ -180,13 +191,20 @@ function register(ipcMain, getDb, getHS, notifyDomain) {
     const db = getDb();
     const totalSessionsRow = db.prepare('SELECT COUNT(*) as c FROM sport_activities').get();
     const totalSessions = totalSessionsRow.c;
-    const weeks = db.prepare(`
-      SELECT strftime('%Y-%W', date) as week
-      FROM sport_activities
-      GROUP BY strftime('%Y-%W', date)
-      HAVING COUNT(*) >= 2
-      ORDER BY week DESC
-    `).all().map(r => r.week);
+    const rows = db.prepare(`
+      SELECT date FROM sport_activities
+      ORDER BY date ASC
+    `).all();
+    const weekCounts = new Map();
+    for (const r of rows) {
+      const key = isoWeekKey(r.date);
+      if (key) weekCounts.set(key, (weekCounts.get(key) || 0) + 1);
+    }
+    const weeks = [];
+    for (const [key, count] of weekCounts) {
+      if (count >= 2) weeks.push(key);
+    }
+    weeks.sort().reverse();
     const totalWeeks = weeks.length;
     const currentStreak = computeWeekStreak(weeks);
     return { totalWeeks, currentStreak, totalSessions };

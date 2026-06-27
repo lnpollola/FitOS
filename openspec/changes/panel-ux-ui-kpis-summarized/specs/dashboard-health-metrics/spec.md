@@ -4,6 +4,8 @@
 
 Expose health metrics from HealthSync and the app database on the dashboard with a logical top-to-bottom flow: hero card (energy balance growth ring), two symmetric rows of health KPI cards, trend charts, and a sports section at the bottom with activity summary accent card and per-sport breakdown cards.
 
+**Phased scope note:** This spec covers the dashboard's health-metrics layer. The Strava-style summary panels are introduced in the `panel-ux-ui-kpis-summarized` change (Phase 1) and are appended above the hero card without modifying the existing health-metrics grid. Subsequent phases — the `summary-insights-view` change (Phase 2), `strength-training-insights` (Phase 3), and `goals-tracker` (Phase 4) — will add their own views and panels, each with their own specs. This spec evolves additively to declare new sections as they are introduced.
+
 ## ADDED Requirements
 
 ### Requirement: Strava-style summary panels block

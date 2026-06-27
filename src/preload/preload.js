@@ -133,6 +133,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getHealthSpO2Range: (from, to) => ipcRenderer.invoke('health:getSpO2Range', from, to),
   getHealthDashboardMetrics: (from, to) => ipcRenderer.invoke('health:getDashboardMetrics', from, to),
 
+  // Strava-style summary panels
+  getPersonalRecords: () => ipcRenderer.invoke('db:getPersonalRecords'),
+  getWeeklyGoal: () => ipcRenderer.invoke('db:getWeeklyGoal'),
+  getRelativeEffort: () => ipcRenderer.invoke('db:getRelativeEffort'),
+  getTrainingLogWeek: (weekStart) => ipcRenderer.invoke('db:getTrainingLogWeek', weekStart),
+  getMonthlyCalendar: (yearMonth) => ipcRenderer.invoke('db:getMonthlyCalendar', yearMonth),
+  getStreak: () => ipcRenderer.invoke('db:getStreak'),
+
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),
   importData: () => ipcRenderer.invoke('import:data'),

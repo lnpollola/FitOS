@@ -98,6 +98,78 @@ The renderer already uses organic-aesthetic tokens (moss/bone/ember), Lucide SVG
 
 **Alternative considered:** Auto-detect from user's activities. Rejected: noisy; user should choose what they care about.
 
+### Decision 8: Migrate week calculations to ISO weeks (Mon–Sun) across the board
+
+**Why:** The existing `db:getSportLifetimeStats` in `src/main/handlers/activity-handlers.js` uses `strftime('%Y-%W', date)` which is **Sunday–Saturday** week format. The new `streak-tracker` spec uses ISO weeks (Mon–Sun). Having two conflicting week boundaries would surface as the same calendar day counting in different weeks across the app — a confusing inconsistency.
+
+**What changes:**
+- `computeWeekStreak()` in `activity-handlers.js` is rewritten to use ISO week boundaries: week starts on Monday 00:00 local, computed via the same algorithm in `kpi-derivation.js → isoWeek()`.
+- The "grace period" rule (current week empty = previous week counts) is preserved.
+- The 500-iteration `for` loop cap is replaced with a date-range cap (max 10 years back), which is more deterministic and easier to reason about.
+- `db:getSportLifetimeStats` continues to exist (no breaking IPC) but now returns ISO-aligned values.
+- The `strftime('%Y-%W', date)` calls in `db:getActivityKcalByType` and `db:getSportSummaryByRange` are also updated to ISO week for consistency.
+
+**Migration cost:** Low. One file edit in `activity-handlers.js`, no DB schema change, no preload change. Existing users may see their streak count shift by ±1 week on first launch after the upgrade (acceptable, not breaking — documented in a release note).
+
+**Alternative considered:** Document the two definitions and add a "tipo de semana" selector in settings. Rejected: the inconsistency would surface in the same screen (dashboard relative-effort uses ISO, lifetime stats uses calendar) which is worse than a ±1 week shift.
+
+### Decision 9: Share effort query with `db:getActivityComparison`
+
+**Why:** The new `db:getRelativeEffort` handler and the existing `db:getActivityComparison` handler both need to compute sport + NEAT data per period. Duplicating the SQL would create two sources of truth for the same data — a calorie mismatch between the relative-effort card and the activity comparison card would confuse the user.
+
+**What changes:**
+- A private helper `getWeekSportData(from, to)` is extracted in `activity-handlers.js`. It returns `{ currentWeek, previousWeek, perSport, totals }`.
+- `db:getRelativeEffort` calls `getWeekSportData()` and applies the intensity-multiplier weighting on top (`Σ (sport_kcal × multiplier) + NEAT`).
+- `db:getActivityComparison` is refactored to use the same helper for its per-sport rollups. The IPC contract (`{ current, previous, currentActiveDays, ... }`) is preserved byte-for-byte — no breaking change for existing callers.
+- The effort formula lives in `utils/kpi-derivation.js` (pure function) so it's unit-testable without a DB.
+
+**Migration cost:** Low. Internal refactor, IPC contract unchanged. Both handlers stay; only the SQL plumbing is shared.
+
+**Alternative considered:** Keep them separate and add a "consistency check" between the two. Rejected: that's defensive programming for a problem that doesn't exist if we share the query.
+
+### Decision 10: Sport icon improvements
+
+**Why:** The current `SPORT_ICON_MAP` in `src/renderer/utils/sport-icons.js` has weak fallbacks for `paddle`, `football`, `boxing`, and `yoga` — three of them collapse to the generic `activity` icon, which is the same as `walking` and `other`. In the monthly calendar grid (Phase 1) this would make padel, fútbol, y caminata indistinguishable.
+
+**What changes (in `src/renderer/utils/sport-icons.js`):**
+
+| sport_type | current icon | new icon | rationale |
+|---|---|---|---|
+| `paddle` | `activity` (generic) | `circle-dot` | suggests a ball on a racket face |
+| `football` | `activity` (generic) | `circle` | a ball |
+| `boxing` | `dumbbell` (collides with `strength`) | `swords` | combat sport iconography |
+| `yoga` | `heart` (reads as cardio) | `flower-2` | peaceful, contemplative |
+
+`running` (`footprints`), `cycling` (`bike`), `swimming` (`waves`), `HIIT` (`trending-up`), `strength` (`dumbbell`), `walking` (`activity`), `other` (`activity`) remain unchanged — they already have good mappings.
+
+The new icons (`circle-dot`, `circle`, `swords`, `flower-2`) are tree-shaken imports added to `src/renderer/utils/icons.js` in the same change as the Strava panel icons (`medal`, `flame`, `target`, `share-2`, `chevron-left`, `chevron-right`).
+
+**Migration cost:** Trivial. Icon name change in one map, 4 new lucide imports. No component changes — `sportIcon(type, size)` is the only API surface.
+
+**Alternative considered:** Use `lucide-react`-style composed icons (e.g., a circle inside a racket frame). Rejected: the lucide library is icon-by-icon, not composed. We can revisit if a custom SVG is needed.
+
+### Decision 11: Visual signature — "faint moss margin" on the Strava block
+
+**Why:** The 6 panels must read as a coherent "athlete's training log" zone, distinct from the existing health-metrics grid below. The signature element is a **faint vertical moss-colored margin line** on the left edge of the Strava block container (3 px wide, `var(--moss)` at 40% opacity), evoking a notebook's binding margin. The block's section header (an italic Fraunces eyebrow reading "Resumen") sits inside that margin.
+
+This follows the **one-signature-per-scope rule** from `organic-aesthetic`: the block as a whole has one signature (the moss margin), each panel inside has its own micro-signature (ring, bubbles, calendar grid, medal badge). The PR medal badge is the boldest element — gold/silver/bronze against the muted palette is the single point of visual boldness, everything else stays disciplined.
+
+**Color additions** (only when the existing tokens are insufficient):
+- Medal: `#D4A437` (gold), `#A8A8A8` (silver), `#A47148` (bronze) — contextual "achievement" hues, not part of the core palette.
+- Effort levels: `#E91E8C` (very high), `#FF6B35` (high), `#9C27B0` (moderate), `#B39DDB` (low) — borrowed from the user's reference (Strava), used only inside `.effort-level--*` spans.
+
+These additions are **localized** to the Strava panels — they do not redefine `--accent` or any other semantic token in `main.css`.
+
+**Typography** (no additions — uses existing tokens):
+- Display numbers (PR time, streak weeks/activities): `var(--font-display)` (Fraunces) at 28–36 px.
+- Panel titles and eyebrows: `var(--font-body)` (Source Sans 3) italic at 12 px, per the existing eyebrow pattern.
+- Tabular data (time, distance, dates): `var(--font-mono)` (JetBrains Mono) at 11–14 px.
+
+**Restraint:**
+- No new animations beyond the existing staggered fade-in (defined in `organic-aesthetic`).
+- No box-shadows on the panels — use the existing card border (`var(--border)`).
+- The PR medal badge is the **only** high-saturation element. Every other panel stays within the moss/bone/ember palette at desaturated levels.
+
 ## Risks / Trade-offs
 
 - **[Risk] Pace projection may produce unrealistic times for very short or very long source activities.** A 0.5 km run projected to 42.2 km gives a wildly optimistic marathon time. → **Mitigation:** Only project from source activities where `distance_km >= 0.8 × target_distance` and `distance_km <= 1.5 × target_distance`. Outside that range, skip the projection for that target.

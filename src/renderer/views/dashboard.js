@@ -10,6 +10,13 @@ import { sparkline, computeTrendDirection } from '../utils/sparkline.js';
 import { growthRing } from '../utils/growth-ring.js';
 import { renderStateCard } from '../utils/state-card.js';
 import { getTrendArrow, trendBadge } from '../utils/trend-arrow.js';
+import {
+  mountPersonalRecord,
+  mountRelativeEffort,
+  mountTrainingLog,
+  mountStreak,
+  mountMonthlyCalendar,
+} from './panels/strava-panels.js';
 
 export async function init() {
   if (window._loadingDashboard) return;
@@ -28,6 +35,7 @@ export async function init() {
         <button class="filter-btn" data-range="3m">${strings.dashboard.dateRange3m}</button>
       </div>
       <div id="last-update" class="text-xs text-muted" style="margin-bottom:var(--space-3)" aria-live="polite"></div>
+      <div class="dashboard-grid" id="row-consistency" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-hero" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-kpis-1" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-kpis-2" aria-live="polite"></div>
@@ -36,11 +44,49 @@ export async function init() {
         <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.weeklyBalanceTrend}</h3><div class="chart-container" style="height:200px"><canvas id="weekly-balance-chart"></canvas></div></div>
       </div>
       <div class="dashboard-grid" id="row-sports" aria-live="polite"></div>
+      <section class="strava-block" id="strava-block" aria-label="${strings.stravaPanels.blockTitle}">
+        <div class="strava-block-header">
+          <h2>${strings.stravaPanels.blockTitle}</h2>
+        </div>
+        <div class="strava-resumen-row">
+          <div id="strava-pr"></div>
+          <div id="strava-relative-effort"></div>
+        </div>
+        <div id="strava-training-log"></div>
+        <div id="strava-streak"></div>
+        <div id="strava-calendar"></div>
+      </section>
     `;
 
     if (!api) {
       document.getElementById('row-hero').innerHTML = `<div class="dashboard-card"><h3>${strings.dashboard.status}</h3><div class="value">${strings.dashboard.offline}</div><div class="subtitle">${strings.dashboard.offlineSub}</div></div>`;
       return;
+    }
+
+    const stravaMounts = [
+      mountPersonalRecord(document.getElementById('strava-pr')),
+      mountRelativeEffort(document.getElementById('strava-relative-effort')),
+      mountTrainingLog(document.getElementById('strava-training-log')),
+      mountStreak(document.getElementById('strava-streak')),
+      mountMonthlyCalendar(document.getElementById('strava-calendar')),
+    ];
+
+    if (api.onDataChanged) {
+      api.onDataChanged(() => {
+        stravaMounts.forEach((unmount, i) => {
+          if (typeof unmount === 'function') {
+            try { unmount(); } catch {}
+          }
+        });
+        const remounts = [
+          mountPersonalRecord(document.getElementById('strava-pr')),
+          mountRelativeEffort(document.getElementById('strava-relative-effort')),
+          mountTrainingLog(document.getElementById('strava-training-log')),
+          mountStreak(document.getElementById('strava-streak')),
+          mountMonthlyCalendar(document.getElementById('strava-calendar')),
+        ];
+        remounts.forEach((u, i) => { stravaMounts[i] = u; });
+      });
     }
 
     document.querySelectorAll('#dashboard-filters .filter-btn').forEach(btn => {
@@ -52,6 +98,7 @@ export async function init() {
     });
 
     async function render() {
+      const consistencyRow = document.getElementById('row-consistency');
       const heroRow = document.getElementById('row-hero');
       const kpis1Row = document.getElementById('row-kpis-1');
       const kpis2Row = document.getElementById('row-kpis-2');
@@ -60,13 +107,14 @@ export async function init() {
       const { from, to } = getRangeDates(_range);
       const daysInPeriod = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
 
+      consistencyRow.innerHTML = skeletonCard();
       heroRow.innerHTML = skeletonCard();
       kpis1Row.innerHTML = skeletonCard().repeat(5);
       kpis2Row.innerHTML = skeletonCard().repeat(4);
       sportsRow.innerHTML = skeletonCard();
 
-      trendRow.style.display = 'block';
-      trendRow.innerHTML = skeletonChart();
+      trendRow.style.display = 'none';
+      trendRow.innerHTML = '';
 
       const lastImportPromise = safeCall(api.getLastImportTimestamp(), null).then(data => {
         const updateEl = document.getElementById('last-update');
@@ -426,7 +474,26 @@ export async function init() {
       const streakTrend = getTrendArrow(currentBestStreak, previousBestStreak);
       const comparisonTip = strings.activity.periodComparisonTooltip;
 
-      // Sports section at the bottom
+      // Consistency card at the TOP (was inside sports section, now promoted)
+      const streakBadge = lifetimeStats.currentStreak > 0
+        ? `<span style="display:inline-block;background:var(--success, #10b981);color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle">${icon('flame', 11)} ${strings.activity.streakActive}</span>`
+        : '';
+      consistencyRow.innerHTML = `
+        <div class="dashboard-card consistency-hero" role="region" aria-label="${strings.activity.consistency}">
+          <div class="consistency-hero-side">
+            <div class="consistency-hero-eyebrow">${icon('trophy', 14)} ${strings.activity.consistency}</div>
+            <div class="consistency-hero-value">${lifetimeStats.totalWeeks}</div>
+            <div class="consistency-hero-sub">${strings.activity.totalWeeksWithGoalSub}</div>
+          </div>
+          <div class="consistency-hero-divider" aria-hidden="true"></div>
+          <div class="consistency-hero-side">
+            <div class="consistency-hero-eyebrow">${strings.activity.currentStreakWeeks}${streakBadge}</div>
+            <div class="consistency-hero-value-with-icon">${lifetimeStats.currentStreak}<span class="consistency-hero-icon">${icon('flame', 24)}</span></div>
+            <div class="consistency-hero-sub">${strings.activity.currentStreakWeeksSub}</div>
+          </div>
+        </div>`;
+
+      // Sports section at the bottom (no consistency card anymore — moved to top)
       if (sportSummary && sportSummary.length > 0) {
         const sorted = [...sportSummary].sort((a, b) => b.count - a.count);
         const sportCardsHtml = sorted.map(a => {
@@ -462,25 +529,7 @@ export async function init() {
               <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${currentBestStreak} <span style="font-size:14px">${streakTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.bestStreak} ${currentBestStreak > 0 ? strings.activity.bestStreakDays.replace('{n}', currentBestStreak) : ''}</div></div>
             </div>
           </div>`;
-        const streakBadge = lifetimeStats.currentStreak > 0
-          ? `<span style="display:inline-block;background:var(--success, #10b981);color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle">${icon('flame', 11)} ${strings.activity.streakActive}</span>`
-          : '';
-        const consistencyHtml = `
-          <div class="dashboard-card" style="grid-column:1/-1;background:linear-gradient(135deg, var(--accent) 0%, var(--ember) 100%);color:#fff;padding:20px 24px">
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3)">
-              <div style="flex:1;min-width:200px">
-                <div class="text-xs" style="opacity:0.85;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px">${icon('trophy', 14)} ${strings.activity.consistency}</div>
-                <div style="font-size:42px;font-weight:700;line-height:1.1;margin-top:6px">${lifetimeStats.totalWeeks}</div>
-                <div class="text-sm" style="opacity:0.85;margin-top:2px">${strings.activity.totalWeeksWithGoalSub}</div>
-              </div>
-              <div style="border-left:1px solid rgba(255,255,255,0.25);padding-left:var(--space-3);min-width:180px">
-                <div class="text-xs" style="opacity:0.85;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px">${strings.activity.currentStreakWeeks}${streakBadge}</div>
-                <div style="font-size:42px;font-weight:700;line-height:1.1;margin-top:6px;display:flex;align-items:baseline;gap:8px">${lifetimeStats.currentStreak}<span style="font-size:24px">${icon('flame', 24)}</span></div>
-                <div class="text-sm" style="opacity:0.85;margin-top:2px">${strings.activity.currentStreakWeeksSub}</div>
-              </div>
-            </div>
-          </div>`;
-        sportsRow.innerHTML = `<div style="grid-column:1/-1;margin:var(--space-2) 0 var(--space-1)"><hr style="border:none;border-top:2px solid var(--border);opacity:0.5"><p class="text-xs text-muted" style="margin-top:var(--space-2)">${strings.dashboard.sportsSection}</p></div>${consistencyHtml}${accentHtml}${sportCardsHtml}`;
+        sportsRow.innerHTML = `<div style="grid-column:1/-1;margin:var(--space-2) 0 var(--space-1)"><hr style="border:none;border-top:2px solid var(--border);opacity:0.5"><p class="text-xs text-muted" style="margin-top:var(--space-2)">${strings.dashboard.sportsSection}</p></div>${accentHtml}${sportCardsHtml}`;
       } else {
         sportsRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
       }
