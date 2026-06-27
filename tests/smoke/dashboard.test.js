@@ -14,6 +14,14 @@ const mockApi = {
   getCyclingDistance: () => Promise.resolve({ ok: false, data: [] }),
   getHealthWorkouts: () => Promise.resolve({ ok: false, data: [] }),
   getEnergyBalance: () => Promise.resolve(null),
+  getPersonalRecords: () => Promise.resolve({ records: [], total: 0 }),
+  getWeeklyGoal: () => Promise.resolve({ current: 0, target: 4, progress_pct: 0, primary_sport: null, week_start: '2026-06-22', week_end: '2026-06-28' }),
+  getRelativeEffort: () => Promise.resolve({ current_week: { value: 0, start_date: '2026-06-22', end_date: '2026-06-28' }, previous_week: { value: 0, start_date: '2026-06-15', end_date: '2026-06-21' }, delta: 0, trend: 'flat' }),
+  getTrainingLogWeek: () => Promise.resolve({ week_start: '2026-06-22', week_end: '2026-06-28', total_minutes: 0, days: [] }),
+  getMonthlyCalendar: () => Promise.resolve({ month: '2026-06', days: [], weeks: [] }),
+  getStreak: () => Promise.resolve({ weeks: 0, total_activities: 0, is_active: false, last_broken_date: null }),
+  onDataChanged: () => {},
+  navigate: () => {},
 };
 
 describe('Dashboard view smoke test', () => {

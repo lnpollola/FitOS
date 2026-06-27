@@ -7,12 +7,12 @@ const SPORT_ICON_MAP = {
   cycling: 'bike',
   walking: 'activity',
   swimming: 'waves',
-  yoga: 'heart',
+  yoga: 'flower-2',
   HIIT: 'trending-up',
   strength: 'dumbbell',
-  football: 'activity',
-  paddle: 'activity',
-  boxing: 'dumbbell',
+  football: 'circle',
+  paddle: 'circle-dot',
+  boxing: 'swords',
   other: 'activity',
 };
 

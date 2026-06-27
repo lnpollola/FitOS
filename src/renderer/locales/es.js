@@ -835,6 +835,80 @@ export const strings = {
     importSuccess: 'Datos importados correctamente',
     exportSuccess: 'Datos exportados correctamente',
   },
+
+  stravaPanels: {
+    blockTitle: 'Resumen',
+    prBanner: {
+      title: 'Récord personal',
+      rankLabels: ['1.º', '2.º', '3.º'],
+      distanceLabels: {
+        '1': '1 km',
+        '1mi': '1 mi',
+        '5': '5 km',
+        '10': '10 km',
+        '21.1': 'Media maratón',
+        '42.2': 'Maratón',
+      },
+      empty: 'Registra tu primera carrera o ruta en bicicleta para desbloquear récords',
+      emptyCta: 'Ir a Actividad',
+      viewAll: 'Ver todos',
+      viewAllCount: (n) => `Ver todos (${n})`,
+    },
+    weeklyGoal: {
+      title: 'Objetivo semanal',
+      progress: (current, target) => `${current}/${target} actividades`,
+      thisWeek: 'Esta semana',
+      empty: 'Sin meta configurada',
+    },
+    relativeEffort: {
+      title: 'Esfuerzo relativo',
+      thisWeek: 'Esta semana',
+      previousWeek: 'Semana pasada',
+      veryHigh: 'Muy alto',
+      high: 'Alto',
+      moderate: 'Moderado',
+      low: 'Bajo',
+      empty: 'Sin actividad esta semana',
+      detailLabel: 'Ver detalle semanal',
+    },
+    trainingLog: {
+      title: 'Registro de entrenamiento',
+      days: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
+      totalDuration: (duration) => duration,
+      empty: 'Sin entrenamientos esta semana',
+      thisWeek: 'Esta semana',
+    },
+    calendar: {
+      months: [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+      ],
+      today: 'Hoy',
+      thisMonth: 'Este mes',
+      navPrev: 'Mes anterior',
+      navNext: 'Mes siguiente',
+      noActivity: 'sin actividad',
+      activityAria: (day, monthName, count, sportName) => {
+        if (count === 0) return `${day} de ${monthName}, sin actividad`;
+        if (count === 1) return `${day} de ${monthName}, 1 actividad de ${sportName}`;
+        return `${day} de ${monthName}, ${count} actividades, ${sportName}`;
+      },
+    },
+    streak: {
+      title: 'Tu serie',
+      weeks: 'Semanas',
+      activities: 'Actividades',
+      inStreak: 'Actividades en serie',
+      active: 'Tu serie',
+      broken: 'Sin racha activa',
+      startPrompt: 'Inicia tu primera semana de actividad',
+      shareLabel: 'Compartir racha',
+      shareDisabledLabel: 'Compartir no disponible',
+      shareSubject: 'Mi racha de actividad en FitOS',
+      shareBody: (weeks, activities) => `Llevo ${weeks} semanas consecutivas de actividad en FitOS, con ${activities} entrenamientos en total. ¡Vamos!`,
+      gracePeriodPrompt: 'Continúa esta semana',
+    },
+  },
 };
 
 const MEASUREMENT_MAP = {

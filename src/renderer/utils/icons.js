@@ -1,4 +1,4 @@
-import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu, LayoutDashboard, Ruler, ScanLine, ChevronDown, ChevronUp, ArrowUpRightFromSquare, CircleUser, Circle, Layers, Flame, Trophy, Zap } from 'lucide';
+import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu, LayoutDashboard, Ruler, ScanLine, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpRightFromSquare, CircleUser, Circle, CircleDot, Layers, Flame, Trophy, Zap, Medal, Target, Share2, Swords, Flower2 } from 'lucide';
 
 const iconRegistry = {
   check: Check, 'arrow-up': ArrowUp, 'arrow-down': ArrowDown,
@@ -11,9 +11,12 @@ const iconRegistry = {
   menu: Menu, 'layout-dashboard': LayoutDashboard,
   ruler: Ruler, 'scan-line': ScanLine,
   'chevron-down': ChevronDown, 'chevron-up': ChevronUp,
+  'chevron-left': ChevronLeft, 'chevron-right': ChevronRight,
   'arrow-up-right-from-square': ArrowUpRightFromSquare,
-  'circle-user': CircleUser, circle: Circle, layers: Layers,
+  'circle-user': CircleUser, circle: Circle, 'circle-dot': CircleDot, layers: Layers,
   flame: Flame, trophy: Trophy, zap: Zap,
+  medal: Medal, target: Target, 'share-2': Share2,
+  swords: Swords, 'flower-2': Flower2,
 };
 
 function renderAttributes(attrs) {
