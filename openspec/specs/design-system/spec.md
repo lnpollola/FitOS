@@ -160,3 +160,27 @@ The system's design system SHALL include the `.nav-section` component for collap
 - **WHEN** developers reference the design system
 - **THEN** `.nav-section` SHALL be documented as the pattern for grouping nav items in the sidebar
 
+## ADDED Requirements (2026-06-27 — goals-tracker)
+
+### Requirement: Goal progress ring CSS component
+
+The system SHALL define CSS classes for goal progress rings and goal cards in `src/renderer/styles/cards.css`. The classes SHALL include: `.goal-progress-ring` (container for the SVG ring, inline-block, centered), `.goal-card` (card with Fraunces title, Source Sans 3 body, organic spacing), `.goal-card--active` (default background), `.goal-card--completed` (subtle green-tinted background or border for completed goals), `.goal-countdown` (countdown label with urgency color coding via CSS variable), `.goal-badge` (achievement badge icon, 16px green), `.goal-actions` (horizontal action button group), `.goal-form-overlay` (modal overlay with backdrop blur and centering), `.goal-celebration-overlay` (full-viewport overlay with confetti canvas background), `.goal-celebration-content` (centered card with goal name, ring, and close button), `.goal-dashboard-summary` (compact horizontal row of rings), `.goal-dashboard-ring` (56×56 px clickable ring container), and `.goal-dashboard-overflow` ("+N más" indicator chip).
+
+#### Scenario: Goal card CSS classes present
+- **WHEN** a developer opens `src/renderer/styles/cards.css`
+- **THEN** `.goal-card` class SHALL exist with Fraunces for title and Source Sans 3 for body
+- **THEN** `.goal-progress-ring` SHALL exist as inline-block container
+- **THEN** `.goal-countdown` SHALL exist with dynamic color via CSS variable
+- **THEN** `.goal-badge` SHALL exist as 16px green icon
+
+#### Scenario: Goal overlay CSS classes present
+- **WHEN** a developer opens `src/renderer/styles/cards.css`
+- **THEN** `.goal-form-overlay` SHALL exist with backdrop blur
+- **THEN** `.goal-celebration-overlay` SHALL exist with confetti canvas z-indexing
+
+#### Scenario: Dashboard goal summary CSS classes present
+- **WHEN** a developer opens `src/renderer/styles/cards.css`
+- **THEN** `.goal-dashboard-summary` SHALL exist as flex row container
+- **THEN** `.goal-dashboard-ring` SHALL exist as 56×56 px clickable element
+- **THEN** `.goal-dashboard-overflow` SHALL exist as overflow indicator chip
+

@@ -169,3 +169,145 @@ The system SHALL provide Spanish locale keys for the three dashboard date range 
 - **THEN** each button label SHALL reference a `strings.dashboard.dateRange*` key
 - **THEN** no button label SHALL be hardcoded outside the locale module
 
+
+## ADDED Requirements (2026-06-27 — panel-ux-ui-kpis-summarized)
+
+
+### Requirement: Strava panels locale namespace
+
+The system SHALL define a new locale namespace `strings.stravaPanels` in `src/renderer/locales/es.js` containing all UI strings for the 6 new Strava-style summary panels. The namespace SHALL include: PR banner (label template, rank ordinals, distance labels, empty state, "Ver todos" link), weekly goal (title, progress text, empty state), relative effort (title, current/previous labels, level adjectives, empty state), training log (header template, day labels L-D, duration format, empty state), monthly calendar (month label template, "Hoy" button, navigation tooltips, day aria-label template), and streak (active label, broken label, share subject/body templates).
+
+#### Scenario: PR banner strings present
+- **WHEN** a developer reads `src/renderer/locales/es.js`
+- **THEN** `strings.stravaPanels.prBanner.title` SHALL exist with a Spanish label (e.g., "Récord personal")
+- **THEN** `strings.stravaPanels.prBanner.rankLabels` SHALL exist as a 3-element array with ordinals: "1.º", "2.º", "3.º"
+- **THEN** `strings.stravaPanels.prBanner.distanceLabels` SHALL exist as a map: `{ '1': '1 km', '1mi': '1 mi', '5': '5 km', '10': '10 km', '21.1': 'Media maratón', '42.2': 'Maratón' }`
+- **THEN** `strings.stravaPanels.prBanner.empty` SHALL exist (e.g., "Registra tu primera carrera o ruta en bicicleta para desbloquear récords")
+- **THEN** `strings.stravaPanels.prBanner.viewAll` SHALL exist (e.g., "Ver todos")
+
+#### Scenario: Weekly goal strings present
+- **WHEN** a developer reads `src/renderer/locales/es.js`
+- **THEN** `strings.stravaPanels.weeklyGoal.title` SHALL be "Objetivo semanal"
+- **THEN** `strings.stravaPanels.weeklyGoal.progress` SHALL be a function or template producing "X/N actividades" (e.g., "1/4 actividades")
+
+#### Scenario: Relative effort strings present
+- **WHEN** a developer reads `src/renderer/locales/es.js`
+- **THEN** `strings.stravaPanels.relativeEffort.title` SHALL be "Esfuerzo relativo"
+- **THEN** `strings.stravaPanels.relativeEffort.currentWeek` SHALL be "Esta semana"
+- **THEN** `strings.stravaPanels.relativeEffort.previousWeek` SHALL be "Semana pasada"
+- **THEN** `strings.stravaPanels.relativeEffort.empty` SHALL be "Sin actividad esta semana"
+
+#### Scenario: Training log strings present
+- **WHEN** a developer reads `src/renderer/locales/es.js`
+- **THEN** `strings.stravaPanels.trainingLog.title` SHALL be "Registro de entrenamiento"
+- **THEN** `strings.stravaPanels.trainingLog.days` SHALL be an array `['L', 'M', 'X', 'J', 'V', 'S', 'D']`
+- **THEN** `strings.stravaPanels.trainingLog.durationFormat` SHALL be a function producing "Xh Ym" from minutes (e.g., `formatDuration(249) === '4h 9m'`)
+- **THEN** `strings.stravaPanels.trainingLog.empty` SHALL be "Sin entrenamientos esta semana"
+
+#### Scenario: Monthly calendar strings present
+- **WHEN** a developer reads `src/renderer/locales/es.js`
+- **THEN** `strings.stravaPanels.calendar.months` SHALL be a 12-element array with Spanish month names: ["enero", "febrero", ..., "diciembre"]
+- **THEN** `strings.stravaPanels.calendar.today` SHALL be "Hoy"
+- **THEN** `strings.stravaPanels.calendar.dayAriaLabel` SHALL be a function producing "DD de MMMM, N actividades, [sport]" or "DD de MMMM, sin actividad"
+- **THEN** `strings.stravaPanels.calendar.navPrev` SHALL be "Mes anterior" (for `aria-label`)
+- **THEN** `strings.stravaPanels.calendar.navNext` SHALL be "Mes siguiente"
+
+#### Scenario: Streak strings present
+- **WHEN** a developer reads `src/renderer/locales/es.js`
+- **THEN** `strings.stravaPanels.streak.weeks` SHALL be "Semanas" (label for the weeks metric)
+- **THEN** `strings.stravaPanels.streak.activities` SHALL be "Actividades"
+- **THEN** `strings.stravaPanels.streak.active` SHALL be "Tu serie"
+- **THEN** `strings.stravaPanels.streak.broken` SHALL be "Sin racha activa"
+- **THEN** `strings.stravaPanels.streak.shareSubject` SHALL be "Mi racha de actividad en FitOS"
+- **THEN** `strings.stravaPanels.streak.shareBody` SHALL be a template "Llevo {N} semanas consecutivas de actividad en FitOS, con {M} entrenamientos en total. ¡Vamos!"
+- **THEN** `strings.stravaPanels.streak.startPrompt` SHALL be "Inicia tu primera semana de actividad"
+
+### Requirement: Time and date formatting in Spanish
+
+All time/date strings in the Strava panels SHALL be formatted using Spanish conventions: "DD de MMMM de YYYY" for full dates (e.g., "15 de junio de 2026"), "DD MMM" for short dates (e.g., "15 jun"), Spanish month abbreviations (ene, feb, mar, abr, may, jun, jul, ago, sep, oct, nov, dic), and 24-hour time format with "h" separator (e.g., "1h 30m", not "1:30").
+
+#### Scenario: Date format with full month
+- **WHEN** the PR banner shows a date
+- **THEN** the format SHALL be "15 de junio de 2026" (lowercase month, "de" connectors)
+- **THEN** the format SHALL NOT be "June 15, 2026" or "15/06/2026"
+
+#### Scenario: Duration format with "h" separator
+- **WHEN** the training-log chart shows a 90 min duration
+- **THEN** the format SHALL be "1h 30m"
+- **THEN** the format SHALL NOT be "1:30" or "1h30m" (the space after "h" is required)
+
+## ADDED Requirements (2026-06-27 — summary-insights-view)
+
+
+### Requirement: Insights view locale namespace
+
+The system SHALL define a new `strings.insights` namespace in `src/renderer/locales/es.js` with all UI strings for the new `insights` view. The namespace SHALL include: section titles, date-range selector labels, empty-state messages per section, recovery zone labels (Bajo/Moderado/Alto), WHR zone labels (Bajo/Moderado/Alto), sport variety labels, weight velocity direction labels, auto-insight text templates with `{value}` placeholders, "Actualizar" button label, "Ver detalle" link label, and severity chip labels (Positivo/Info/Alerta).
+
+#### Scenario: All insights strings live in the namespace
+- **WHEN** a developer reads `src/renderer/views/insights.js`
+- **THEN** all user-facing strings SHALL be imported from `strings.insights.*`
+- **THEN** no hardcoded Spanish strings SHALL appear in template literals
+- **THEN** no English strings SHALL appear in user-facing positions
+
+#### Scenario: Auto-insight templates use placeholders
+- **WHEN** an auto-insight card is generated
+- **THEN** the template SHALL contain `{value}` or `{n}` placeholders
+- **THEN** the placeholder SHALL be replaced with the computed value at render time
+- **THEN** the resulting text SHALL be in Spanish with correct grammar (e.g., "Llevas 5 semanas" not "Llevas 5 semana")
+
+#### Scenario: Recovery zone labels in Spanish
+- **WHEN** the recovery score is rendered
+- **THEN** the zone label SHALL be one of "Bajo" (low), "Moderado" (moderate), "Alto" (high)
+- **THEN** the labels SHALL be sourced from `strings.insights.recoveryZones`
+
+#### Scenario: WHR zone labels in Spanish
+- **WHEN** the WHR card is rendered
+- **THEN** the zone label SHALL be one of "Bajo", "Moderado", "Alto" (per WHO/OMS classification)
+- **THEN** the labels SHALL be sourced from `strings.insights.whrZones`
+
+#### Scenario: Severity chip labels in Spanish
+- **WHEN** an auto-insight card has severity `positive`
+- **THEN** the chip SHALL display "Positivo"
+- **WHEN** severity `info`
+- **THEN** the chip SHALL display "Info"
+- **WHEN** severity `alert`
+- **THEN** the chip SHALL display "Alerta"
+- **THEN** the labels SHALL be sourced from `strings.insights.severityLabels`
+
+### Requirement: Sidebar label for insights nav item
+
+The system SHALL use the Spanish label "Patrones" for the `insights` nav item, sourced from `strings.nav.sections.inicio.insights` (or directly from `strings.nav` if the section-level keys are flattened). The label SHALL be visible when the sidebar is expanded and SHALL appear as a tooltip when the sidebar is collapsed.
+
+#### Scenario: Nav label is "Patrones"
+- **WHEN** the sidebar renders
+- **THEN** the insights nav item SHALL display "Patrones" as its label
+- **THEN** the `aria-label` attribute SHALL also be "Patrones"
+
+## ADDED Requirements (2026-06-27 — goals-tracker)
+
+### Requirement: Goals view locale namespace
+
+The system SHALL define a new `strings.goals` namespace in `src/renderer/locales/es.js` with all UI strings for the goals view, goal cards, celebration overlay, confetti, empty states, and form labels. The namespace SHALL include: view title, section headers (Activos, Completados, Archivados), form labels and placeholders (type options, label, target value, unit, start date, target date), action buttons (Nuevo objetivo, Guardar, Cancelar, Editar, Archivar, Eliminar, Cerrar), empty state messages, celebration text, countdown labels with singular/plural forms, confirmation dialogs (delete, archive), type option labels, and status labels.
+
+#### Scenario: All goals strings in the namespace
+- **WHEN** a developer reads `src/renderer/views/goals.js`
+- **THEN** all user-facing strings SHALL be imported from `strings.goals.*`
+- **THEN** no hardcoded Spanish strings SHALL appear in template literals
+
+#### Scenario: Goals type options in Spanish
+- **WHEN** the goal creation form renders type options
+- **THEN** the four options SHALL be "Peso corporal", "Distancia", "Frecuencia semanal", "Personalizado"
+- **THEN** these labels SHALL be sourced from `strings.goals.form.typeOptions`
+
+#### Scenario: Goals empty state in Spanish
+- **WHEN** the goals view renders with no goals
+- **THEN** the empty state SHALL display "Aún no tienes objetivos" sourced from `strings.goals.empty`
+- **THEN** the action button SHALL display "Crear objetivo" sourced from `strings.goals.createFirst`
+
+#### Scenario: Goals countdown in Spanish
+- **WHEN** a goal has days remaining
+- **THEN** the countdown SHALL display "N días restantes" using key `strings.goals.countdown.remaining`
+- **WHEN** a goal is overdue
+- **THEN** the countdown SHALL display "En curso" using `strings.goals.countdown.overdue`
+- **WHEN** a goal is due today
+- **THEN** the countdown SHALL display "¡Último día!" using `strings.goals.countdown.lastDay`

@@ -51,6 +51,11 @@ body.organic {
   --ink: #1F1B17;
   --lichen: #8A8870;
 
+  --space-xs: var(--space-2);
+  --space-sm: var(--space-3);
+  --space-md: var(--space-5);
+  --space-lg: var(--space-7);
+
   --bg-primary: var(--bone);
   --bg-secondary: var(--paper);
   --bg-tertiary: var(--smoke);

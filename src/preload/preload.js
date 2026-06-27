@@ -141,6 +141,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMonthlyCalendar: (yearMonth) => ipcRenderer.invoke('db:getMonthlyCalendar', yearMonth),
   getStreak: () => ipcRenderer.invoke('db:getStreak'),
 
+  // Summary insights
+  getYearInMotion: (from, to) => ipcRenderer.invoke('db:getYearInMotion', from, to),
+  getDayOfWeekStats: (from, to) => ipcRenderer.invoke('db:getDayOfWeekStats', from, to),
+  getSportDistribution: () => ipcRenderer.invoke('db:getSportDistribution'),
+  getRecoveryScore: () => ipcRenderer.invoke('db:getRecoveryScore'),
+  getWeightVelocity: (from, to) => ipcRenderer.invoke('db:getWeightVelocity', from, to),
+  getWHR: () => ipcRenderer.invoke('db:getWHR'),
+  getAutoInsights: () => ipcRenderer.invoke('db:getAutoInsights'),
+
+  // Strength insights
+  getStrengthPersonalRecords: () => ipcRenderer.invoke('db:getStrengthPersonalRecords'),
+  getStrengthPlateau: () => ipcRenderer.invoke('db:getStrengthPlateau'),
+  getStrengthScore: () => ipcRenderer.invoke('db:getStrengthScore'),
+  getWeeklyTonnage: () => ipcRenderer.invoke('db:getWeeklyTonnage'),
+
+  // Goals
+  getGoals: () => ipcRenderer.invoke('db:getGoals'),
+  saveGoal: (goal) => ipcRenderer.invoke('db:saveGoal', goal),
+  deleteGoal: (id) => ipcRenderer.invoke('db:deleteGoal', id),
+  archiveGoal: (id) => ipcRenderer.invoke('db:archiveGoal', id),
+  getGoalProgress: (goalId) => ipcRenderer.invoke('db:getGoalProgress', goalId),
+
   // Export / Import
   exportData: () => ipcRenderer.invoke('export:data'),
   importData: () => ipcRenderer.invoke('import:data'),

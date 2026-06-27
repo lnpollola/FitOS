@@ -748,14 +748,21 @@ export async function init() {
     const exMap = {};
     for (const ex of exercises) exMap[ex.id] = ex;
 
-    let html = `<table class="data-table" style="margin-bottom:12px"><thead><tr><th>${strings.training.setNumber}</th><th>${strings.training.exerciseName}</th><th>${strings.training.load}</th><th>${strings.training.reps}</th><th>${strings.training.rpe}</th><th></th></tr></thead><tbody>`;
+    function estimated1RM(load, reps) {
+      if (load == null || reps == null || reps < 1) return null;
+      return Math.round(load * (1 + reps / 30) * 10) / 10;
+    }
+
+    let html = `<table class="data-table" style="margin-bottom:12px"><thead><tr><th>${strings.training.setNumber}</th><th>${strings.training.exerciseName}</th><th>${strings.training.load}</th><th>${strings.training.reps}</th><th>${strings.training.rpe}</th><th>1RM est.</th><th></th></tr></thead><tbody>`;
     if (sets && sets.length > 0) {
       for (const set of sets) {
         const ex = exMap[set.exercise_id];
-        html += `<tr><td>${set.set_number}</td><td>${ex ? ex.name : '--'}</td><td>${set.load_kg ?? '--'}</td><td>${set.reps ?? '--'}</td><td>${set.rpe ?? '--'}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-set="${set.id}">${strings.training.deleteSet}</button></td></tr>`;
+        const rm = estimated1RM(set.load_kg, set.reps);
+        const rmDisplay = rm != null ? `${rm} kg` : '--';
+        html += `<tr><td>${set.set_number}</td><td>${ex ? ex.name : '--'}</td><td>${set.load_kg ?? '--'}</td><td>${set.reps ?? '--'}</td><td>${set.rpe ?? '--'}</td><td style="font-family:var(--font-mono);color:var(--accent);font-weight:500">${rmDisplay}</td><td><button class="btn btn-secondary" style="padding:2px 6px;font-size:11px" data-delete-set="${set.id}">${strings.training.deleteSet}</button></td></tr>`;
       }
     } else {
-      html += `<tr><td colspan="6" class="text-xs text-muted">${strings.states.noData}</td></tr>`;
+      html += `<tr><td colspan="7" class="text-xs text-muted">${strings.states.noData}</td></tr>`;
     }
     html += '</tbody></table>';
 

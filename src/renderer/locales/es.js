@@ -2,7 +2,7 @@ export const strings = {
   // Navigation
   nav: {
     sections: {
-      inicio: 'INICIO',
+      inicio: { label: 'INICIO', insights: 'Patrones' },
       salud: 'SALUD',
       entrenamiento: 'ENTRENAMIENTO',
     },
@@ -15,6 +15,7 @@ export const strings = {
     training: 'Entrenamiento de Fuerza',
     analytics: 'Tendencias',
     profile: 'Perfil y Ajustes',
+    goals: 'Objetivos',
   },
   appTitle: 'FitOS - Salud y Rendimiento',
   appName: 'FitOS',
@@ -836,6 +837,177 @@ export const strings = {
     exportSuccess: 'Datos exportados correctamente',
   },
 
+  insights: {
+    title: 'Patrones',
+
+    dateRange: {
+      label90d: '3 meses',
+      label6m: '6 meses',
+      label1y: '1 año',
+    },
+
+    heatmap: {
+      title: 'Año en Movimiento',
+      caption: 'Patrón parcial ({n} días con actividad)',
+      tooltip: '{date} — {min} min',
+      empty: 'Sin actividades deportivas registradas. Si haces entrenamiento de fuerza, los patrones de pesas llegan en una próxima versión.',
+      cta: 'Ir a Actividad',
+    },
+
+    dayOfWeek: {
+      title: 'Tu Semana Típica',
+      bestDay: 'Tu mejor día',
+      partialPattern: 'Patrón parcial ({n} semanas de datos)',
+      empty: 'Necesitas al menos 2 semanas de datos para identificar tu día favorito',
+      dayLabels: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
+    },
+
+    sportDistribution: {
+      title: 'Distribución de Deportes',
+      totalLabel: 'Total',
+      otherSports: 'Otros ({n} deportes)',
+      empty: 'No hay actividades en los últimos 90 días',
+      percentFormat: '{pct}%',
+      minutesFormat: '{min} min',
+      sessionsFormat: '{n} sesiones',
+    },
+
+    recovery: {
+      title: 'Recuperación',
+      baseline: 'Línea base personal (30 días)',
+      subMeters: {
+        hrv: 'HRV',
+        rhr: 'RHR',
+        sleep: 'Sueño',
+      },
+      sparklineLabel: 'Recuperación últimos 7 días',
+      empty: 'Necesitas al menos 30 días de datos de HRV, RHR y sueño para calcular tu línea base personal',
+      daysUntil: 'Faltan {n} días para tu primera puntuación de recuperación',
+      partialSignal: 'Composite calculado con 2/3 señales',
+    },
+
+    recoveryZones: {
+      low: 'Bajo',
+      moderate: 'Moderado',
+      high: 'Alto',
+    },
+
+    weightVelocity: {
+      title: 'Velocidad de Peso',
+      axisLabel: 'kg/semana',
+      referenceLabel: 'Ritmo objetivo',
+      prLabel: 'PR {weight} kg — {date}',
+      empty: 'Registra tu peso regularmente para ver tu velocidad de cambio',
+      partialWindow: 'Necesitas al menos 28 días entre pesajes para calcular velocidad',
+      prMarkerFormat: 'PR {weight}',
+    },
+
+    whr: {
+      title: 'Ratio Cintura-Cadera',
+      latest: 'Última medición',
+      zone: 'Zona',
+      history: 'Historial 90 días',
+      empty: 'Registra medidas corporales (cintura y cadera) para ver tu WHR',
+      noHips: 'Falta la medida de cadera. Registra cadera y cintura en la misma fecha',
+      noProfile: 'Completa tu perfil (sexo) para clasificar tu WHR',
+      cta: 'Ir a Mediciones',
+    },
+
+    whrZones: {
+      low: 'Bajo',
+      moderate: 'Moderado',
+      high: 'Alto',
+      unknown: 'Sin clasificar',
+    },
+
+    autoInsights: {
+      title: 'Insights Automáticos',
+      seeDetail: 'Ver detalle',
+      viewLabel: 'Ir a {view}',
+      empty: 'Sin insights esta semana — sigue registrando actividades para descubrirlos',
+      severityLabels: {
+        positive: 'Positivo',
+        info: 'Info',
+        alert: 'Alerta',
+      },
+      templates: {
+        bestWeekStreak: 'Llevas {n} semanas consecutivas con actividad — tu mejor racha desde {month}.',
+        hrvDeviation: 'HRV {pct}% {direction} tu promedio de 30 días.',
+        hrvAbove: 'por encima de',
+        hrvBelow: 'por debajo de',
+        restDayStreak: 'Llevas {n} días sin actividad — ¿descanso planificado o rutina perdida?',
+        weightDirectionMatch: 'Tu ritmo actual ({velocity} kg/sem) está {relation} tu objetivo ({target} kg/sem).',
+        weightBelow: 'por debajo de',
+        weightAbove: 'por encima de',
+        sportVariety: 'Has entrenado {n} deportes distintos en los últimos 90 días. Diversidad alta.',
+        recoveryTrend: 'Tu recuperación ha {direction} un {pct}% en los últimos 7 días.',
+        recoveryImproved: 'mejorado',
+        recoveryDeclined: 'empeorado',
+        whrImprovement: 'Tu ratio cintura-cadera ha {direction} de {a} a {b} en 12 semanas.',
+        whrImproved: 'mejorado',
+        whrDeclined: 'empeorado',
+        sportPRWeek: 'Has establecido {n} récords personales en deporte esta semana.',
+      },
+    },
+
+    fixedWindowLabels: {
+      recovery: 'Basado en los últimos 7 días',
+      whr: 'Última medición',
+    },
+
+    globalEmpty: 'Importa datos de Apple Health o registra actividades para desbloquear los patrones',
+  },
+
+  strengthInsights: {
+    title: 'Entrenamiento de Fuerza',
+    personalRecords: {
+      title: 'Mejores Marcas',
+      volumePR: 'Mayor volumen en sesión',
+      best1RM: '1RM estimado',
+      rankLabels: ['1.º', '2.º', '3.º'],
+      filterByMuscle: 'Filtrar por grupo muscular',
+      allMuscles: 'Todos',
+      empty: 'Registra sesiones de entrenamiento para ver tus mejores marcas',
+      noExercises: 'Sin ejercicios con datos',
+    },
+    plateau: {
+      title: 'Mesetas',
+      severityLabels: {
+        warning: 'Precaución',
+        alert: 'Alerta',
+        critical: 'Crítica',
+      },
+      weeksSince: '{n} semanas sin PR',
+      currentPR: 'PR actual: {value} kg',
+      dateLabel: 'Desde {date}',
+      viewProgression: 'Ver progresión',
+      setsSincePR: '{n} series desde entonces',
+      empty: 'Sin mesetas — buen progreso',
+      emptyIcon: 'check-circle',
+    },
+    score: {
+      title: 'Puntuación de Fuerza',
+      compositeLabel: 'Compuesta',
+      scoreUnit: 'pts',
+      insufficientData: 'Entrena al menos 3 grupos musculares para ver tu puntuación de fuerza',
+      noWeightForBodyweight: 'Configura tu peso en el perfil para calcular ejercicios corporales',
+      empty: 'Registra sesiones con peso para ver tu puntuación de fuerza',
+    },
+    weeklyTonnage: {
+      title: 'Volumen Semanal',
+      currentPeriod: 'Últimas 12 semanas',
+      previousPeriod: '12 semanas anteriores',
+      averageLabel: 'Promedio',
+      up: 'Subiendo',
+      down: 'Bajando',
+      flat: 'Estable',
+      deltaFormat: '{delta} kg ({pct}%)',
+      insufficientData: 'Necesitas al menos 4 semanas de entrenamiento para ver la tendencia de volumen',
+      empty: 'Registra tus primeras sesiones de entrenamiento para ver la tendencia de volumen semanal',
+    },
+    fixedWindowLabel: 'Todos los datos históricos',
+  },
+
   stravaPanels: {
     blockTitle: 'Resumen',
     prBanner: {
@@ -908,6 +1080,48 @@ export const strings = {
       shareBody: (weeks, activities) => `Llevo ${weeks} semanas consecutivas de actividad en FitOS, con ${activities} entrenamientos en total. ¡Vamos!`,
       gracePeriodPrompt: 'Continúa esta semana',
     },
+  },
+
+  goals: {
+    title: 'Objetivos',
+    newGoal: 'Nuevo objetivo',
+    editGoal: 'Editar objetivo',
+    createGoal: 'Crear objetivo',
+    emptyTitle: 'Aún no tienes objetivos',
+    emptySubtitle: 'Define metas para mantenerte motivado y seguir tu progreso.',
+    completedSection: 'Completados',
+    archivedSection: 'Objetivos archivados',
+    showArchived: 'Ver archivados',
+    hideArchived: 'Ocultar archivados',
+    edit: 'Editar',
+    archive: 'Archivar',
+    delete: 'Eliminar',
+    cancel: 'Cancelar',
+    save: 'Guardar',
+    create: 'Crear',
+    saveError: 'Error al guardar el objetivo. Intenta de nuevo.',
+    daysRemaining: '{n} días restantes',
+    oneDayRemaining: '1 día restante',
+    overdue: 'En curso',
+    lastDay: '¡Último día!',
+    deleteConfirm: '¿Eliminar objetivo?',
+    deleteWarning: 'Esta acción no se puede deshacer.',
+    celebrationTitle: '¡Objetivo conseguido!',
+    celebrationClose: 'Cerrar',
+    goalProgress: 'Progreso del objetivo',
+    moreGoals: '{n} objetivos más',
+    more: 'más',
+    emptyDashboard: 'Define tu primer objetivo',
+    formType: 'Tipo',
+    formLabel: 'Nombre del objetivo',
+    formTarget: 'Valor objetivo',
+    formUnit: 'Unidad',
+    formStartDate: 'Fecha de inicio',
+    formTargetDate: 'Fecha límite',
+    typeWeight: 'Peso corporal',
+    typeDistance: 'Distancia',
+    typeFrequency: 'Frecuencia semanal',
+    typeCustom: 'Personalizado',
   },
 };
 

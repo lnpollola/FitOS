@@ -143,25 +143,29 @@ Ciclo de vida:
 
 Los comandos están en `.opencode/commands/opsx-*.md`. Skills en `.opencode/skills/openspec-*/SKILL.md`.
 
-## Vistas Implementadas (7)
+## Vistas Implementadas (10)
 | View | ID | Funcionalidad |
 |---|---|---|
-| Dashboard | `dashboard` | 5 cards resumen: calorías hoy, balance semanal, último peso, delta mediciones, próx. entrenamiento |
-| Actividad | `activity` | Import CSV, import XML Apple Health, entrada manual, actividades deportivas con tipos, timeline, resumen semanal Chart.js |
-| Plan de Dieta | `diet` | Templates de comidas, CRUD alimentos, learn/new food, platos elaborados, plan diario con auto-create |
-| Balance Energético | `energy` | Breakdown TDEE (BMR + sport + NEAT), balance diario, balance semanal con warning <5 días |
-| Mediciones | `measurements` | 10 métricas + peso, método Navy body fat, charts históricos, before/after |
-| Entrenamiento | `training` | Planes 2-6 días, librería de ejercicios, sesiones con series/reps/RPE, charts progresión |
-| Perfil | `profile` | Formulario perfil (edad, sexo, altura, peso, baseline), export/import JSON |
+| Dashboard | `dashboard` | Hero con anillo de crecimiento, Strava panels, 9+ KPIs con sparklines, selector de rango, sección de deportes |
+| Patrones | `insights` | Heatmap anual, histograma DOW, donut de distribución deportiva, score de recuperación compuesto, velocidad de peso, ratio cintura-cadera, auto-insights |
+| Tendencias | `analytics` | Visión global de salud: pasos, FC, energía, HRV, sueño, ranking de actividades, VO₂ max |
+| Actividad | `activity` | Import Apple Health XML + CSV, resumen semanal, ranking ordenable con sparklines, comparación 15d/1m/3m |
+| Sueño | `sleep` | Duración, fases (profundo/REM/ligero), consistencia, cumplimiento vs objetivo |
+| Plan de Dieta | `diet` | 5 columnas de comidas, gestor de alimentos, platos elaborados, auto-generador desde déficit |
+| Balance Energético | `energy` | Desglose GET (TMB + deporte + NEAT), gauge de adherencia, balance semanal |
+| Mediciones | `measurements` | 10 métricas + peso, Navy body fat, charts históricos, before/after |
+| Entrenamiento | `training` | 5 planes predefinidos, 55 ejercicios, registro sesiones RPE, gráficos progresión |
+| Objetivos | `goals` | Metas configurables con anillos de progreso, cuenta regresiva, celebración con confeti, resumen en Panel |
+| Perfil | `profile` | Perfil usuario, export/import JSON, umbrales de cumplimiento |
 
 ## Cambios Planificados (multiphase)
 
 Roadmap incremental sobre el dashboard, definido durante explore-mode el 27 Jun 2026:
 
 - **Phase 1 — `panel-ux-ui-kpis-summarized`** (en curso): Paneles Strava-style sobre el dashboard actual (PR banner, weekly goal ring, relative effort, training log bubble, streak, monthly calendar). Ajustes: migración a semanas ISO en `getSportLifetimeStats`, mejora de sport icons (paddle/football/boxing/yoga), utility `kpi-derivation.js`.
-- **Phase 2 — `summary-insights-view`** (próximo): Nueva vista `insights` entre Panel y Tendencias. Year-in-motion heatmap, time-of-day, day-of-week, sport distribution, recovery score composite, weight velocity, WHR, auto-insights. Code name en inglés, UI en español.
-- **Phase 3 — `strength-training-insights`** (después): 1RM Epley, PR por ejercicio, plateau detector, volume PR, strength score.
-- **Phase 4 — `goals-tracker`** (después): Goals configurables con progress rings y countdown, persistidos en `settings`.
+- **Phase 2 — `summary-insights-view`** (implementado): Nueva vista `insights` entre Panel y Tendencias. Year-in-motion heatmap, day-of-week histogram, sport distribution donut, recovery score composite (HRV+RHR+sleep), weight velocity chart, waist-to-hip ratio card, auto-insight cards. Code name en inglés, UI en español.
+- **Phase 3 — `strength-training-insights`** (próximo): 1RM Epley, PR por ejercicio, plateau detector, volume PR, strength score.
+- **Phase 4 — `goals-tracker`** (implementado): Goals configurables con progress rings y countdown, persistidos en `settings`.
 
 ## Notas Importantes
 - La app funciona en **modo web** (sin Electron) con `npm run dev:web`, pero `window.electronAPI` será undefined
@@ -199,3 +203,17 @@ Roadmap incremental sobre el dashboard, definido durante explore-mode el 27 Jun 
 - Gradiente top-bar eliminado globalmente bajo `body.organic`
 - 14 tests nuevos (7 sparkline, 4 growth-ring, 2 smoke organic-tokens, 1 dashboard compact hero)
 - **52/52 tests pasan**
+
+## Sesión — goals-tracker (27 Jun 2026) [IMPLEMENTADO]
+
+### Estado: Completo — listo para archivar vía `/opsx-archive`
+- **51/51 tareas** implementadas (CRUD goals, progress rings, countdown, celebration confetti, dashboard summary card)
+- 9 specs nuevas: `goal-crud`, `goal-progress-rings`, `goal-countdown`, `goal-celebration`, `goal-dashboard-card`, `goals-view`
+- 3 specs modificadas: `dashboard-health-metrics`, `spanish-ui`, `design-system`
+- Nuevo handler module `src/main/handlers/goals-handlers.js` con 6 IPC handlers: `db:getGoals`, `db:saveGoal`, `db:deleteGoal`, `db:archiveGoal`, `db:getGoalProgress`, `validateGoal`
+- Nuevas utilidades: `goal-progress-ring.js` (SVG donut), `goals.js` (helpers puros), `confetti.js` (canvas particle animation)
+- Nueva vista `src/renderer/views/goals.js` con CRUD completo (crear/editar/archivar/eliminar), secciones activos/completados/archivados, skeleton loading, overlay de celebración
+- Goals sin schema changes: persistidos como JSON en `settings` tabla (clave `goals`)
+- Card resumen en dashboard con hasta 3 anillos clickables (56×56 px), overflow "+N más", empty state "Define tu primer objetivo"
+- **299/299 tests pasan** (7 unit goal-progress-ring + 11 unit goals-utils + 3 unit confetti + 5 smoke goals + 273 existentes)
+- 0 breaking changes, 0 nuevas dependencias, 0 schema changes
