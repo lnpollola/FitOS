@@ -14,12 +14,13 @@ const mockApi = {
   getCyclingDistance: () => Promise.resolve({ ok: false, data: [] }),
   getHealthWorkouts: () => Promise.resolve({ ok: false, data: [] }),
   getEnergyBalance: () => Promise.resolve(null),
-  getPersonalRecords: () => Promise.resolve({ records: [], total: 0 }),
-  getWeeklyGoal: () => Promise.resolve({ current: 0, target: 4, progress_pct: 0, primary_sport: null, week_start: '2026-06-22', week_end: '2026-06-28' }),
+  getPersonalRecords: () => Promise.resolve({ records: [], total: 0, by_sport: { running: [], cycling: [], strength: [] }, primary_sport: null }),
   getRelativeEffort: () => Promise.resolve({ current_week: { value: 0, start_date: '2026-06-22', end_date: '2026-06-28' }, previous_week: { value: 0, start_date: '2026-06-15', end_date: '2026-06-21' }, delta: 0, trend: 'flat' }),
   getTrainingLogWeek: () => Promise.resolve({ week_start: '2026-06-22', week_end: '2026-06-28', total_minutes: 0, days: [] }),
   getMonthlyCalendar: () => Promise.resolve({ month: '2026-06', days: [], weeks: [] }),
   getStreak: () => Promise.resolve({ weeks: 0, total_activities: 0, is_active: false, last_broken_date: null }),
+  getAutoInsights: () => Promise.resolve(null),
+  getGoals: () => Promise.resolve([]),
   onDataChanged: () => {},
   navigate: () => {},
 };
@@ -81,20 +82,39 @@ describe('Dashboard view smoke test', () => {
     expect(html).not.toContain('data-range="7d"');
   });
 
-  it('rows in correct order: hero → kpis-1 → kpis-2 → trend → sports', async () => {
+  it('rows in correct order: hero → kpis-1 → kpis-2 → sports → strava-block → auto-insights', async () => {
     const { init } = await import('../../src/renderer/views/dashboard.js');
     await init();
     const html = document.getElementById('view-dashboard').innerHTML;
     const heroIdx = html.indexOf('id="row-hero"');
     const kpis1Idx = html.indexOf('id="row-kpis-1"');
     const kpis2Idx = html.indexOf('id="row-kpis-2"');
-    const trendIdx = html.indexOf('id="row-trend"');
     const sportsIdx = html.indexOf('id="row-sports"');
+    const stravaIdx = html.indexOf('id="strava-block"');
+    const autoInsightsIdx = html.indexOf('id="row-auto-insights"');
     expect(heroIdx).toBeGreaterThan(-1);
     expect(kpis1Idx).toBeGreaterThan(heroIdx);
     expect(kpis2Idx).toBeGreaterThan(kpis1Idx);
-    expect(trendIdx).toBeGreaterThan(kpis2Idx);
-    expect(sportsIdx).toBeGreaterThan(trendIdx);
+    expect(sportsIdx).toBeGreaterThan(kpis2Idx);
+    expect(stravaIdx).toBeGreaterThan(sportsIdx);
+    expect(autoInsightsIdx).toBeGreaterThan(stravaIdx);
+  });
+
+  it('does not contain "Calorías Hoy" card', async () => {
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).not.toContain('Calorías Hoy');
+    expect(html).not.toContain('Calorías hoy');
+  });
+
+  it('does not contain trend chart row', async () => {
+    const { init } = await import('../../src/renderer/views/dashboard.js');
+    await init();
+    const html = document.getElementById('view-dashboard').innerHTML;
+    expect(html).not.toContain('id="row-trend"');
+    expect(html).not.toContain('trend-chart');
+    expect(html).not.toContain('weekly-balance-chart');
   });
 
   it('uses locale strings not hardcoded text', async () => {

@@ -139,7 +139,7 @@ function computeSignal(rows) {
     const sumSq = baselineValues.reduce((s, v) => s + (v - baselineMean) ** 2, 0);
     stddev = Math.round(Math.sqrt(sumSq / daysAvailable) * 10) / 10;
   }
-  const sparkline = currentVals;
+  const sparkline = currentVals.reverse();
   return {
     current: currentMean != null ? Math.round(currentMean * 10) / 10 : null,
     baseline: baselineMean != null ? Math.round(baselineMean * 10) / 10 : null,

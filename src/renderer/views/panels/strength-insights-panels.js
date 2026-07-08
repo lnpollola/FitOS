@@ -7,10 +7,8 @@ import Chart from 'chart.js/auto';
 
 const SI = strings.strengthInsights;
 
-let _tonnageChart = null;
-
 function destroyTonnageChart() {
-  if (_tonnageChart) { _tonnageChart.destroy(); _tonnageChart = null; }
+  if (window._tonnageChart) { window._tonnageChart.destroy(); window._tonnageChart = null; }
 }
 
 export function mountStrengthPRs(container) {
@@ -316,7 +314,7 @@ export function mountWeeklyTonnage(container) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    _tonnageChart = new Chart(ctx, {
+    window._tonnageChart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels,

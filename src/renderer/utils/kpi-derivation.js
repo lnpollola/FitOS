@@ -375,7 +375,7 @@ export function recoveryScore({ hrv, rhr, sleep }) {
   const rhrSub = hasRHR ? recoverySubScore(rhrZ, true) : 50;
   const sleepSub = hasSleep ? recoverySubScore(sleepZ, false) : 50;
 
-  const composite = Math.round(0.4 * hrvSub + 0.3 * (100 - rhrSub) + 0.3 * sleepSub);
+  const composite = Math.round(0.4 * hrvSub + 0.3 * rhrSub + 0.3 * sleepSub);
   const clamped = Math.max(0, Math.min(100, composite));
 
   const zone = clamped < 40 ? 'low' : clamped < 70 ? 'moderate' : 'high';

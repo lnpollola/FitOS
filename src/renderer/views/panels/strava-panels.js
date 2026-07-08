@@ -69,6 +69,9 @@ export function mountPersonalRecord(container) {
   const api = window.electronAPI;
   if (!api) return () => {};
 
+  let activeTab = null;
+  let allData = null;
+
   const renderLoading = () => {
     container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
   };
@@ -98,6 +101,25 @@ export function mountPersonalRecord(container) {
     }
   };
 
+  const getRecordsForTab = (tab) => {
+    if (!allData || !allData.by_sport) return [];
+    return allData.by_sport[tab] || [];
+  };
+
+  const renderTabs = () => {
+    const tabs = ['running', 'cycling', 'strength'];
+    return `<div class="strava-pr-tabs" role="tablist">
+      ${tabs.map(tab => `
+        <button class="strava-pr-tab ${activeTab === tab ? 'strava-pr-tab--active' : ''}" 
+                role="tab" 
+                aria-selected="${activeTab === tab}" 
+                data-tab="${tab}">
+          ${SP.prBanner.tabs[tab]}
+        </button>
+      `).join('')}
+    </div>`;
+  };
+
   const renderRecord = (record, total) => {
     const panel = document.createElement('div');
     panel.className = 'strava-panel strava-pr-panel';
@@ -109,6 +131,7 @@ export function mountPersonalRecord(container) {
     const sportIconHtml = sportIcon(record.sport_type, 14);
     panel.innerHTML = `
       <h3 class="strava-panel-title">${SP.prBanner.title}</h3>
+      ${renderTabs()}
       <div class="strava-pr-banner" role="article" aria-label="${labelText}, ${valueText}, ${dateStr}">
         <div class="strava-pr-badge ${badgeClass}" aria-hidden="true">${icon('medal', 24)}</div>
         <div class="strava-pr-content">
@@ -119,6 +142,34 @@ export function mountPersonalRecord(container) {
         <div class="strava-pr-chevron">${icon('chevron-right', 18)}</div>
       </div>
     `;
+    
+    // Add tab event listeners
+    const tabButtons = panel.querySelectorAll('.strava-pr-tab');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeTab = btn.dataset.tab;
+        renderCurrentView();
+      });
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const tabs = Array.from(tabButtons);
+          const currentIndex = tabs.indexOf(btn);
+          let nextIndex;
+          if (e.key === 'ArrowRight') {
+            nextIndex = (currentIndex + 1) % tabs.length;
+          } else {
+            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          }
+          tabs[nextIndex].focus();
+        }
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+    });
+
     if (total > 1) {
       const link = document.createElement('button');
       link.className = 'strava-pr-view-all';
@@ -127,42 +178,51 @@ export function mountPersonalRecord(container) {
       panel.appendChild(link);
       link.addEventListener('click', (e) => { e.stopPropagation(); openModal(panel, total); });
     }
-    container.innerHTML = '';
-    container.appendChild(panel);
     return panel;
+  };
+
+  const renderCurrentView = () => {
+    const records = getRecordsForTab(activeTab);
+    if (records.length === 0) {
+      renderEmpty();
+    } else {
+      const panel = renderRecord(records[0], records.length);
+      container.innerHTML = '';
+      container.appendChild(panel);
+    }
   };
 
   const openModal = (parentPanel, total) => {
     const existing = parentPanel.querySelector('dialog.strava-pr-modal');
     if (existing) { existing.showModal(); return; }
-    safeCall(Promise.resolve(api.getPersonalRecords()), { records: [], total: 0 }).then((data) => {
-      const dialog = document.createElement('dialog');
-      dialog.className = 'strava-pr-modal';
-      const list = (data.records || []).map((r) => {
-        const cls = rankBadgeClass(r.rank);
-        const labelText = getPrLabelText(r);
-        const valueText = formatPrValue(r);
-        const sportIconHtml = sportIcon(r.sport_type, 12);
-        return `<div class="strava-pr-modal-row">
-          <span class="strava-pr-badge ${cls} strava-pr-modal-row-badge">${icon('medal', 16)}</span>
-          <div class="strava-pr-modal-row-content">
-            <div class="strava-pr-modal-row-label">${getRankLabel(r.rank) ? getRankLabel(r.rank) + ' · ' : ''}${sportIconHtml} ${labelText}</div>
-            <div class="strava-pr-modal-row-time">${valueText}</div>
-            <div class="strava-pr-modal-row-date">${formatDateLong(new Date(r.achieved_at + 'T00:00:00'))}</div>
-          </div>
-        </div>`;
-      }).join('');
-      dialog.innerHTML = `
-        <button class="strava-pr-modal-close" aria-label="Cerrar">${icon('x', 16)}</button>
-        <h2>${SP.prBanner.title} (${total})</h2>
-        ${list || '<p class="strava-pr-modal-empty">Sin récords</p>'}
-      `;
-      parentPanel.appendChild(dialog);
-      const closeBtn = dialog.querySelector('.strava-pr-modal-close');
-      if (closeBtn) closeBtn.addEventListener('click', () => dialog.close());
-      dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
-      dialog.showModal();
-    });
+    
+    const records = getRecordsForTab(activeTab);
+    const dialog = document.createElement('dialog');
+    dialog.className = 'strava-pr-modal';
+    const list = records.map((r) => {
+      const cls = rankBadgeClass(r.rank);
+      const labelText = getPrLabelText(r);
+      const valueText = formatPrValue(r);
+      const sportIconHtml = sportIcon(r.sport_type, 12);
+      return `<div class="strava-pr-modal-row">
+        <span class="strava-pr-badge ${cls} strava-pr-modal-row-badge">${icon('medal', 16)}</span>
+        <div class="strava-pr-modal-row-content">
+          <div class="strava-pr-modal-row-label">${getRankLabel(r.rank) ? getRankLabel(r.rank) + ' · ' : ''}${sportIconHtml} ${labelText}</div>
+          <div class="strava-pr-modal-row-time">${valueText}</div>
+          <div class="strava-pr-modal-row-date">${formatDateLong(new Date(r.achieved_at + 'T00:00:00'))}</div>
+        </div>
+      </div>`;
+    }).join('');
+    dialog.innerHTML = `
+      <button class="strava-pr-modal-close" aria-label="Cerrar">${icon('x', 16)}</button>
+      <h2>${SP.prBanner.tabs[activeTab]} (${total})</h2>
+      ${list || '<p class="strava-pr-modal-empty">Sin récords</p>'}
+    `;
+    parentPanel.appendChild(dialog);
+    const closeBtn = dialog.querySelector('.strava-pr-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.showModal();
   };
 
   let cancelled = false;
@@ -174,112 +234,9 @@ export function mountPersonalRecord(container) {
       renderError(load);
       return;
     }
-    const records = data.records || [];
-    if (records.length === 0) {
-      renderEmpty();
-    } else {
-      renderRecord(records[0], data.total || records.length);
-    }
-  };
-
-  load();
-
-  return () => { cancelled = true; };
-}
-
-export function mountWeeklyGoal(container) {
-  if (!container) return () => {};
-  const api = window.electronAPI;
-  if (!api) {
-    container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
-    return () => {};
-  }
-
-  let cancelled = false;
-
-  const renderLoading = () => {
-    container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
-  };
-
-  const renderEmpty = (data) => {
-    const panel = document.createElement('div');
-    panel.className = 'strava-panel';
-    panel.innerHTML = `
-      <h3 class="strava-panel-title">${SP.weeklyGoal.title}</h3>
-      <div class="strava-weekly-goal" tabindex="0" role="button" aria-label="${SP.weeklyGoal.title}">
-        <div class="strava-ring-wrap">
-          <svg viewBox="0 0 36 36" aria-hidden="true">
-            <circle class="strava-ring-track" cx="18" cy="18" r="15.9155" stroke-width="3"></circle>
-          </svg>
-          <div class="strava-ring-center">${icon('target', 32)}</div>
-        </div>
-        <div class="strava-weekly-progress">${SP.weeklyGoal.progress(0, data.target || 4)}</div>
-        <div class="strava-weekly-meta">${SP.weeklyGoal.thisWeek}</div>
-      </div>
-    `;
-    container.innerHTML = '';
-    container.appendChild(panel);
-    attachNavigate(panel);
-  };
-
-  const attachNavigate = (panel) => {
-    const goal = panel.querySelector('.strava-weekly-goal');
-    if (!goal || !api.navigate) return;
-    goal.addEventListener('click', () => api.navigate('activity'));
-    goal.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); api.navigate('activity'); }
-    });
-  };
-
-  const renderRing = (data) => {
-    const current = Number(data.current) || 0;
-    const target = Number(data.target) || 4;
-    const pct = Math.min(100, (current / Math.max(1, target)) * 100);
-    const panel = document.createElement('div');
-    panel.className = 'strava-panel';
-    const centerIcon = data.primary_sport ? sportIcon(data.primary_sport, 28) : icon('target', 28);
-    const clamped = current > target;
-    panel.innerHTML = `
-      <h3 class="strava-panel-title">${SP.weeklyGoal.title}</h3>
-      <div class="strava-weekly-goal" tabindex="0" role="button" aria-label="${SP.weeklyGoal.title}: ${SP.weeklyGoal.progress(current, target)}">
-        <div class="strava-ring-wrap">
-          <svg viewBox="0 0 36 36" aria-hidden="true">
-            <circle class="strava-ring-track" cx="18" cy="18" r="15.9155" stroke-width="3"></circle>
-            <circle class="strava-ring-fill" cx="18" cy="18" r="15.9155" stroke-width="3"
-              stroke-dasharray="${pct} 100"
-              stroke-dashoffset="0"></circle>
-          </svg>
-          <div class="strava-ring-center">${centerIcon}</div>
-        </div>
-        <div class="strava-weekly-progress">${SP.weeklyGoal.progress(current, target)}${clamped ? ' ✓' : ''}</div>
-        <div class="strava-weekly-meta">${SP.weeklyGoal.thisWeek}</div>
-      </div>
-    `;
-    container.innerHTML = '';
-    container.appendChild(panel);
-    attachNavigate(panel);
-  };
-
-  const renderError = () => {
-    renderStateCard(container.firstElementChild || container, {
-      title: SP.weeklyGoal.title,
-      state: 'error',
-      subtitle: strings.states.errorLoading,
-      onRetry: load,
-    });
-  };
-
-  const load = async () => {
-    renderLoading();
-    const data = await safeCall(api.getWeeklyGoal(), null);
-    if (cancelled) return;
-    if (!data) { renderError(); return; }
-    const current = Number(data.current) || 0;
-    if (current === 0 && (!data.primary_sport)) {
-      renderEmpty(data);
-    } else {
-      renderRing(data);
-    }
+    allData = data;
+    activeTab = data.primary_sport || 'running';
+    renderCurrentView();
   };
 
   load();
@@ -587,6 +544,183 @@ export function mountStreak(container) {
     if (cancelled) return;
     if (!data) { renderError(); return; }
     renderContent(data);
+  };
+
+  load();
+
+  return () => { cancelled = true; };
+}
+
+export function mountStreakCalendar(container) {
+  if (!container) return () => {};
+  const api = window.electronAPI;
+  if (!api) {
+    container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
+    return () => {};
+  }
+
+  let cancelled = false;
+  const state = {
+    yearMonth: (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    })(),
+  };
+
+  const renderLoading = () => {
+    container.innerHTML = `<div class="strava-panel strava-streak-calendar">
+      <div class="strava-streak-calendar-left">${skeletonCard()}</div>
+      <div class="strava-streak-calendar-right">
+        <div class="strava-skeleton-calendar-grid">
+          ${Array.from({ length: 35 }, () => '<div class="strava-skeleton-calendar-cell skeleton"></div>').join('')}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  const renderError = () => {
+    renderStateCard(container.firstElementChild || container, {
+      title: SP.streak.combinedTitle,
+      state: 'error',
+      subtitle: strings.states.errorLoading,
+      onRetry: load,
+    });
+  };
+
+  const renderContent = (streakData, calendarData) => {
+    const weeks = Number(streakData.weeks) || 0;
+    const acts = Number(streakData.total_activities) || 0;
+    const isActive = !!streakData.is_active;
+
+    const months = SP.calendar.months;
+    const [year, monthNum] = state.yearMonth.split('-').map(Number);
+    const monthName = months[monthNum - 1];
+    const days = calendarData.days || [];
+    const calWeeks = (calendarData.weeks || []).filter(w => w.in_month);
+    const today = toIsoDate(new Date());
+    const firstDow = days.length > 0 ? days[0].day_of_week : 0;
+    const emptyCellsBefore = Array.from({ length: firstDow }, () => '<div class="strava-calendar-empty"></div>').join('');
+    const dayCells = days.map((d) => {
+      const isFuture = d.date > today;
+      const hasActivity = d.has_activity;
+      const classes = [
+        'strava-calendar-day',
+        hasActivity ? 'strava-calendar-day--active' : 'strava-calendar-day--inactive',
+        isFuture ? 'strava-calendar-day--future' : '',
+      ].filter(Boolean).join(' ');
+      const monthNameLong = months[monthNum - 1];
+      const ariaLabel = hasActivity
+        ? SP.calendar.activityAria(d.day, monthNameLong, d.activity_count, d.sport_type || 'actividad')
+        : SP.calendar.activityAria(d.day, monthNameLong, 0, '');
+      const inner = hasActivity
+        ? `${sportIcon(d.sport_type, 14)}${d.activity_count > 1 ? '<span class="strava-calendar-day-multi-dot" aria-hidden="true"></span>' : ''}`
+        : `${d.day}`;
+      return `<button class="${classes}" data-cal-date="${d.date}" aria-label="${ariaLabel}">${inner}</button>`;
+    }).join('');
+    const weekStatusCells = calWeeks.map((w) => {
+      let cls = 'strava-calendar-week-status--incomplete';
+      let inner = '';
+      if (w.completed) {
+        cls = 'strava-calendar-week-status--completed';
+        inner = icon('check', 12);
+      } else if (w.is_current && calWeeks.length > 0) {
+        cls = 'strava-calendar-week-status--active';
+        const label = SP.streak.weeks;
+        inner = `<span>${icon('flame', 10)}</span><span>${label}</span>`;
+      }
+      return `<div class="strava-calendar-week-status ${cls}" aria-hidden="true">${inner}</div>`;
+    }).join('');
+    const dowHeaders = SP.trainingLog.days.map(d => `<div class="strava-calendar-dow-header">${d}</div>`).join('');
+    const monthHeader = `<div class="strava-calendar-dow-header"></div>`;
+
+    let streakHtml = '';
+    if (weeks === 0) {
+      streakHtml = `
+        <div class="strava-streak-calendar-left">
+          <h3 class="strava-panel-title">${SP.streak.title}</h3>
+          <div class="strava-streak-empty">${SP.streak.broken}</div>
+          <p class="strava-helper-text-sm-left">${SP.streak.startPrompt}</p>
+        </div>
+      `;
+    } else {
+      streakHtml = `
+        <div class="strava-streak-calendar-left">
+          <h3 class="strava-panel-title">${SP.streak.title}</h3>
+          <div class="strava-streak-metrics">
+            <div class="strava-streak-metric">
+              <div class="strava-streak-value">${weeks}</div>
+              <div class="strava-streak-label">${SP.streak.weeks}</div>
+            </div>
+            <div class="strava-streak-metric">
+              <div class="strava-streak-value">${acts}</div>
+              <div class="strava-streak-label">${SP.streak.inStreak}</div>
+            </div>
+          </div>
+          ${!isActive && weeks > 0 ? `<p class="strava-grace-text">${SP.streak.gracePeriodPrompt}</p>` : ''}
+        </div>
+      `;
+    }
+
+    const panel = document.createElement('div');
+    panel.className = 'strava-panel strava-streak-calendar';
+    panel.innerHTML = `
+      ${streakHtml}
+      <div class="strava-streak-calendar-right">
+        <div class="strava-calendar-header">
+          <button class="strava-calendar-nav-btn" data-cal-nav="prev" aria-label="${SP.calendar.navPrev}">${icon('chevron-left', 14)}</button>
+          <div class="strava-calendar-title">${monthName} ${year}</div>
+          <button class="strava-calendar-nav-btn" data-cal-nav="next" aria-label="${SP.calendar.navNext}">${icon('chevron-right', 14)}</button>
+          <button class="strava-calendar-today-btn" data-cal-today>${SP.calendar.today}</button>
+        </div>
+        <div class="strava-calendar-grid" role="grid" aria-label="${monthName} ${year}">
+          ${dowHeaders}
+          ${monthHeader}
+          ${emptyCellsBefore}${dayCells}
+          ${weekStatusCells}
+        </div>
+      </div>
+    `;
+    container.innerHTML = '';
+    container.appendChild(panel);
+    attachHandlers(panel);
+  };
+
+  const attachHandlers = (panel) => {
+    const prev = panel.querySelector('[data-cal-nav="prev"]');
+    const next = panel.querySelector('[data-cal-nav="next"]');
+    const today = panel.querySelector('[data-cal-today]');
+    if (prev) prev.addEventListener('click', () => shiftMonth(-1));
+    if (next) next.addEventListener('click', () => shiftMonth(1));
+    if (today) today.addEventListener('click', () => goToToday());
+    panel.querySelectorAll('[data-cal-date]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (api.navigate) api.navigate('activity');
+      });
+    });
+  };
+
+  const shiftMonth = (delta) => {
+    const [y, m] = state.yearMonth.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    state.yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    load();
+  };
+
+  const goToToday = () => {
+    const d = new Date();
+    state.yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    load();
+  };
+
+  const load = async () => {
+    renderLoading();
+    const [streakData, calendarData] = await Promise.all([
+      safeCall(api.getStreak(), null),
+      safeCall(api.getMonthlyCalendar(state.yearMonth), null),
+    ]);
+    if (cancelled) return;
+    if (!streakData || !calendarData) { renderError(); return; }
+    renderContent(streakData, calendarData);
   };
 
   load();

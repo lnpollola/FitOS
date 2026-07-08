@@ -81,8 +81,26 @@ function register(ipcMain, getDb) {
     const startDate = goal.startDate;
 
     if (goal.type === 'weight') {
-      const entry = db.prepare('SELECT weight_kg FROM weight_entries WHERE date >= ? ORDER BY date DESC LIMIT 1').get(startDate);
-      if (entry) current = entry.weight_kg;
+      const startEntry = db.prepare('SELECT weight_kg FROM weight_entries WHERE date <= ? ORDER BY date DESC LIMIT 1').get(startDate);
+      const startWeight = startEntry ? startEntry.weight_kg : null;
+      const currentEntry = db.prepare('SELECT weight_kg FROM weight_entries WHERE date >= ? ORDER BY date DESC LIMIT 1').get(startDate);
+      if (currentEntry) current = currentEntry.weight_kg;
+      
+      if (startWeight !== null && target > 0) {
+        if (target < startWeight) {
+          // Weight loss: progress = (start - current) / (start - target)
+          const progress = startWeight > target ? (startWeight - current) / (startWeight - target) : 0;
+          const progress_pct = Math.max(0, Math.min(100, Math.round(progress * 1000) / 10));
+          return { ok: true, current, target, progress_pct };
+        } else if (target > startWeight) {
+          // Weight gain: progress = (current - start) / (target - start)
+          const progress = target > startWeight ? (current - startWeight) / (target - startWeight) : 0;
+          const progress_pct = Math.max(0, Math.min(100, Math.round(progress * 1000) / 10));
+          return { ok: true, current, target, progress_pct };
+        }
+      }
+      // No starting weight or target equals start
+      return { ok: true, current, target, progress_pct: 0, note: 'Sin datos de peso iniciales' };
     } else if (goal.type === 'distance') {
       const result = db.prepare("SELECT COALESCE(SUM(distance_km), 0) as total FROM sport_activities WHERE date >= ? AND (sport_type = 'running' OR sport_type = 'cycling')").get(startDate);
       current = result ? result.total : 0;

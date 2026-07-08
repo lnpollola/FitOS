@@ -56,6 +56,25 @@ Buttons that trigger async operations (imports, saves, exports) SHALL enter a lo
 - **THEN** the CSS SHALL apply `opacity: 0.7`, `cursor: wait`, `pointer-events: none`
 - **THEN** a spinner element inside the button SHALL be visible (via `::after` pseudo-element or child element)
 
+### Requirement: Chart destruction on view unmount
+
+All Chart.js chart instances SHALL be properly destroyed when their parent view is unmounted or when charts are recreated. Chart references SHALL be stored on `window` (e.g., `window._stepsChart`) so that the global `destroyAllCharts()` function in `app.js` can find and destroy them. Module-scoped chart variables SHALL NOT be used.
+
+#### Scenario: Tonnage chart destroyed on view unmount
+- **WHEN** the user navigates away from the insights view
+- **THEN** `window._tonnageChart` SHALL be destroyed (if it exists)
+- **THEN** no Chart.js instance SHALL remain in memory after view unmount
+
+#### Scenario: Chart references on window object
+- **WHEN** any view creates a Chart.js instance
+- **THEN** the reference SHALL be stored on `window` (e.g., `window._tonnageChart`)
+- **THEN** the reference SHALL NOT be stored in module scope
+
+#### Scenario: destroyAllCharts catches all charts
+- **WHEN** `destroyAllCharts()` is called (e.g., on view switch)
+- **THEN** all active Chart.js instances SHALL be destroyed
+- **THEN** no orphaned chart instances SHALL remain
+
 ### Requirement: aria-live regions for async content updates
 
 Regions of the DOM that are populated by async IPC calls SHALL declare `aria-live="polite"` so screen readers announce content updates after the data arrives.

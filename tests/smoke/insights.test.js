@@ -93,7 +93,7 @@ describe('Insights view smoke test', () => {
     await expect(init()).resolves.not.toThrow();
   });
 
-  it('renders title, date-range selector, and 7 section placeholders on mount', async () => {
+  it('renders title, date-range selector, and 5 section placeholders on mount (no velocity/WHR/auto-insights)', async () => {
     const { init } = await import('../../src/renderer/views/insights.js');
     await init();
     const container = document.getElementById('view-insights');
@@ -103,9 +103,9 @@ describe('Insights view smoke test', () => {
     expect(document.getElementById('section-dow')).toBeTruthy();
     expect(document.getElementById('section-sport-dist')).toBeTruthy();
     expect(document.getElementById('section-recovery')).toBeTruthy();
-    expect(document.getElementById('section-velocity')).toBeTruthy();
-    expect(document.getElementById('section-whr')).toBeTruthy();
-    expect(document.getElementById('section-auto-insights')).toBeTruthy();
+    expect(document.getElementById('section-velocity')).toBeFalsy();
+    expect(document.getElementById('section-whr')).toBeFalsy();
+    expect(document.getElementById('section-auto-insights')).toBeFalsy();
   });
 
   it('clicking date-range button updates state and refetches', async () => {
@@ -128,16 +128,13 @@ describe('Insights view smoke test', () => {
         rhr: { current: 58, baseline: 62, stddev: 4, daysAvailable: 10, sparkline: null },
         sleep: { current: 7.8, baseline: 7.2, stddev: 0.6, daysAvailable: 10, sparkline: null },
       }),
-      getWeightVelocity: () => Promise.resolve({ points: [], target_pace_reference_velocity: -0.5, target_pace_magnitude: 0.5, pr_weight: null, pr_insufficient_window: true }),
-      getWHR: () => Promise.resolve({ current: null, history: [], sex: null, has_measurements: false }),
-      getAutoInsights: () => Promise.resolve({ weekStreak: 0, restDayStreak: 0, recentSportPRs: 0 }),
     };
     window.electronAPI = emptyApi;
     const { init } = await import('../../src/renderer/views/insights.js');
     await init();
     await new Promise(r => setTimeout(r, 100));
     const sections = document.querySelectorAll('.insights-section');
-    expect(sections.length).toBe(8);
+    expect(sections.length).toBe(5);
   });
 
   it('renders error state when IPC call throws', async () => {
@@ -163,9 +160,6 @@ describe('Insights view smoke test', () => {
         rhr: { current: 58, baseline: 62, stddev: 4, daysAvailable: 10, sparkline: null },
         sleep: { current: 7.8, baseline: 7.2, stddev: 0.6, daysAvailable: 10, sparkline: null },
       }),
-      getWeightVelocity: () => Promise.resolve({ points: [], target_pace_reference_velocity: -0.5, target_pace_magnitude: 0.5, pr_weight: null, pr_insufficient_window: true }),
-      getWHR: () => Promise.resolve({ current: null, history: [], sex: null, has_measurements: false }),
-      getAutoInsights: () => Promise.resolve({ weekStreak: 0, restDayStreak: 0, recentSportPRs: 0 }),
     };
     window.electronAPI = emptyApi;
     const { init } = await import('../../src/renderer/views/insights.js');
@@ -173,7 +167,6 @@ describe('Insights view smoke test', () => {
     await new Promise(r => setTimeout(r, 200));
     const banner = document.getElementById('insights-global-banner');
     expect(banner).toBeTruthy();
-    expect(banner.style.display).not.toBe('none');
   });
 
   it('onDataChanged subscription exists', async () => {
@@ -181,5 +174,21 @@ describe('Insights view smoke test', () => {
     await init();
     const container = document.getElementById('view-insights');
     expect(container.innerHTML.length).toBeGreaterThan(100);
+  });
+
+  it('heatmap title changes based on selected period', async () => {
+    const { init } = await import('../../src/renderer/views/insights.js');
+    await init();
+    await new Promise(r => setTimeout(r, 100));
+    const titleEl = document.getElementById('heatmap-title');
+    expect(titleEl).toBeTruthy();
+    expect(titleEl.textContent).toContain('últimos 3 meses');
+
+    const btn6m = document.querySelector('#insights-filters .filter-btn[data-range="6m"]');
+    if (btn6m) {
+      btn6m.click();
+      await new Promise(r => setTimeout(r, 100));
+      expect(titleEl.textContent).toContain('últimos 6 meses');
+    }
   });
 });

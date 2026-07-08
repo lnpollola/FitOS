@@ -123,7 +123,18 @@ export async function init() {
       document.getElementById('filter-to').value = '';
       if (errEl) errEl.textContent = '';
       document.getElementById('filter-apply').style.display = 'none';
+
+      const chartContainers = document.querySelectorAll('#analytics-chart-grid .chart-container, #secondary-metrics-grid .chart-container');
+      chartContainers.forEach(el => el.classList.add('chart-transitioning'));
+      await new Promise(r => setTimeout(r, 200));
+
       await loadAll();
+
+      const newContainers = document.querySelectorAll('#analytics-chart-grid .chart-container, #secondary-metrics-grid .chart-container');
+      newContainers.forEach(el => {
+        el.classList.add('chart-transitioning');
+        requestAnimationFrame(() => el.classList.remove('chart-transitioning'));
+      });
     }
 
     document.querySelectorAll('.filter-btn[data-range]').forEach(btn => {
@@ -325,9 +336,11 @@ export async function init() {
       el.innerHTML = cards.map(c => `
         <div class="analytics-kpi-card">
           <div class="kpi-label">${c.label}</div>
-          <div class="kpi-value">${c.value}</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value">${c.value}</div>
+            <div class="kpi-trend ${c.trend.cls}">${c.trend.arrow}</div>
+          </div>
           <div class="kpi-sub">${c.sub}</div>
-          <div class="kpi-trend ${c.trend.cls}">${c.trend.arrow}</div>
         </div>
       `).join('');
     }
@@ -494,6 +507,29 @@ export async function init() {
         canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noEnergy}</div>`;
         return;
       }
+
+      const avgActive = Math.round(active.reduce((a, b) => a + b, 0) / active.length);
+      const avgBasal = Math.round(basal.reduce((a, b) => a + b, 0) / basal.length);
+      const ratio = avgBasal > 0 ? Math.round((avgActive / avgBasal) * 100) : 0;
+
+      const contextKpis = `
+        <div class="chart-context-kpis">
+          <div class="context-kpi">
+            <span class="context-kpi-value">${avgActive}</span>
+            <span class="context-kpi-label">${strings.analytics.avgActiveKcal}</span>
+          </div>
+          <div class="context-kpi">
+            <span class="context-kpi-value">${avgBasal}</span>
+            <span class="context-kpi-label">${strings.analytics.avgBasalKcal}</span>
+          </div>
+          <div class="context-kpi">
+            <span class="context-kpi-value">${ratio}%</span>
+            <span class="context-kpi-label">${strings.analytics.activeBasalRatio}</span>
+          </div>
+        </div>
+      `;
+
+      canvas.parentElement.insertAdjacentHTML('beforebegin', contextKpis);
 
       window._energyChart = new Chart(ctx, {
         type: 'bar',

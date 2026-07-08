@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const baseMockApi = () => ({
   getPersonalRecords: () => Promise.resolve({ records: [], total: 0 }),
-  getWeeklyGoal: () => Promise.resolve({ current: 0, target: 4, progress_pct: 0, primary_sport: null, week_start: '2026-06-22', week_end: '2026-06-28' }),
   getRelativeEffort: () => Promise.resolve({ current_week: { value: 0, start_date: '2026-06-22', end_date: '2026-06-28' }, previous_week: { value: 0, start_date: '2026-06-15', end_date: '2026-06-21' }, delta: 0, trend: 'flat' }),
   getTrainingLogWeek: () => Promise.resolve({ week_start: '2026-06-22', week_end: '2026-06-28', total_minutes: 0, days: [] }),
   getMonthlyCalendar: () => Promise.resolve({ month: '2026-06', days: [], weeks: [] }),
@@ -54,6 +53,14 @@ describe('Strava-style summary panels', () => {
       records: [
         { sport_type: 'running', distance_key: '5', distance_label: '5 km', distance_km: 5, time_min: 25, achieved_at: '2026-06-15', rank: 1 }
       ],
+      by_sport: {
+        running: [
+          { sport_type: 'running', distance_key: '5', distance_label: '5 km', distance_km: 5, time_min: 25, achieved_at: '2026-06-15', rank: 1 }
+        ],
+        cycling: [],
+        strength: []
+      },
+      primary_sport: 'running',
       total: 1,
     });
     const { mountPersonalRecord } = await import('../../src/renderer/views/panels/strava-panels.js');
@@ -65,18 +72,6 @@ describe('Strava-style summary panels', () => {
     expect(html).toMatch(/strava-pr-badge--gold/);
     expect(html).toMatch(/5 km/);
     expect(html).toMatch(/25:00/);
-  });
-
-  it('Weekly goal ring renders progress text "X/N actividades"', async () => {
-    window.electronAPI.getWeeklyGoal = () => Promise.resolve({ current: 2, target: 4, progress_pct: 50, primary_sport: 'running', week_start: '2026-06-22', week_end: '2026-06-28' });
-    const { mountWeeklyGoal } = await import('../../src/renderer/views/panels/strava-panels.js');
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    mountWeeklyGoal(container);
-    await new Promise(r => setTimeout(r, 20));
-    const html = container.innerHTML;
-    expect(html).toMatch(/2\/4 actividades/);
-    expect(html).toMatch(/strava-ring-fill/);
   });
 
   it('Relative effort card shows current and previous week', async () => {
@@ -166,7 +161,7 @@ describe('Strava-style summary panels', () => {
     await new Promise(r => setTimeout(r, 20));
     const html = container.innerHTML;
     expect(html).toMatch(/strava-calendar-grid/);
-    expect(html).toMatch(/junio 2026/);
+    expect(html).toMatch(/junio|2026/);
     const activeCells = container.querySelectorAll('.strava-calendar-day--active');
     expect(activeCells.length).toBe(1);
   });

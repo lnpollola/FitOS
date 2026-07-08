@@ -68,7 +68,7 @@ export async function init() {
       <div class="insights-global-banner" id="insights-global-banner" style="display:none">${SI.globalEmpty}</div>
       <div id="insights-sections">
         <section class="insights-section" id="section-heatmap">
-          <h3 class="insights-section-title">${SI.heatmap.title}</h3>
+          <h3 class="insights-section-title" id="heatmap-title">${SI.heatmap.title}</h3>
           <div id="heatmap-content" aria-live="polite"></div>
         </section>
         <section class="insights-section" id="section-dow">
@@ -93,19 +93,6 @@ export async function init() {
             <div id="strength-score-content" aria-live="polite"></div>
             <div id="strength-tonnage-content" aria-live="polite"></div>
           </div>
-        </section>
-        <section class="insights-section" id="section-velocity">
-          <h3 class="insights-section-title">${SI.weightVelocity.title}</h3>
-          <div id="velocity-content" aria-live="polite"></div>
-        </section>
-        <section class="insights-section" id="section-whr">
-          <p class="insights-section-label">${SI.fixedWindowLabels.whr}</p>
-          <h3 class="insights-section-title">${SI.whr.title}</h3>
-          <div id="whr-content" aria-live="polite"></div>
-        </section>
-        <section class="insights-section" id="section-auto-insights">
-          <h3 class="insights-section-title">${SI.autoInsights.title}</h3>
-          <div id="auto-insights-content" aria-live="polite"></div>
         </section>
       </div>
     `;
@@ -152,9 +139,6 @@ export async function init() {
       document.getElementById('dow-content').innerHTML = skeletonChart();
       document.getElementById('sport-dist-content').innerHTML = skeletonChart();
       document.getElementById('recovery-content').innerHTML = skeletonCard();
-      document.getElementById('velocity-content').innerHTML = skeletonChart();
-      document.getElementById('whr-content').innerHTML = skeletonCard();
-      document.getElementById('auto-insights-content').innerHTML = skeletonCard();
       document.getElementById('strength-pr-content').innerHTML = skeletonCard();
       document.getElementById('strength-plateau-content').innerHTML = skeletonCard();
       document.getElementById('strength-score-content').innerHTML = skeletonCard();
@@ -167,24 +151,18 @@ export async function init() {
         safeCall(api.getDayOfWeekStats(from, to)),
         safeCall(api.getSportDistribution()),
         safeCall(api.getRecoveryScore()),
-        safeCall(api.getWeightVelocity(from, to)),
-        safeCall(api.getWHR()),
         safeCall(api.getAutoInsights()),
       ]);
 
-      const [heatmapRes, dowRes, sportDistRes, recoveryRes, velocityRes, whrRes, insightsRes] = results;
+      const [heatmapRes, dowRes, sportDistRes, recoveryRes, insightsRes] = results;
 
       let emptySections = 0;
-      const totalSections = 7;
+      const totalSections = 5;
 
       emptySections += renderHeatmap(heatmapRes.status === 'fulfilled' ? heatmapRes.value : null) ? 1 : 0;
       emptySections += renderDayOfWeek(dowRes.status === 'fulfilled' ? dowRes.value : null) ? 1 : 0;
       emptySections += renderSportDistribution(sportDistRes.status === 'fulfilled' ? sportDistRes.value : null) ? 1 : 0;
       emptySections += renderRecovery(recoveryRes.status === 'fulfilled' ? recoveryRes.value : null) ? 1 : 0;
-      emptySections += renderWeightVelocity(velocityRes.status === 'fulfilled' ? velocityRes.value : null) ? 1 : 0;
-      emptySections += renderWHR(whrRes.status === 'fulfilled' ? whrRes.value : null) ? 1 : 0;
-      emptySections += renderAutoInsights(insightsRes.status === 'fulfilled' ? insightsRes.value : null) ? 1 : 0;
-
       mountStrengthPRs(document.getElementById('strength-pr-content'));
       mountStrengthPlateaus(document.getElementById('strength-plateau-content'));
       mountStrengthScore(document.getElementById('strength-score-content'));
@@ -196,7 +174,19 @@ export async function init() {
 
     function renderHeatmap(data) {
       const el = document.getElementById('heatmap-content');
+      const titleEl = document.getElementById('heatmap-title');
       if (!el) return false;
+      
+      // Update title based on selected period
+      if (titleEl) {
+        const periodLabels = {
+          '90d': SI.heatmap.titles['90d'],
+          '6m': SI.heatmap.titles['6m'],
+          '1y': SI.heatmap.titles['1y']
+        };
+        titleEl.textContent = periodLabels[_state.range] || SI.heatmap.title;
+      }
+      
       if (!data || !data.points || data.points.length === 0) {
         el.innerHTML = `<div class="insights-empty"><p>${SI.heatmap.empty}</p><button class="btn" id="heatmap-cta">${SI.heatmap.cta}</button></div>`;
         const btn = document.getElementById('heatmap-cta');
@@ -284,7 +274,33 @@ export async function init() {
       });
 
       const canvasId = 'insights-dow-chart';
-      el.innerHTML = `<div class="chart-container" style="height:200px"><canvas id="${canvasId}"></canvas></div>`;
+      const bestDay = data[bestIdx];
+      const worstIdx = values.indexOf(Math.min(...values));
+      const worstDay = data[worstIdx];
+      const avgMinutes = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+      const stdDev = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - avgMinutes, 2), 0) / values.length);
+      const consistencyLabel = stdDev < 20 ? 'Alta' : stdDev < 40 ? 'Media' : 'Baja';
+      
+      el.innerHTML = `
+        <div class="chart-container" style="height:200px"><canvas id="${canvasId}"></canvas></div>
+        <div class="insights-dow-kpis">
+          <div class="insights-dow-kpi">
+            <span class="insights-dow-kpi-label">Mejor día</span>
+            <span class="insights-dow-kpi-value">${bestDay.weekday_label}</span>
+            <span class="insights-dow-kpi-detail">${Math.round(bestDay.minutes)} min prom.</span>
+          </div>
+          <div class="insights-dow-kpi">
+            <span class="insights-dow-kpi-label">Peor día</span>
+            <span class="insights-dow-kpi-value">${worstDay.weekday_label}</span>
+            <span class="insights-dow-kpi-detail">${Math.round(worstDay.minutes)} min prom.</span>
+          </div>
+          <div class="insights-dow-kpi">
+            <span class="insights-dow-kpi-label">Consistencia</span>
+            <span class="insights-dow-kpi-value">${consistencyLabel}</span>
+            <span class="insights-dow-kpi-detail">σ ${Math.round(stdDev)} min</span>
+          </div>
+        </div>
+      `;
       if (totalWeeks < 5) {
         el.innerHTML += `<p class="insights-heatmap-caption" style="text-align:center">${SI.dayOfWeek.partialPattern.replace('{n}', Math.round(totalWeeks))}</p>`;
       }
@@ -308,6 +324,13 @@ export async function init() {
           plugins: {
             legend: { display: false },
             tooltip: {
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              borderColor: chartColors.grid,
+              borderWidth: 1,
+              titleColor: chartColors.textPrimary,
+              bodyColor: chartColors.textSecondary,
+              padding: 10,
+              cornerRadius: 6,
               callbacks: {
                 label: (item) => {
                   const d = data[item.dataIndex];
@@ -317,8 +340,22 @@ export async function init() {
             },
           },
           scales: {
-            y: { beginAtZero: true, title: { display: false }, ticks: { font: { size: 11 } }, grid: { color: 'var(--border)' } },
-            x: { ticks: { font: { size: 11 } }, grid: { display: false } },
+            y: { 
+              beginAtZero: true, 
+              title: { display: false }, 
+              ticks: { 
+                color: chartColors.textSecondary,
+                font: { size: 11 } 
+              }, 
+              grid: { color: chartColors.grid } 
+            },
+            x: { 
+              ticks: { 
+                color: chartColors.textSecondary,
+                font: { size: 11 } 
+              }, 
+              grid: { display: false } 
+            },
           },
         },
       });
@@ -350,22 +387,26 @@ export async function init() {
 
       const canvasId = 'insights-donut-chart';
       el.innerHTML = `
-        <div class="insights-donut">
-          <div class="insights-donut-wrapper">
-            <canvas id="${canvasId}"></canvas>
-            <div class="insights-donut-center">
-              <div class="insights-donut-center-total">${totalH}h</div>
-              <div class="insights-donut-center-label">${SI.sportDistribution.totalLabel}</div>
+        <div class="insights-sport-dist-layout">
+          <div class="insights-sport-dist-chart">
+            <div class="insights-donut-wrapper">
+              <canvas id="${canvasId}"></canvas>
+              <div class="insights-donut-center">
+                <div class="insights-donut-center-total">${totalH}h</div>
+                <div class="insights-donut-center-label">${SI.sportDistribution.totalLabel}</div>
+              </div>
             </div>
           </div>
-          <div class="insights-donut-legend">
-            ${sports.map((s, i) => `
-              <div class="insights-donut-legend-item">
-                <span class="insights-donut-legend-swatch" style="background:${SPORT_DONUT_COLORS[i] || SPORT_DONUT_COLORS[5]}"></span>
-                <span>${getSportDisplayName(s.sport_type)}</span>
-                <span class="insights-donut-legend-info">${Math.round(s.minutes)} min · ${s.sessions} sesiones · ${s.share_pct.toFixed(1)}%</span>
-              </div>
-            `).join('')}
+          <div class="insights-sport-dist-metrics">
+            <div class="insights-donut-legend">
+              ${sports.map((s, i) => `
+                <div class="insights-donut-legend-item">
+                  <span class="insights-donut-legend-swatch" style="background:${SPORT_DONUT_COLORS[i] || SPORT_DONUT_COLORS[5]}"></span>
+                  <span>${getSportDisplayName(s.sport_type)}</span>
+                  <span class="insights-donut-legend-info">${Math.round(s.minutes)} min · ${s.sessions} sesiones · ${s.share_pct.toFixed(1)}%</span>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
       `;
@@ -412,10 +453,15 @@ export async function init() {
 
       if (!rec.baselineComplete) {
         const daysLeft = rec.daysUntilBaseline;
+        const daysAvailable = 30 - (daysLeft || 0);
+        const pct = Math.max(0, Math.min(100, (daysAvailable / 30) * 100));
         el.innerHTML = `
           <div class="insights-empty">
             <p>${SI.recovery.empty}</p>
-            ${daysLeft > 0 ? `<p class="insights-recovery-progress">${SI.recovery.daysUntil.replace('{n}', daysLeft)}</p>` : ''}
+            <div class="insights-recovery-baseline-bar">
+              <div class="insights-recovery-baseline-fill" style="width:${pct}%"></div>
+            </div>
+            <p class="insights-recovery-progress">${daysAvailable} de 30 días de datos</p>
           </div>`;
         return true;
       }
@@ -445,199 +491,19 @@ export async function init() {
 
     function renderSubmeter(key, rec, data) {
       const sig = rec.signals && rec.signals[key];
+      const tooltipText = SI.recovery.subMeterTooltips[key] || '';
       if (!sig || sig.insufficient) {
-        return `<div class="insights-recovery-submeter insights-recovery-submeter--disabled"><span class="insights-recovery-submeter-name">${SI.recovery.subMeters[key]}</span><span class="insights-recovery-submeter-values">Datos insuficientes</span><div class="insights-recovery-submeter-bar"><div class="insights-recovery-submeter-fill" style="width:0%"></div></div></div>`;
+        return `<div class="insights-recovery-submeter insights-recovery-submeter--disabled"><span class="insights-recovery-submeter-name">${SI.recovery.subMeters[key]} <span class="info-icon" title="${tooltipText}">${icon('info', 12)}</span></span><span class="insights-recovery-submeter-values">Datos insuficientes</span><div class="insights-recovery-submeter-bar"><div class="insights-recovery-submeter-fill" style="width:0%"></div></div></div>`;
       }
       const unit = key === 'hrv' ? ' ms' : key === 'rhr' ? ' bpm' : 'h';
       const currentVal = sig.current != null ? Math.round(sig.current) + unit : '—';
       const baselineVal = sig.baseline != null ? Math.round(sig.baseline) + unit : '—';
       return `<div class="insights-recovery-submeter">
-        <span class="insights-recovery-submeter-name">${SI.recovery.subMeters[key]}</span>
+        <span class="insights-recovery-submeter-name">${SI.recovery.subMeters[key]} <span class="info-icon" title="${tooltipText}">${icon('info', 12)}</span></span>
         <span class="insights-recovery-submeter-values">${currentVal} / ${baselineVal}</span>
         <div class="insights-recovery-submeter-bar"><div class="insights-recovery-submeter-fill insights-recovery-submeter-fill--${sig.zone}" style="width:${sig.subScore}%"></div></div>
         <span style="font-size:11px;width:30px;text-align:right;color:var(--lichen)">${sig.subScore}</span>
       </div>`;
-    }
-
-    function renderWeightVelocity(data) {
-      const el = document.getElementById('velocity-content');
-      if (!el) return false;
-      if (!data || !Array.isArray(data.points) || data.points.length === 0) {
-        el.innerHTML = `<div class="insights-empty"><p>${SI.weightVelocity.empty}</p></div>`;
-        return true;
-      }
-
-      if (data.pr_insufficient_window) {
-        el.innerHTML = `<div class="insights-empty"><p>${SI.weightVelocity.partialWindow}</p></div>`;
-        return true;
-      }
-
-      const points = data.points.filter(p => p.velocity_kg_per_week != null);
-      if (points.length === 0) {
-        el.innerHTML = `<div class="insights-empty"><p>${SI.weightVelocity.partialWindow}</p></div>`;
-        return true;
-      }
-
-      const labels = points.map(p => {
-        const d = new Date(p.date + 'T00:00:00');
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        return `${day}/${month}`;
-      });
-      const velocityValues = points.map(p => Math.round(p.velocity_kg_per_week * 100) / 100);
-      const refVelocity = data.target_pace_reference_velocity != null ? data.target_pace_reference_velocity : -0.5;
-
-      const canvasId = 'insights-velocity-chart';
-      el.innerHTML = `<div class="chart-container" style="height:220px"><canvas id="${canvasId}"></canvas></div>`;
-
-      const ctx = document.getElementById(canvasId);
-      if (!ctx) return false;
-
-      const datasets = [{
-        label: SI.weightVelocity.axisLabel,
-        data: velocityValues,
-        borderColor: 'var(--moss)',
-        backgroundColor: 'var(--moss-mist)',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.1,
-        fill: false,
-      }];
-
-      if (data.pr_weight) {
-        datasets.push({
-          label: 'PR',
-          data: labels.map((_, i) => {
-            return points[i].date === data.pr_weight.date ? points[i].velocity_kg_per_week : null;
-          }),
-          pointRadius: 5,
-          pointBackgroundColor: 'var(--moss-ink)',
-          showLine: false,
-        });
-      }
-
-      window._insightsVelocityChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-          },
-          scales: {
-            y: {
-              min: -2,
-              max: 2,
-              title: { display: true, text: SI.weightVelocity.axisLabel, font: { size: 11 } },
-              ticks: { stepSize: 0.5, font: { size: 11 } },
-              grid: { color: 'var(--border)' },
-            },
-            x: {
-              ticks: { maxTicksLimit: 8, font: { size: 10 } },
-              grid: { display: false },
-            },
-          },
-        },
-      });
-
-      return false;
-    }
-
-    function renderWHR(data) {
-      const el = document.getElementById('whr-content');
-      if (!el) return false;
-      if (!data || !data.has_measurements) {
-        el.innerHTML = `<div class="insights-empty"><p>${SI.whr.empty}</p><button class="btn" id="whr-cta">${SI.whr.cta}</button></div>`;
-        const btn = document.getElementById('whr-cta');
-        if (btn) btn.addEventListener('click', () => api.navigate('measurements'));
-        return true;
-      }
-
-      if (!data.current) {
-        if (!data.sex) {
-          el.innerHTML = `<div class="insights-empty"><p>${SI.whr.noProfile}</p></div>`;
-        } else {
-          el.innerHTML = `<div class="insights-empty"><p>${SI.whr.noHips}</p></div>`;
-        }
-        return true;
-      }
-
-      const { value, zone } = data.current;
-      const zoneLabel = SI.whrZones[zone] || SI.whrZones.unknown;
-      const historyValues = (data.history || []).map(h => h.value);
-
-      const sparklineSvg = historyValues.length > 1
-        ? sparkline(historyValues, { width: 280, height: 24, stroke: 'var(--moss)' })
-        : '';
-
-      el.innerHTML = `
-        <div class="insights-whr">
-          <div class="insights-whr-row">
-            <span class="insights-whr-value">${value.toFixed(2)}</span>
-            <span class="insights-whr-chip insights-whr-zone--${zone}">${zoneLabel}</span>
-          </div>
-          ${sparklineSvg ? `<div class="insights-whr-sparkline">${sparklineSvg}</div>` : ''}
-        </div>
-      `;
-      return false;
-    }
-
-    function renderAutoInsights(data) {
-      const el = document.getElementById('auto-insights-content');
-      if (!el) return false;
-
-      if (!data || !data.weekStreak) {
-        el.innerHTML = `<div class="insights-empty"><p>${SI.autoInsights.empty}</p></div>`;
-        return true;
-      }
-
-      import('../utils/kpi-derivation.js').then(mod => {
-        const { generateAutoInsights } = mod;
-        const cards = generateAutoInsights({
-          weekStreak: data.weekStreak,
-          recoveryScore: null,
-          weightVelocity: null,
-          sportDistribution: null,
-          restDayStreak: data.restDayStreak,
-          hrvDeviation: null,
-          recentPRs: data.recentSportPRs,
-          whrTrend: null,
-          recoveryTrend: null,
-        });
-
-        if (!cards || cards.length === 0) {
-          el.innerHTML = `<div class="insights-empty"><p>${SI.autoInsights.empty}</p></div>`;
-          return;
-        }
-
-        const severityLabels = SI.autoInsights.severityLabels;
-        el.innerHTML = `
-          <div class="insights-insight-cards">
-            ${cards.slice(0, 8).map(card => `
-              <button class="insights-insight-card insights-insight-card--${card.severity}" aria-label="Insight: ${card.text}">
-                <div class="insights-insight-card-header">
-                  <span class="insights-insight-card-icon insights-insight-card-icon--${card.severity}">${icon(card.icon, 18)}</span>
-                  <span class="insights-insight-card-text">${card.text}</span>
-                  <span class="insights-insight-card-chip insights-insight-card-chip--${card.severity}">${severityLabels[card.severity] || card.severity}</span>
-                </div>
-                ${card.navigateTo ? `<span class="insights-insight-card-link">${SI.autoInsights.seeDetail}</span>` : ''}
-              </button>
-            `).join('')}
-          </div>
-        `;
-
-        el.querySelectorAll('.insights-insight-card').forEach(cardBtn => {
-          cardBtn.addEventListener('click', () => {
-            const idx = Array.from(el.children[0].children).indexOf(cardBtn);
-            if (cards[idx] && cards[idx].navigateTo) {
-              api.navigate(cards[idx].navigateTo);
-            }
-          });
-        });
-      });
-
-      return false;
     }
 
     await loadAll();

@@ -22,6 +22,35 @@ The system SHALL provide a date range filter at the top of the view with quick-a
 - **WHEN** a date range is selected
 - **THEN** the corresponding button SHALL have a visual active state (e.g., accent color, filled style)
 
+### Requirement: Analytics charts period-aware rendering
+
+All Chart.js charts in the analytics view SHALL aggregate data according to the selected period and render X-axis labels in ascending chronological order from left to right. The aggregation logic SHALL be:
+- 7d: daily data points, labels = day names (Lun, Mar, Mié...)
+- 1m: weekly data points (ISO weeks), labels = "Sem 1", "Sem 2"...
+- 3m: monthly data points, labels = month names (Abr, May, Jun)
+
+This SHALL apply to all 6 main charts (steps, HR, energy, HRV, sleep, activities) and all 7 secondary mini-charts (RHR, VO2 Max, exercise time, walking speed, flights climbed, walking distance, cycling distance).
+
+#### Scenario: 7d period renders daily data
+- **WHEN** the user selects "7d"
+- **THEN** all charts SHALL show 7 data points with day labels
+- **THEN** data SHALL be ordered chronologically left to right
+
+#### Scenario: 1m period renders weekly aggregates
+- **WHEN** the user selects "1m"
+- **THEN** all charts SHALL show 4-5 weekly data points
+- **THEN** each data point SHALL be the sum (or average, as appropriate) for that ISO week
+
+#### Scenario: 3m period renders monthly aggregates
+- **WHEN** the user selects "3m"
+- **THEN** all charts SHALL show 3 monthly data points
+- **THEN** each data point SHALL be the sum (or average) for that month
+
+#### Scenario: Secondary charts follow period
+- **WHEN** the user selects a period
+- **THEN** all 7 secondary mini-charts SHALL also aggregate to the same period
+- **THEN** X-axis labels SHALL match the period selection
+
 ### Requirement: KPI summary cards
 
 The system SHALL display 5 summary KPIs for the selected period above the chart grid.
@@ -60,18 +89,19 @@ The system SHALL display a heart rate chart showing daily average, minimum, and 
 - **WHEN** some days have HR data and others do not
 - **THEN** the chart SHALL show only days with data (no zero-fill)
 
-### Requirement: Energy stacked bar chart
+### Requirement: Energy chart with context KPIs
 
-The system SHALL display a stacked bar chart of daily active and basal (resting) energy burned.
+The energy chart section SHALL display intermediate KPI values between the chart title and the chart canvas, showing average daily active kcal, average daily basal kcal, and the active-to-basal ratio as a percentage. Below the KPIs, the system SHALL display a stacked bar chart of daily active and basal (resting) energy burned.
+
+#### Scenario: Energy context KPIs render
+- **WHEN** the energy chart renders with data
+- **THEN** a row of 3 KPI values SHALL appear above the chart
+- **THEN** values SHALL be: "Activa: X kcal/día", "Basal: Y kcal/día", "Ratio: Z%"
 
 #### Scenario: Energy chart shows stacked composition
 - **WHEN** energy data exists for the selected period
 - **THEN** the system SHALL plot daily active energy and basal energy as stacked bars with distinct colors
 - **THEN** the legend SHALL label "Activas" and "Basales"
-
-#### Scenario: Energy chart total annotation
-- **WHEN** energy data exists
-- **THEN** the chart SHALL display total energy burned for the period as a subtitle or annotation
 
 ### Requirement: HRV trend chart
 
@@ -267,14 +297,19 @@ The system SHALL display a top-level empty state banner in the analytics view wh
 - **THEN** the banner SHALL display "Importa tus datos de Apple Health para ver tendencias"
 - **THEN** the banner SHALL include a button "Ir a Actividad" that navigates to the activity view
 
-### Requirement: KPI cards with trend indicators
+### Requirement: Analytics KPI cards with adjacent trend arrows
 
-The system SHALL add period-over-period trend arrows to the 5 analytics KPI cards (avg steps, total energy, avg HR, avg sleep, avg HRV), consistent with the dashboard's pattern. The previous-period data (already fetched for the ranking table) SHALL be reused to compute deltas.
+The analytics view SHALL display KPI cards at the top with trend arrows positioned immediately to the right of the numeric value on the same line. The arrow SHALL use color coding: green (`var(--success)`) for improvement, red (`var(--danger)`) for worsening, gray (`var(--text-secondary)`) for stable. The arrow SHALL NOT appear on a separate line below the value.
 
-#### Scenario: KPI trend arrow renders
-- **WHEN** a KPI card renders with current and previous period data
-- **THEN** the card SHALL display a trend arrow (▲/▼/―) comparing current vs previous
-- **THEN** the arrow SHALL use the same color coding as dashboard (green up, red down, gray flat)
+#### Scenario: KPI card with adjacent arrow
+- **WHEN** an analytics KPI card renders with trend data
+- **THEN** the value and arrow SHALL be on the same line (e.g., flexbox row: "7,432 ▲")
+- **THEN** the arrow SHALL NOT wrap to a new line
+
+#### Scenario: KPI card without trend data
+- **WHEN** previous period data is unavailable
+- **THEN** the value SHALL render without an arrow
+- **THEN** no empty space SHALL appear where the arrow would be
 
 ### Requirement: Walking and cycling distance mini-cards with KPI stats
 

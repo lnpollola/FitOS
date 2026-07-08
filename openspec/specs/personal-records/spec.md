@@ -8,27 +8,19 @@ Detect, rank, and surface personal records (PRs) for standard distances from `sp
 
 ### Requirement: Detect best times per standard distance
 
-The system SHALL compute the best (minimum) time per `(sport_type, distance_bucket)` from `sport_activities` records where `distance_km >= 1.0`. Standard distances: 1 km, 1 mi (1.609 km), 5 km, 10 km, 21.1 km (half marathon), 42.2 km (marathon). Sport types in scope: `running`, `cycling`. For each `(sport_type, distance)`, the system SHALL project source activity times to the target distance using Riegel's formula `t2 = t1 × (d2 / d1)^1.06` and select the minimum projected time as the PR.
+The system SHALL compute the best (minimum) time per `(sport_type, distance_bucket)` from `sport_activities` records where `distance_km >= 1.0`. Standard distances for running: 1 km, 5 km, 10 km, 21.1 km (media maratón), 42.2 km (maratón). Standard distances for cycling: 10 km, 50 km, 100 km. Sport types in scope: `running`, `cycling`. For each `(sport_type, distance)`, the system SHALL project source activity times to the target distance using Riegel's formula `t2 = t1 × (d2 / d1)^1.06` and select the minimum projected time as the PR.
 
 #### Scenario: Exact-distance PR detected
 - **WHEN** the user has a `running` activity of 5.00 km in 25:00
 - **THEN** the 5 km PR for `running` SHALL be 25:00 with rank 1 (gold)
-- **THEN** the `achieved_at` date SHALL equal the activity's date
 
 #### Scenario: PR projected from nearby distance
-- **WHEN** the user has a `running` activity of 4.87 km in 24:00 (pace ≈ 4:55 /km) and no 5.00 km run exists
-- **THEN** the 5 km PR SHALL be projected to ~25:24 (24 × (5/4.87)^1.06)
-- **THEN** the projection source activity SHALL be returned in the payload as `source_activity_id`
+- **WHEN** the user has a `running` activity of 4.87 km in 24:00 and no 5.00 km run exists
+- **THEN** the 5 km PR SHALL be projected to ~25:24
 
-#### Scenario: Source activity outside projection window is rejected
-- **WHEN** a `running` activity has `distance_km = 0.5` and the target distance is 42.2 km
-- **THEN** the activity SHALL NOT contribute to the marathon PR
-- **THEN** the projection window SHALL be `[0.8 × target, 1.5 × target]` (e.g., 33.76–63.30 km for marathon)
-
-#### Scenario: Best of multiple activities selected
-- **WHEN** the user has three 5 km runs (25:00, 26:30, 24:15) and one 4.95 km run (24:00)
-- **THEN** the 5 km PR SHALL be 24:15 (the actual 5 km run), not 24:00 (the projected 4.95 km)
-- **THEN** the rank SHALL be 1 (gold)
+#### Scenario: Cycling standard distances
+- **WHEN** the user has cycling activities of 15 km, 55 km, and 110 km
+- **THEN** the system SHALL compute PRs for 10 km (from 15 km), 50 km (from 55 km), and 100 km (from 110 km)
 
 ### Requirement: Rank PRs by historical best
 
@@ -45,23 +37,30 @@ The system SHALL assign a rank badge to each PR based on the user's historical b
 - **THEN** the banner SHALL display the most-recently-achieved PR by `achieved_at` DESC
 - **THEN** the "Ver todos (N)" link SHALL reveal a modal with all PRs sorted by `achieved_at` DESC
 
-### Requirement: PR banner rendering
+### Requirement: PR banner rendering with sport tabs
 
-The system SHALL render the personal-record banner as a horizontal list item with a badge icon (gold/silver/bronze), a label (e.g., "2.º tiempo más rápido en 5 km"), the time value, and the date. The banner SHALL use `role="article"` with `aria-label` summarizing the record. The Lucide `medal` icon SHALL be used for the badge, recolored to gold (`#D4A437`), silver (`#A8A8A8`), or bronze (`#A47148`) per rank.
+The system SHALL render the personal-record panel with sport tabs (Running / Ciclismo / Fuerza) in the header. The banner SHALL display PRs filtered by the selected sport tab. Each tab SHALL show the best PR for that sport's standard distances. The "Ver todos" modal SHALL show all PRs for the active sport tab only.
 
-#### Scenario: Banner renders with gold badge
-- **WHEN** the most-recent PR is rank 1 (gold) for 5 km running
-- **THEN** the banner SHALL show the gold `medal` icon, the label "Tiempo más rápido en 5 km", the time "24:15", and the date "15 de jun de 2026"
-- **THEN** the badge SHALL be the only gold-colored element on the dashboard
+#### Scenario: Tab-based PR display
+- **WHEN** the PR panel renders
+- **THEN** tabs SHALL appear: "Running", "Ciclismo", "Fuerza"
+- **THEN** the default active tab SHALL be the sport with the most recent PR
+- **THEN** clicking a tab SHALL filter the displayed PRs to that sport only
 
-#### Scenario: Banner empty state
-- **WHEN** the user has no `running` or `cycling` activities with `distance_km >= 1.0`
-- **THEN** the banner SHALL render in the empty state with the message "Registra tu primera carrera o ruta en bicicleta para desbloquear récords" and a "Ir a Actividad" button
-- **THEN** the button SHALL navigate to the `activity` view via `electronAPI.navigate('activity')`
+#### Scenario: Running tab shows running PRs only
+- **WHEN** the "Running" tab is active
+- **THEN** only running PRs (5 km, 10 km, media maratón, maratón) SHALL be displayed
+- **THEN** no cycling records SHALL appear
 
-#### Scenario: Banner loading state
-- **WHEN** the IPC call to `db:getPersonalRecords` is in flight
-- **THEN** the banner SHALL render a skeleton placeholder via `renderStateCard(container, { state: 'loading' })`
+#### Scenario: Cycling tab shows cycling PRs only
+- **WHEN** the "Ciclismo" tab is active
+- **THEN** only cycling PRs (10 km, 50 km, 100 km, recorrido más largo) SHALL be displayed
+- **THEN** no running records SHALL appear
+
+#### Scenario: No mixed sport records
+- **WHEN** any tab is active
+- **THEN** the displayed records SHALL all belong to the same sport type
+- **THEN** no record from a different sport SHALL appear in the list
 
 ### Requirement: Time format and locale
 

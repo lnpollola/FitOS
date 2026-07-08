@@ -85,6 +85,8 @@ export const strings = {
     trendFlat: '―',
     hrvLabel: 'HRV',
     restingHr: 'FC Reposo',
+    hrvTooltip: 'Variabilidad de frecuencia cardíaca. Mide la variación en milisegundos entre latidos. Indica recuperación y adaptación al estrés.',
+    rhrTooltip: 'Frecuencia cardíaca en reposo. Pulsaciones por minuto cuando estás en descanso. Indica tu nivel de fitness cardiovascular.',
     hrvComposite: 'HRV + FC Reposo',
     avg7d: 'Prom. 7d',
     kcalDaily: 'kcal/día',
@@ -128,6 +130,11 @@ export const strings = {
     nextWorkoutLabel: 'Próx. Entrenamiento',
     plannedIntakeLabel: 'Ingesta planificada hoy',
     noData: 'Sin datos',
+    manualEntry: 'Manual',
+    appleWatch: 'Apple Watch',
+    energyBreakdown: 'Desglose de Energía',
+    sportCalories: 'Calorías Deporte',
+    basalCalories: 'Calorías Basales',
     weight: 'Peso',
     weightNoData: 'Sin datos de peso',
     weightDelta: 'Δ',
@@ -135,6 +142,15 @@ export const strings = {
     distanceWalking: 'Caminando',
     distanceCycling: 'Ciclismo',
     sportsSection: 'DEPORTES',
+    autoInsights: {
+      title: 'Insights Automáticos',
+      severityLabels: {
+        positive: 'Positivo',
+        warning: 'Atención',
+        negative: 'Mejorable',
+        info: 'Info',
+      },
+    },
     vsPrevious: 'vs anterior',
   },
 
@@ -748,6 +764,9 @@ export const strings = {
     dailyAvg: 'Promedio diario',
     active: 'Activas',
     basal: 'Basales',
+    avgActiveKcal: 'Activa prom.',
+    avgBasalKcal: 'Basal prom.',
+    activeBasalRatio: 'Ratio activa/basal',
     ma7: 'Media 7 días',
     avg: 'Media',
     min: 'Mín',
@@ -848,6 +867,11 @@ export const strings = {
 
     heatmap: {
       title: 'Año en Movimiento',
+      titles: {
+        '90d': 'Movimiento — últimos 3 meses',
+        '6m': 'Movimiento — últimos 6 meses',
+        '1y': 'Movimiento — último año'
+      },
       caption: 'Patrón parcial ({n} días con actividad)',
       tooltip: '{date} — {min} min',
       empty: 'Sin actividades deportivas registradas. Si haces entrenamiento de fuerza, los patrones de pesas llegan en una próxima versión.',
@@ -879,6 +903,11 @@ export const strings = {
         hrv: 'HRV',
         rhr: 'RHR',
         sleep: 'Sueño',
+      },
+      subMeterTooltips: {
+        hrv: 'Variabilidad de frecuencia cardíaca. Mide la variación en milisegundos entre latidos. Indica recuperación y adaptación al estrés.',
+        rhr: 'Frecuencia cardíaca en reposo. Pulsaciones por minuto cuando estás en descanso. Indica tu nivel de fitness cardiovascular.',
+        sleep: 'Duración y calidad del sueño. Horas de sueño por noche. Indica recuperación física y mental.',
       },
       sparklineLabel: 'Recuperación últimos 7 días',
       empty: 'Necesitas al menos 30 días de datos de HRV, RHR y sueño para calcular tu línea base personal',
@@ -1012,6 +1041,11 @@ export const strings = {
     blockTitle: 'Resumen',
     prBanner: {
       title: 'Récord personal',
+      tabs: {
+        running: 'Running',
+        cycling: 'Ciclismo',
+        strength: 'Fuerza',
+      },
       rankLabels: ['1.º', '2.º', '3.º'],
       distanceLabels: {
         '1': '1 km',
@@ -1068,6 +1102,7 @@ export const strings = {
     },
     streak: {
       title: 'Tu serie',
+      combinedTitle: 'Racha y Calendario',
       weeks: 'Semanas',
       activities: 'Actividades',
       inStreak: 'Actividades en serie',

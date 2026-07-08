@@ -70,7 +70,7 @@ export function sparkline(values, { stroke = 'var(--moss)', width = 120, height 
     extras += `<line x1="${pad}" y1="${meanY.toFixed(2)}" x2="${(w - pad).toFixed(2)}" y2="${meanY.toFixed(2)}" stroke="var(--lichen)" stroke-opacity="0.4" stroke-dasharray="2,2" stroke-width="0.8"/>`;
   }
 
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" title="Min: ${min} | Max: ${max}">
     <path class="area" d="${areaD}" style="fill:${stroke}"/>
     <path class="line" d="${d}" style="stroke:${stroke}"/>
     ${extras}

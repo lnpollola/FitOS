@@ -15,8 +15,7 @@ import {
   mountPersonalRecord,
   mountRelativeEffort,
   mountTrainingLog,
-  mountStreak,
-  mountMonthlyCalendar,
+  mountStreakCalendar,
 } from './panels/strava-panels.js';
 
 export async function init() {
@@ -41,10 +40,6 @@ export async function init() {
       <div class="dashboard-grid" id="row-hero" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-kpis-1" aria-live="polite"></div>
       <div class="dashboard-grid" id="row-kpis-2" aria-live="polite"></div>
-      <div class="dashboard-chart-row" id="row-trend" style="margin-top:var(--space-4);display:none">
-        <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.kcalDaily}</h3><div class="chart-container" style="height:200px"><canvas id="trend-chart"></canvas></div></div>
-        <div class="card"><h3 class="text-sm" style="margin-bottom:var(--space-2)">${strings.dashboard.weeklyBalanceTrend}</h3><div class="chart-container" style="height:200px"><canvas id="weekly-balance-chart"></canvas></div></div>
-      </div>
       <div class="dashboard-grid" id="row-sports" aria-live="polite"></div>
       <section class="strava-block" id="strava-block" aria-label="${strings.stravaPanels.blockTitle}">
         <div class="strava-block-header">
@@ -55,9 +50,9 @@ export async function init() {
           <div id="strava-relative-effort"></div>
         </div>
         <div id="strava-training-log"></div>
-        <div id="strava-streak"></div>
-        <div id="strava-calendar"></div>
+        <div id="strava-streak-calendar"></div>
       </section>
+      <div class="dashboard-grid" id="row-auto-insights" aria-live="polite"></div>
     `;
 
     if (!api) {
@@ -69,25 +64,12 @@ export async function init() {
       mountPersonalRecord(document.getElementById('strava-pr')),
       mountRelativeEffort(document.getElementById('strava-relative-effort')),
       mountTrainingLog(document.getElementById('strava-training-log')),
-      mountStreak(document.getElementById('strava-streak')),
-      mountMonthlyCalendar(document.getElementById('strava-calendar')),
+      mountStreakCalendar(document.getElementById('strava-streak-calendar')),
     ];
 
     if (api.onDataChanged) {
       api.onDataChanged(() => {
-        stravaMounts.forEach((unmount, i) => {
-          if (typeof unmount === 'function') {
-            try { unmount(); } catch {}
-          }
-        });
-        const remounts = [
-          mountPersonalRecord(document.getElementById('strava-pr')),
-          mountRelativeEffort(document.getElementById('strava-relative-effort')),
-          mountTrainingLog(document.getElementById('strava-training-log')),
-          mountStreak(document.getElementById('strava-streak')),
-          mountMonthlyCalendar(document.getElementById('strava-calendar')),
-        ];
-        remounts.forEach((u, i) => { stravaMounts[i] = u; });
+        render();
       });
     }
 
@@ -106,7 +88,6 @@ export async function init() {
       const kpis1Row = document.getElementById('row-kpis-1');
       const kpis2Row = document.getElementById('row-kpis-2');
       const sportsRow = document.getElementById('row-sports');
-      const trendRow = document.getElementById('row-trend');
       const { from, to } = getRangeDates(_range);
       const daysInPeriod = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
 
@@ -114,11 +95,8 @@ export async function init() {
       goalsRow.innerHTML = skeletonCard();
       heroRow.innerHTML = skeletonCard();
       kpis1Row.innerHTML = skeletonCard().repeat(5);
-      kpis2Row.innerHTML = skeletonCard().repeat(4);
+      kpis2Row.innerHTML = skeletonCard().repeat(3);
       sportsRow.innerHTML = skeletonCard();
-
-      trendRow.style.display = 'none';
-      trendRow.innerHTML = '';
 
       const lastImportPromise = safeCall(api.getLastImportTimestamp(), null).then(data => {
         const updateEl = document.getElementById('last-update');
@@ -130,7 +108,7 @@ export async function init() {
         }
       });
 
-      const appDataPromise = api.getDashboardData();
+      const appDataPromise = api.getDashboardData().catch(() => null);
       const healthMetricsPromise = api.getHealthDashboardMetrics(from, to).catch(() => ({ ok: false }));
       const sportSummaryPromise = api.getSportSummaryByRange ? api.getSportSummaryByRange(from, to).catch(() => []) : (api.getActivityKcalByType(from, to).catch(() => []));
       const sleepDataPromise = api.getSleepAnalysis ? api.getSleepAnalysis(from, to).catch(() => ({ ok: false, dailySeries: [], trendArrow: null, consistency: null, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null })) : Promise.resolve({ ok: false, dailySeries: [], trendArrow: null, consistency: null, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null });
@@ -151,16 +129,7 @@ export async function init() {
       const activityComparisonPromise = api.getActivityComparison ? api.getActivityComparison(from, to).catch(() => null) : Promise.resolve(null);
       const lifetimeStatsPromise = api.getSportLifetimeStats ? api.getSportLifetimeStats().catch(() => ({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 })) : Promise.resolve({ totalWeeks: 0, currentStreak: 0, totalSessions: 0 });
       const goalsPromise = api.getGoals ? api.getGoals().catch(() => []) : Promise.resolve([]);
-
-      const now = new Date();
-      const weeklyBalancePromises = [];
-      if (api.getEnergyBalance) {
-        for (let w = 11; w >= 0; w--) {
-          const d = new Date(now);
-          d.setDate(d.getDate() - (w * 7));
-          weeklyBalancePromises.push(safeCall(api.getEnergyBalance(d.toISOString().split('T')[0]), null));
-        }
-      }
+      const autoInsightsPromise = api.getAutoInsights ? api.getAutoInsights().catch(() => null) : Promise.resolve(null);
 
       const results = await Promise.allSettled([
         appDataPromise,
@@ -175,7 +144,7 @@ export async function init() {
         activityComparisonPromise,
         lifetimeStatsPromise,
         goalsPromise,
-        ...weeklyBalancePromises,
+        autoInsightsPromise,
       ]);
 
       const appData = results[0].status === 'fulfilled' ? results[0].value : null;
@@ -190,7 +159,7 @@ export async function init() {
       const activityComparison = results[9].status === 'fulfilled' ? results[9].value : null;
       const lifetimeStats = results[10].status === 'fulfilled' ? results[10].value : { totalWeeks: 0, currentStreak: 0, totalSessions: 0 };
       const dashboardGoals = results[11].status === 'fulfilled' ? results[11].value : [];
-      const weeklyBalances = results.slice(12).map(r => r.status === 'fulfilled' ? r.value : null);
+      const autoInsights = results[12].status === 'fulfilled' ? results[12].value : null;
 
       await lastImportPromise;
 
@@ -437,6 +406,49 @@ export async function init() {
       if (infoItems.length) {
         heroSubline += `<div class="flex-gap-md" style="margin-top:var(--space-1)">${infoItems.join('')}</div>`;
       }
+      // Last weight for hero card
+      let lastWeightHtml = '';
+      if (weightStats?.count > 0 && weightStats.last != null) {
+        const lastWeightEntry = appData?.weightEntries?.[appData.weightEntries.length - 1];
+        const lastWeightDate = lastWeightEntry?.date ? new Date(lastWeightEntry.date).toLocaleDateString() : '';
+        const lastWeightSource = lastWeightEntry?.source === 'manual' ? strings.dashboard.manualEntry : strings.dashboard.appleWatch;
+        lastWeightHtml = `<div class="hero-last-weight">
+          <span class="hero-last-weight-label">${strings.dashboard.latestWeight}:</span>
+          <span class="hero-last-weight-value">${weightStats.last.toFixed(1)} ${strings.dashboard.unitKg}</span>
+          ${lastWeightDate ? `<span class="hero-last-weight-date">${lastWeightDate}</span>` : ''}
+          <span class="hero-last-weight-source">${lastWeightSource}</span>
+        </div>`;
+      } else {
+        lastWeightHtml = `<div class="hero-last-weight">
+          <span class="hero-last-weight-label">${strings.dashboard.latestWeight}:</span>
+          <span class="hero-last-weight-value">${strings.dashboard.noData}</span>
+        </div>`;
+      }
+
+      // Energy breakdown for hero card
+      const totalSportKcal = sportSummary.reduce((s, a) => s + (a.total_kcal || 0), 0);
+      const avgDailyBasalKcal = dailyData && dailyData.length > 0
+        ? Math.round(dailyData.reduce((s, d) => s + (d.kcal_basales || 0), 0) / dailyData.length)
+        : 0;
+      const totalKcalForBar = totalSportKcal + avgDailyBasalKcal;
+      const sportKcalPercent = totalKcalForBar > 0 ? (totalSportKcal / totalKcalForBar) * 100 : 0;
+      const basalKcalPercent = totalKcalForBar > 0 ? (avgDailyBasalKcal / totalKcalForBar) * 100 : 0;
+
+      let energyBreakdownHtml = '';
+      if (totalKcalForBar > 0) {
+        energyBreakdownHtml = `<div class="hero-energy-breakdown">
+          <div class="hero-energy-breakdown-label">${strings.dashboard.energyBreakdown}</div>
+          <div class="hero-energy-breakdown-bar">
+            <div class="hero-energy-breakdown-sport" style="width: ${sportKcalPercent}%" title="${strings.dashboard.sportCalories}: ${Math.round(totalSportKcal)} kcal"></div>
+            <div class="hero-energy-breakdown-basal" style="width: ${basalKcalPercent}%" title="${strings.dashboard.basalCalories}: ${Math.round(avgDailyBasalKcal)} kcal"></div>
+          </div>
+          <div class="hero-energy-breakdown-legend">
+            <span><span class="legend-dot moss"></span>${strings.dashboard.sportCalories}: <strong>${Math.round(totalSportKcal)}</strong> kcal</span>
+            <span><span class="legend-dot ember"></span>${strings.dashboard.basalCalories}: <strong>${Math.round(avgDailyBasalKcal)}</strong> kcal</span>
+          </div>
+        </div>`;
+      }
+
       heroRow.innerHTML = `
         <div class="card-hero${compact ? ' card-hero--compact' : ''}">
           ${compact ? '' : `<div class="hero-ring-wrap">
@@ -446,6 +458,8 @@ export async function init() {
             <div class="hero-eyebrow">${strings.dashboard.weekBalance}</div>
             <div><span class="hero-value">${heroValue}</span><span class="hero-unit">kcal</span></div>
             <div class="hero-sub">${heroSubline}</div>
+            ${lastWeightHtml}
+            ${energyBreakdownHtml}
             ${compact ? '' : `<div class="hero-legend">
               <span><span class="legend-dot moss"></span>${strings.dashboard.highExpenditure}</span>
               <span><span class="legend-dot ember"></span>${strings.dashboard.lowExpenditure}</span>
@@ -453,63 +467,96 @@ export async function init() {
           </div>
         </div>`;
 
+      // Auto-insights section
+      const autoInsightsRow = document.getElementById('row-auto-insights');
+      if (autoInsightsRow && autoInsights && autoInsights.cards && autoInsights.cards.length > 0) {
+        const severityLabels = strings.dashboard.autoInsights.severityLabels;
+        autoInsightsRow.innerHTML = `
+          <div class="dashboard-card dashboard-auto-insights">
+            <h3>${strings.dashboard.autoInsights.title}</h3>
+            <div class="auto-insights-grid">
+              ${autoInsights.cards.slice(0, 4).map(card => `
+                <div class="auto-insight-card auto-insight-card--${card.severity}">
+                  <div class="auto-insight-icon">${icon(card.icon, 16)}</div>
+                  <div class="auto-insight-text">${card.text}</div>
+                  <div class="auto-insight-severity">${severityLabels[card.severity] || card.severity}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (autoInsightsRow) {
+        autoInsightsRow.innerHTML = '';
+      }
+
       // Row 1 KPIs: Sueño, HRV, RHR, Peso, Pasos
       kpis1Row.innerHTML = `
         <div class="dashboard-card">
-          <h3>${strings.dashboard.sleepTitle}</h3>
+          <div class="kpi-header">
+            <h3>${strings.dashboard.sleepTitle}</h3>
+            ${sleepSeries.length >= 2 ? sparkline(sleepSeries, { width: 60, height: 20, stroke: `var(--${sleepColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${sleepDisplay}</div>
-          ${sleepSeries.length >= 2 ? sparkline(sleepSeries, { stroke: `var(--${sleepColor})`, showMean: true }) : ''}
-          <div class="subtitle">${sleepPhasesBar}${sleepConsistencyBadge}${sleepCompliance}</div>
+          <div class="kpi-comparison">${sleepPhasesBar}${sleepConsistencyBadge}${sleepCompliance}</div>
         </div>
         <div class="dashboard-card">
-          <h3>${strings.dashboard.hrvLabel}</h3>
+          <div class="kpi-header">
+            <h3>${strings.dashboard.hrvLabel} <span class="info-icon" title="${strings.dashboard.hrvTooltip}">${icon('info', 14)}</span></h3>
+            ${hrvSeries.length >= 2 ? sparkline(hrvSeries, { width: 60, height: 20, stroke: `var(--${hrvColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${hrvDisplay}</div>
-          ${hrvSeries.length >= 2 ? sparkline(hrvSeries, { stroke: `var(--${hrvColor})`, showMean: true }) : ''}
-          <div class="subtitle">${hrvTrend || ''}</div>
+          <div class="kpi-comparison">${hrvTrend || ''}</div>
         </div>
         <div class="dashboard-card">
-          <h3>${strings.dashboard.restingHr}</h3>
+          <div class="kpi-header">
+            <h3>${strings.dashboard.restingHr} <span class="info-icon" title="${strings.dashboard.rhrTooltip}">${icon('info', 14)}</span></h3>
+            ${rhrSeries.length >= 2 ? sparkline(rhrSeries, { width: 60, height: 20, stroke: `var(--${rhrColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${rhrDisplay}</div>
-          ${rhrSeries.length >= 2 ? sparkline(rhrSeries, { stroke: `var(--${rhrColor})`, showMean: true }) : ''}
-          <div class="subtitle">${strings.dashboard.avg7d}</div>
+          <div class="kpi-comparison">${strings.dashboard.avg7d}</div>
         </div>
         <div class="dashboard-card">
-          <h3>${strings.dashboard.latestWeight}</h3>
+          <div class="kpi-header">
+            <h3>${strings.dashboard.latestWeight}</h3>
+            ${weightSparklineHtml ? weightSparklineHtml.replace(/width="[^"]*"/, 'width="60"').replace(/height="[^"]*"/, 'height="20"') : ''}
+          </div>
           <div class="value">${weightDisplay}</div>
-          ${weightSparklineHtml}
-          <div class="subtitle">${weightDeltaHtml}</div>
+          <div class="kpi-comparison">${weightDeltaHtml}</div>
         </div>
         <div class="dashboard-card">
-          <h3>${strings.dashboard.dailySteps}</h3>
+          <div class="kpi-header">
+            <h3>${strings.dashboard.dailySteps}</h3>
+            ${stepsSeries.length >= 2 ? sparkline(stepsSeries, { width: 60, height: 20, stroke: `var(--${stepsColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${stepsSeries.length ? `<strong>${stepsSeries[stepsSeries.length - 1].toLocaleString()}</strong>` : strings.dashboard.noData}</div>
-          ${stepsSeries.length >= 2 ? sparkline(stepsSeries, { stroke: `var(--${stepsColor})`, showMean: true }) : ''}
-          <div class="subtitle">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m?.toLocaleString() || strings.dashboard.noData}</div>
+          <div class="kpi-comparison">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m?.toLocaleString() || strings.dashboard.noData}</div>
         </div>`;
 
-      // Row 2 KPIs: Ejercicio, Caminata, Ciclismo, Calorías Hoy
+      // Row 2 KPIs: Ejercicio, Caminata, Ciclismo
       kpis2Row.innerHTML = `
         <div class="dashboard-card">
-          <h3>${strings.dashboard.exerciseTime}</h3>
+          <div class="kpi-header">
+            <h3>${strings.dashboard.exerciseTime}</h3>
+            ${exerSeries.length >= 2 ? sparkline(exerSeries, { width: 60, height: 20, stroke: `var(--${exerColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${exerciseDisplay}</div>
-          ${exerSeries.length >= 2 ? sparkline(exerSeries, { stroke: `var(--${exerColor})`, showMean: true }) : ''}
-          <div class="subtitle">${exerciseCompliance || strings.dashboard.avgDay}</div>
+          <div class="kpi-comparison">${exerciseCompliance || strings.dashboard.avgDay}</div>
         </div>
         <div class="dashboard-card">
-          <h3>${strings.activity.sportNames.walking}</h3>
+          <div class="kpi-header">
+            <h3>${strings.activity.sportNames.walking}</h3>
+            ${walkSeries.length >= 2 ? sparkline(walkSeries, { width: 60, height: 20, stroke: `var(--${walkColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${walkDisplay}</div>
-          ${walkSeries.length >= 2 ? sparkline(walkSeries, { stroke: `var(--${walkColor})`, showMean: true }) : ''}
-          <div class="subtitle">${walkSub}</div>
+          <div class="kpi-comparison">${walkSub}</div>
         </div>
         <div class="dashboard-card">
-          <h3>${strings.activity.sportNames.cycling}</h3>
+          <div class="kpi-header">
+            <h3>${strings.activity.sportNames.cycling}</h3>
+            ${cyclingSeries.length >= 2 ? sparkline(cyclingSeries, { width: 60, height: 20, stroke: `var(--${cycleColor})`, showMean: false }) : ''}
+          </div>
           <div class="value">${cycleDisplay}</div>
-          ${cyclingSeries.length >= 2 ? sparkline(cyclingSeries, { stroke: `var(--${cycleColor})`, showMean: true }) : ''}
-          <div class="subtitle">${cycleSub}</div>
-        </div>
-        <div class="dashboard-card">
-          <h3>${strings.dashboard.todayCalories}</h3>
-          <div class="value">${todayCaloriesHtml}</div>
-          <div class="subtitle">${strings.dashboard.plannedIntakeLabel}</div>
+          <div class="kpi-comparison">${cycleSub}</div>
         </div>`;
 
       if (results[0].status === 'rejected') {
@@ -591,73 +638,6 @@ export async function init() {
         sportsRow.innerHTML = `<div style="grid-column:1/-1;margin:var(--space-2) 0 var(--space-1)"><hr style="border:none;border-top:2px solid var(--border);opacity:0.5"><p class="text-xs text-muted" style="margin-top:var(--space-2)">${strings.dashboard.sportsSection}</p></div>${accentHtml}${sportCardsHtml}`;
       } else {
         sportsRow.innerHTML = `<div class="dashboard-card" style="grid-column:1/-1;text-align:center;color:var(--text-secondary)"><p>${strings.dashboard.noActivityData}</p></div>`;
-      }
-
-      if (dailyData.length > 1) {
-        trendRow.style.display = 'grid';
-        const ctx = document.getElementById('trend-chart')?.getContext('2d');
-        if (ctx) {
-          if (window._dashTrendChart) window._dashTrendChart.destroy();
-          const labels = dailyData.map(d => d.dia).reverse();
-          const kcalData = dailyData.map(d => d.kcal_activas + d.kcal_basales).reverse();
-          const ma7 = kcalData.map((_, i, arr) => {
-            const slice = arr.slice(Math.max(0, i - 6), i + 1);
-            return slice.reduce((s, v) => s + v, 0) / slice.length;
-          });
-          window._dashTrendChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels,
-              datasets: [
-                { label: strings.dashboard.kcalDaily, data: kcalData, borderColor: chartColors.accent, backgroundColor: chartColors.accent + '1a', fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 5 },
-                { label: strings.dashboard.ma7, data: ma7, borderColor: chartColors.warning, borderDash: [5, 5], pointRadius: 0, pointHoverRadius: 5, tension: 0.3 },
-              ],
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: {
-                legend: { labels: { color: chartColors.textSecondary, boxWidth: 12, padding: 8 } },
-                tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
-              },
-              scales: {
-                y: { beginAtZero: true, ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
-                x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 10 }, grid: { display: false } },
-              },
-            },
-          });
-        }
-        const wbCtx = document.getElementById('weekly-balance-chart')?.getContext('2d');
-        if (wbCtx) {
-          if (window._dashWeeklyChart) window._dashWeeklyChart.destroy();
-          const wbLabels = [];
-          const wbValues = [];
-          weeklyBalances.forEach((b, i) => {
-            const d = new Date(now);
-            d.setDate(d.getDate() - ((11 - i) * 7));
-            wbLabels.push(d.toLocaleDateString());
-            wbValues.push(b && b.tdee != null ? Math.round(b.tdee - (b.planned_intake || 0)) : null);
-          });
-          window._dashWeeklyChart = new Chart(wbCtx, {
-            type: 'bar',
-            data: {
-              labels: wbLabels,
-              datasets: [{ label: strings.dashboard.avgDay, data: wbValues, backgroundColor: wbValues.map(v => v == null ? chartColors.grid : v >= 0 ? chartColors.accent : chartColors.danger), borderRadius: 4 }],
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: {
-                legend: { labels: { color: chartColors.textSecondary, boxWidth: 12, padding: 8 } },
-                tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
-              },
-              scales: {
-                y: { ticks: { color: chartColors.textSecondary }, grid: { color: chartColors.grid } },
-                x: { ticks: { color: chartColors.textSecondary, maxTicksLimit: 12 }, grid: { display: false } },
-              },
-            },
-          });
-        }
-      } else {
-        trendRow.style.display = 'none';
       }
     }
 
