@@ -10,29 +10,30 @@ Verified during exploration: `blood_pressure` has 0 records (AW doesn't measure 
 
 ### Requirement: Dashboard health metrics card layout
 
-The dashboard SHALL display health metric cards organized in a logical top-to-bottom flow: Hero card (full-width balance with growth ring) at the top, two symmetric rows of health KPI cards (5 + 4), trend charts (kcal daily + weekly balance) in the middle, and a sports section at the bottom with a visual separator. The sports section SHALL include the activity summary accent card and per-sport-type breakdown cards.
+The dashboard SHALL display health metric cards organized in a logical top-to-bottom flow: Strava-style summary panels at the top, auto-insights section, goals summary, hero card (full-width balance with growth ring and energy breakdown), two symmetric rows of health KPI cards (5 + 3, since "Calorías Hoy" is removed) with inline sparklines and period comparisons, and a sports section at the bottom. The sports section SHALL include the activity summary accent card and per-sport-type breakdown cards. The combined streak+calendar card SHALL appear after the sports section.
 
-#### Scenario: Hero card renders first
+#### Scenario: Hero card renders first after goals
 - **WHEN** the dashboard renders
-- **THEN** the hero card with balance semanal and growth ring SHALL appear at the top spanning full width
+- **THEN** the Strava panels block SHALL appear at the top
+- **THEN** the auto-insights section SHALL appear below Strava panels
+- **THEN** the goals summary SHALL appear below auto-insights
+- **THEN** the hero card with balance semanal, growth ring, energy breakdown, and last weight SHALL appear below goals
 - **THEN** no sports or activity content SHALL appear above the hero card
 
-#### Scenario: Health KPIs in two symmetric rows
+#### Scenario: Health KPIs in two rows without Calorías Hoy
 - **WHEN** the dashboard renders
 - **THEN** row 1 SHALL contain 5 cards: Sueño, HRV, RHR, Peso, Pasos
-- **THEN** row 2 SHALL contain 4 cards: Ejercicio, Distancia, Calorías Hoy, Próximo Entrenamiento
-- **THEN** each card SHALL include a sparkline where data is available
+- **THEN** row 2 SHALL contain 3 cards: Ejercicio, Caminata, Ciclismo
+- **THEN** each card SHALL include an inline sparkline (60×20 px) next to the label and period comparisons below the value
 
-#### Scenario: Trend charts in the middle
-- **WHEN** daily data is available
-- **THEN** the kcal diarias chart (line + MA7) and balance semanal chart (bars) SHALL render side-by-side below the health KPI rows
-
-#### Scenario: Sports section at the bottom
+#### Scenario: No trend chart row
 - **WHEN** the dashboard renders
-- **THEN** a visual separator or section label ("DEPORTES") SHALL appear before the sports section
-- **THEN** the activity summary accent card SHALL appear first in the sports section
-- **THEN** per-sport-type cards SHALL appear below the accent card
-- **THEN** no sports content SHALL appear above the trend charts
+- **THEN** no Chart.js trend charts SHALL appear between the KPI rows and the sports section
+
+#### Scenario: Sports section followed by combined streak+calendar
+- **WHEN** the dashboard renders
+- **THEN** the sports section SHALL appear after the KPI rows
+- **THEN** the combined streak+calendar card SHALL appear after the sports section
 
 ### Requirement: Exercise time card
 
@@ -65,11 +66,19 @@ The system SHALL display average walking distance per day using `distance_walkin
 
 ### Requirement: HRV + resting HR composite card
 
-The system SHALL display a combined card with HRV (SDNN ms) and resting heart rate (bpm).
+The system SHALL display separate cards for HRV (SDNN ms) and resting heart rate (bpm). Each card SHALL include an info icon (Lucide `info`) that, on hover or click, displays a tooltip explaining what the metric means. HRV tooltip: "Variabilidad del ritmo cardíaco. Indica la recuperación de tu sistema nervioso. Valores más altos = mejor recuperación." RHR tooltip: "Frecuencia cardíaca en reposo. Indica tu nivel de fatiga general. Valores más bajos = mejor condición."
 
-#### Scenario: Composite card renders
-- **WHEN** HRV and resting HR data exists
-- **THEN** show latest HRV, latest resting HR, 7d averages, trend arrow
+#### Scenario: HRV card with info tooltip
+- **WHEN** the HRV card renders
+- **THEN** an info icon SHALL appear next to the label
+- **WHEN** the user hovers over or clicks the info icon
+- **THEN** a tooltip SHALL display the HRV explanation in Spanish
+
+#### Scenario: RHR card with info tooltip
+- **WHEN** the RHR card renders
+- **THEN** an info icon SHALL appear next to the label
+- **WHEN** the user hovers over or clicks the info icon
+- **THEN** a tooltip SHALL display the RHR explanation in Spanish
 
 ### Requirement: Cycling distance card
 
@@ -518,3 +527,19 @@ The dashboard SHALL render a compact goals summary row between the Strava-style 
 - **WHEN** the dashboard loads
 - **THEN** `db:getGoals` and `db:getGoalProgress` for active goals SHALL be called within the batch
 - **THEN** IPC failures SHALL display a fallback without breaking the dashboard
+
+## ADDED Requirements (2026-07-08 — multi-view-ux-polish-v2)
+
+### Requirement: Dashboard goals summary card refreshes on data change
+
+The dashboard SHALL re-render the goals summary card when a `data-changed` event is received. The `onDataChanged` callback SHALL trigger a full re-render of the dashboard (including goals, KPIs, hero, sports, and Strava panels), not just the Strava panels.
+
+#### Scenario: Goals update after data change
+- **WHEN** the user creates or modifies a goal in the goals view
+- **WHEN** the `data-changed` event fires
+- **THEN** the dashboard goals summary card SHALL reflect the updated goals
+- **THEN** all other dashboard sections SHALL also refresh
+
+### Requirement: Last weight in hero card
+
+The hero card SHALL display the most recent weight entry as a compact sub-element. See `dashboard-kpi-redesign` spec for details.

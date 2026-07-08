@@ -54,13 +54,17 @@ const SPORT_EFFORT_MULTIPLIERS = {
 const NEAT_KCAL_PER_STEP = 0.04;
 
 const RIEGEL_EXPONENT = 1.06;
-const STANDARD_DISTANCES = [
+const RUNNING_STANDARD_DISTANCES = [
   { km: 1, key: '1', label: '1 km' },
-  { km: 1.609, key: '1mi', label: '1 mi' },
   { km: 5, key: '5', label: '5 km' },
   { km: 10, key: '10', label: '10 km' },
   { km: 21.1, key: '21.1', label: 'Media maratón' },
   { km: 42.2, key: '42.2', label: 'Maratón' },
+];
+const CYCLING_STANDARD_DISTANCES = [
+  { km: 10, key: '10', label: '10 km' },
+  { km: 50, key: '50', label: '50 km' },
+  { km: 100, key: '100', label: '100 km' },
 ];
 
 function paceProjection(d1Km, t1Min, d2Km) {
@@ -74,13 +78,13 @@ function isWithinProjectionWindow(d1Km, targetKm) {
   return d1Km >= 0.8 * targetKm && d1Km <= 1.5 * targetKm;
 }
 
-function projectStandardDistances(activities, sportType) {
+function projectStandardDistances(activities, sportType, distances) {
   const eligible = activities.filter(a =>
     a.sport_type === sportType &&
     Number.isFinite(a.distance_km) && a.distance_km >= 1.0 &&
     Number.isFinite(a.duration_minutes) && a.duration_minutes > 0
   );
-  return STANDARD_DISTANCES.map(target => {
+  return distances.map(target => {
     let best = null;
     for (const a of eligible) {
       if (!isWithinProjectionWindow(a.distance_km, target.km)) continue;
@@ -162,9 +166,8 @@ function register(ipcMain, getDb, _getHS, _notifyDomain) {
       ORDER BY date ASC
     `).all();
     const records = [];
-    for (const sportType of ['running', 'cycling']) {
-      records.push(...projectStandardDistances(all, sportType));
-    }
+    records.push(...projectStandardDistances(all, 'running', RUNNING_STANDARD_DISTANCES));
+    records.push(...projectStandardDistances(all, 'cycling', CYCLING_STANDARD_DISTANCES));
     const cyclingDistanceRows = db.prepare(`
       SELECT date, distance_km
       FROM sport_activities
@@ -229,36 +232,18 @@ function register(ipcMain, getDb, _getHS, _notifyDomain) {
       });
     });
     const ranked = rankRecords(records)
-      .filter(r => r.rank != null || r.is_distance || r.is_volume)
-      .slice(0, 5);
-    if (ranked.length === 0 && records.length > 0) {
-      return { records: records.slice(0, 5), total: records.length };
+      .filter(r => r.rank != null || r.is_distance || r.is_volume);
+    const bySport = { running: [], cycling: [], strength: [] };
+    for (const r of ranked) {
+      const sport = r.sport_type;
+      if (bySport[sport]) bySport[sport].push(r);
     }
-    return { records: ranked, total: records.length };
-  });
-
-  ipcMain.handle('db:getWeeklyGoal', () => {
-    const db = getDb();
-    const range = currentIsoWeekRange();
-    const from = toIsoDate(range.start);
-    const to = toIsoDate(range.end);
-    const settingRow = db.prepare("SELECT value FROM settings WHERE key = 'weekly_activity_target'").get();
-    const target = settingRow ? Math.max(1, parseInt(settingRow.value, 10) || 4) : 4;
-    const counts = db.prepare(`
-      SELECT sport_type, COUNT(*) as count
-      FROM sport_activities WHERE date >= ? AND date <= ?
-      GROUP BY sport_type ORDER BY count DESC
-    `).all(from, to);
-    const totalSessions = counts.reduce((s, r) => s + (Number(r.count) || 0), 0);
-    const primary = counts.length > 0 ? counts[0].sport_type : null;
-    const progress_pct = Math.min(100, (totalSessions / target) * 100);
+    const mostRecent = ranked.length > 0 ? ranked[0] : null;
     return {
-      current: totalSessions,
-      target,
-      progress_pct,
-      primary_sport: primary,
-      week_start: from,
-      week_end: to,
+      records: ranked,
+      by_sport: bySport,
+      primary_sport: mostRecent ? mostRecent.sport_type : null,
+      total: ranked.length,
     };
   });
 

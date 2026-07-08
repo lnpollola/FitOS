@@ -100,6 +100,75 @@
   margin-top: var(--space-1);
 }
 
+.dashboard-card .kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.dashboard-card .kpi-header h3 {
+  margin-bottom: 0;
+}
+
+.dashboard-card .kpi-header svg {
+  flex-shrink: 0;
+}
+
+.dashboard-card .kpi-comparison {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.dashboard-card .kpi-comparison .kpi-arrow {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-card .kpi-comparison .kpi-arrow.up {
+  color: var(--success);
+}
+
+.dashboard-card .kpi-comparison .kpi-arrow.down {
+  color: var(--danger);
+}
+
+.dashboard-card .kpi-comparison .kpi-delta {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+}
+
+.dashboard-card .kpi-comparison .kpi-period {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.dashboard-card .info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: help;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.dashboard-card .info-icon:hover {
+  background: var(--accent);
+  color: white;
+}
+
 .card-accent {
   background: var(--accent);
   color: #fff;
@@ -113,7 +182,6 @@
 .compliance-warn { font-size: 11px; color: var(--warning); }
 
 .metric-trend { font-size: 12px; margin-left: 4px; }
-.metric-value-sm { font-size: 12px; }
 
 .trend-up { color: var(--danger); }
 .trend-down { color: var(--success); }
@@ -122,6 +190,11 @@
 .chart-container {
   position: relative;
   height: 250px;
+  transition: opacity 200ms ease;
+}
+
+.chart-transitioning {
+  opacity: 0;
 }
 
 /* Analytics View */
@@ -199,11 +272,23 @@
   margin-bottom: 6px;
 }
 
+.analytics-kpi-card .kpi-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
 .analytics-kpi-card .kpi-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 22px;
   font-weight: 500;
   color: var(--accent);
+}
+
+.analytics-kpi-card .kpi-trend {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .analytics-kpi-card .kpi-sub {
@@ -231,7 +316,39 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.chart-context-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+}
+
+.context-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.context-kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.context-kpi-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
 }
 
 .chart-card .chart-empty {
@@ -371,6 +488,312 @@
   font-style: normal;
 }
 
+.strava-streak-calendar {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  gap: var(--space-4);
+}
+
+.strava-streak-calendar-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-right: var(--space-4);
+  border-right: 1px solid var(--border);
+}
+
+.strava-streak-calendar-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .strava-streak-calendar {
+    grid-template-columns: 1fr;
+  }
+  .strava-streak-calendar-left {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--space-4);
+  }
+}
+
+.strava-streak-calendar .strava-streak-metrics {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.strava-streak-calendar .strava-streak-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.strava-streak-calendar .strava-streak-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.strava-streak-calendar .strava-streak-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.strava-streak-calendar .strava-calendar-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.strava-streak-calendar .strava-calendar-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  text-align: center;
+}
+
+.strava-streak-calendar .strava-calendar-nav-btn,
+.strava-streak-calendar .strava-calendar-today-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.strava-streak-calendar .strava-calendar-nav-btn:hover,
+.strava-streak-calendar .strava-calendar-today-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.strava-streak-calendar .strava-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.strava-streak-calendar .strava-calendar-dow-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-1);
+  text-transform: uppercase;
+}
+
+.strava-streak-calendar .strava-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+}
+
+.strava-streak-calendar .strava-calendar-day--active {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.strava-streak-calendar .strava-calendar-day--inactive {
+  color: var(--text-secondary);
+}
+
+.strava-streak-calendar .strava-calendar-day--future {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.strava-streak-calendar .strava-calendar-day:hover:not(.strava-calendar-day--future) {
+  border-color: var(--accent);
+}
+
+.strava-streak-calendar .strava-calendar-day-multi-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.strava-streak-calendar .strava-calendar-empty {
+  aspect-ratio: 1;
+}
+
+.strava-streak-calendar .strava-calendar-week-status {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+}
+
+.strava-streak-calendar .strava-calendar-week-status--completed {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.strava-streak-calendar .strava-calendar-week-status--active {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.strava-streak-calendar .strava-calendar-week-status--incomplete {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.strava-streak-calendar .strava-grace-text {
+  font-size: 12px;
+  color: var(--warning);
+  font-style: italic;
+}
+
+.strava-streak-calendar .strava-streak-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.strava-streak-calendar .strava-helper-text-sm-left {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.strava-streak-calendar .strava-panel-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.dashboard-auto-insights {
+  grid-column: 1 / -1;
+}
+
+.dashboard-auto-insights h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.auto-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.auto-insight-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all 0.2s;
+}
+
+.auto-insight-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.auto-insight-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.auto-insight-card--positive .auto-insight-icon {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.auto-insight-card--warning .auto-insight-icon {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.auto-insight-card--negative .auto-insight-icon {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.auto-insight-card--info .auto-insight-icon {
+  background: var(--info-light);
+  color: var(--info);
+}
+
+.auto-insight-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.auto-insight-severity {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.auto-insight-card--positive .auto-insight-severity {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.auto-insight-card--warning .auto-insight-severity {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.auto-insight-card--negative .auto-insight-severity {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.auto-insight-card--info .auto-insight-severity {
+  background: var(--info-light);
+  color: var(--info);
+}
+
 .strava-panel {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -389,12 +812,6 @@
   letter-spacing: 0.5px;
 }
 
-.strava-row-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-}
-
 .strava-resumen-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -409,10 +826,41 @@
   height: 100%;
 }
 
-.strava-row-full {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
+/* PR tabs */
+.strava-pr-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.strava-pr-tab {
+  background: none;
+  border: none;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.strava-pr-tab:hover {
+  color: var(--text-primary);
+}
+
+.strava-pr-tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.strava-pr-tab:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 /* PR banner */
@@ -482,70 +930,6 @@
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-/* Weekly goal ring */
-.strava-weekly-goal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  cursor: pointer;
-  outline: none;
-}
-
-.strava-weekly-goal:focus-visible {
-  box-shadow: 0 0 0 2px var(--accent-light);
-}
-
-.strava-ring-wrap {
-  position: relative;
-  width: 132px;
-  height: 132px;
-  margin-bottom: var(--space-2);
-}
-
-.strava-ring-wrap svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.strava-ring-track {
-  stroke: var(--text-secondary);
-  stroke-opacity: 0.2;
-  fill: none;
-}
-
-.strava-ring-fill {
-  stroke: var(--success);
-  fill: none;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.4s ease;
-}
-
-.strava-ring-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-primary);
-}
-
-.strava-weekly-progress {
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 13px;
-  color: var(--text-primary);
-  margin-top: var(--space-1);
-}
-
-.strava-weekly-meta {
-  font-family: var(--font-body, 'Source Sans 3', sans-serif);
-  font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0.7;
-  margin-top: 2px;
 }
 
 /* Relative effort */
@@ -830,6 +1214,18 @@
   background: none;
 }
 
+.strava-skeleton-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  padding: var(--space-2);
+}
+
+.strava-skeleton-calendar-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+}
+
 /* Streak */
 .strava-streak {
   display: flex;
@@ -893,14 +1289,6 @@
 .strava-streak-share:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .strava-streak-share:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.strava-streak-broken {
-  font-family: var(--font-body, 'Source Sans 3', sans-serif);
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-style: italic;
-  flex: 1;
-}
-
 .strava-pr-modal {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -918,14 +1306,12 @@
 .strava-pr-modal-close { float: right; background: none; border: none; cursor: pointer; color: var(--text-secondary); }
 
 @media (max-width: 900px) {
-  .strava-row-2,
   .strava-resumen-row { grid-template-columns: 1fr; }
   .strava-pr-banner { grid-template-columns: 48px 1fr auto; }
   .strava-streak { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .strava-ring-fill { transition: none; }
   .strava-bubble { transition: none; }
 }
 
@@ -1134,6 +1520,12 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+.strava-relative-effort .trend-up,
+.strava-relative-effort .trend-down,
+.strava-relative-effort .trend-flat {
+  color: #fff;
+}
+
 .strava-relative-effort-prev {
   display: flex;
   align-items: baseline;
@@ -1160,44 +1552,6 @@
   top: 50%;
   transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.6);
-}
-
-/* ============================================================
-   Weekly goal ring (smaller, clearer)
-   ============================================================ */
-
-.strava-weekly-goal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  cursor: pointer;
-  outline: none;
-  padding: 8px 0 4px;
-}
-
-.strava-ring-wrap {
-  position: relative;
-  width: 96px;
-  height: 96px;
-  margin-bottom: var(--space-2);
-}
-
-.strava-weekly-progress {
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 12px;
-  color: var(--text-primary);
-  margin-top: var(--space-1);
-}
-
-.strava-weekly-meta {
-  font-family: var(--font-body, 'Source Sans 3', sans-serif);
-  font-size: 10px;
-  color: var(--text-secondary);
-  opacity: 0.7;
-  margin-top: 2px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 /* ============================================================
@@ -1579,7 +1933,8 @@
   border-radius: var(--radius);
   padding: var(--space-5);
   box-shadow: var(--shadow);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: var(--space-4);
   align-items: center;
   transition: box-shadow 0.2s, transform 0.2s;
@@ -1632,7 +1987,7 @@
 .goal-card-progress {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .goal-card-value {
@@ -1646,6 +2001,24 @@
   font-size: 12px;
   color: var(--text-secondary);
   margin-left: 2px;
+}
+
+.goal-card-percentage-bar {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.goal-card-percentage-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.goal-card--completed .goal-card-percentage-fill {
+  background: var(--success);
 }
 
 .goal-card-footer {
@@ -1668,7 +2041,14 @@
 
 .goals-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .goals-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .goals-section-header {

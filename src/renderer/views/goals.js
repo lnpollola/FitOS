@@ -4,6 +4,7 @@ import { goalProgressRing } from '../utils/goal-progress-ring.js';
 import { computeDaysRemaining, sortGoalsByDeadline } from '../utils/goals.js';
 import { triggerConfetti } from '../utils/confetti.js';
 import { skeletonCard } from '../utils/skeleton.js';
+import { safeCall } from '../utils/safe-call.js';
 
 let _celebrationQueue = [];
 let _seenCompleted = new Set();
@@ -58,15 +59,11 @@ async function renderGoals(container, api) {
 
   const progressMap = new Map();
   for (const g of goals) {
-    try {
-      const result = await api.getGoalProgress(g.id);
-      if (result && result.ok) {
-        g.current = result.current;
-        g.progress_pct = result.progress_pct;
-      } else {
-        g.progress_pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 1000) / 10) : 0;
-      }
-    } catch {
+    const result = await safeCall(api.getGoalProgress(g.id), null);
+    if (result && result.ok) {
+      g.current = result.current;
+      g.progress_pct = result.progress_pct;
+    } else {
       g.progress_pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 1000) / 10) : 0;
     }
   }
@@ -136,6 +133,14 @@ function renderGoalCard(goal, isCompleted) {
 
   const badgeHtml = isCompleted ? `<span class="goal-badge">${icon('badge-check', 16)}</span>` : '';
 
+  let progressDisplay = '';
+  if (goal.type === 'weight') {
+    const startWeight = goal.startWeight || goal.current;
+    progressDisplay = `<span class="goal-card-value">${startWeight.toFixed(1)} → ${goal.target.toFixed(1)}</span>`;
+  } else {
+    progressDisplay = `<span class="goal-card-value">${formatProgress(goal.current, goal.type)} / ${goal.target}</span>`;
+  }
+
   return `
     <div class="goal-card ${isCompleted ? 'goal-card--completed' : 'goal-card--active'}" data-goal-id="${goal.id}">
       <div class="goal-card-ring">${ring}</div>
@@ -144,8 +149,11 @@ function renderGoalCard(goal, isCompleted) {
           <span class="goal-card-label">${badgeHtml}${escapeHtml(goal.label)}</span>
         </div>
         <div class="goal-card-progress">
-          <span class="goal-card-value">${formatProgress(goal.current, goal.type)} / ${goal.target}</span>
+          ${progressDisplay}
           <span class="goal-card-unit">${escapeHtml(goal.unit)}</span>
+        </div>
+        <div class="goal-card-percentage-bar">
+          <div class="goal-card-percentage-fill" style="width: ${Math.min(100, goal.progress_pct)}%"></div>
         </div>
         <div class="goal-card-footer">
           ${daysLabel}
@@ -181,7 +189,7 @@ function setupEventListeners(container, api) {
     }
 
     if (e.target.closest('.goal-archive') && goalId) {
-      await api.archiveGoal(goalId);
+      await safeCall(api.archiveGoal(goalId), null);
       renderGoals(container, api);
     }
 

@@ -14,11 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Activity days
   getActivityDays: () => ipcRenderer.invoke('db:getActivityDays'),
-  saveActivityDay: (day) => ipcRenderer.invoke('db:saveActivityDay', day),
-  getSportActivities: (date) => ipcRenderer.invoke('db:getSportActivities', date),
-  saveSportActivity: (activity) => ipcRenderer.invoke('db:saveSportActivity', activity),
-  importActivityCSV: (csvPath) => ipcRenderer.invoke('db:importActivityCSV', csvPath),
-  getWeeklySportSummary: () => ipcRenderer.invoke('db:getWeeklySportSummary'),
   getActivityKcalByType: (from, to) => ipcRenderer.invoke('db:getActivityKcalByType', from, to),
   getSportSummaryByRange: (from, to) => ipcRenderer.invoke('db:getSportSummaryByRange', from, to),
   getActivityComparison: (from, to) => ipcRenderer.invoke('db:getActivityComparison', from, to),
@@ -69,14 +64,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Settings
   getSetting: (key) => ipcRenderer.invoke('db:getSetting', key),
   setSetting: (key, value) => ipcRenderer.invoke('db:setSetting', key, value),
-  getTrendWeight: () => ipcRenderer.invoke('db:getTrendWeight'),
   getLastImportTimestamp: () => ipcRenderer.invoke('db:getLastImportTimestamp'),
-  setLastImportTimestamp: (timestamp) => ipcRenderer.invoke('db:setLastImportTimestamp', timestamp),
   getHealthsyncDbInfo: () => ipcRenderer.invoke('db:getHealthsyncDbInfo'),
 
   // Dashboard
   getDashboardData: () => ipcRenderer.invoke('db:getDashboardData'),
-  getSleepData: (from, to) => ipcRenderer.invoke('db:getSleepData', from, to),
   getSleepAnalysis: (from, to) => ipcRenderer.invoke('db:getSleepAnalysis', from, to),
   getCyclingDistance: (from, to) => ipcRenderer.invoke('db:getCyclingDistance', from, to),
 
@@ -89,13 +81,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Meal dish options
   linkDishToMeal: (link) => ipcRenderer.invoke('db:linkDishToMeal', link),
-  getDishesForMeal: (mealTemplateId) => ipcRenderer.invoke('db:getDishesForMeal', mealTemplateId),
-  unlinkDish: (id) => ipcRenderer.invoke('db:unlinkDish', id),
 
   // Workout plans
   getWorkoutPlans: () => ipcRenderer.invoke('db:getWorkoutPlans'),
   getPlanDays: (planId) => ipcRenderer.invoke('db:getPlanDays', planId),
-  getExercisesByIds: (ids) => ipcRenderer.invoke('db:getExercisesByIds', ids),
 
   // Apple Health
   checkHealthsync: () => ipcRenderer.invoke('db:checkHealthsync'),
@@ -104,13 +93,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   resetAndSyncHealthsync: () => ipcRenderer.invoke('db:resetAndSyncHealthsync'),
   getHealthDailySummary: (from, to) => ipcRenderer.invoke('health:getDailySummary', from, to),
   getHealthWorkouts: (limit) => ipcRenderer.invoke('health:getWorkouts', limit),
-  getHealthSleep: (limit) => ipcRenderer.invoke('health:getSleep', limit),
-  getHealthHRV: (limit) => ipcRenderer.invoke('health:getHRV', limit),
-  getHealthBodyMass: (limit) => ipcRenderer.invoke('health:getBodyMass', limit),
-  getHealthHRVWeekly: (limit) => ipcRenderer.invoke('health:getHRVWeekly', limit),
-  getHealthHeartRateDaily: (limit) => ipcRenderer.invoke('health:getHeartRateDaily', limit),
-  getHealthStats: () => ipcRenderer.invoke('health:getStats'),
-  syncHealthToApp: () => ipcRenderer.invoke('health:syncToApp'),
 
   // Health Analytics (date-range queries)
   getHealthHeartRateRange: (from, to) => ipcRenderer.invoke('health:getHeartRateRange', from, to),
@@ -126,16 +108,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getHealthFlightsClimbedRange: (from, to) => ipcRenderer.invoke('health:getFlightsClimbedRange', from, to),
 
   // HealthSync dashboard metrics (v3)
-  getHealthBloodPressure: (from, to) => ipcRenderer.invoke('health:getBloodPressure', from, to),
-  getHealthStandingHours: (from, to) => ipcRenderer.invoke('health:getStandingHours', from, to),
-  getHealthExerciseTime: (from, to) => ipcRenderer.invoke('health:getExerciseTime', from, to),
-  getHealthWalkingDistance: (from, to) => ipcRenderer.invoke('health:getWalkingDistance', from, to),
-  getHealthSpO2Range: (from, to) => ipcRenderer.invoke('health:getSpO2Range', from, to),
   getHealthDashboardMetrics: (from, to) => ipcRenderer.invoke('health:getDashboardMetrics', from, to),
 
   // Strava-style summary panels
   getPersonalRecords: () => ipcRenderer.invoke('db:getPersonalRecords'),
-  getWeeklyGoal: () => ipcRenderer.invoke('db:getWeeklyGoal'),
   getRelativeEffort: () => ipcRenderer.invoke('db:getRelativeEffort'),
   getTrainingLogWeek: (weekStart) => ipcRenderer.invoke('db:getTrainingLogWeek', weekStart),
   getMonthlyCalendar: (yearMonth) => ipcRenderer.invoke('db:getMonthlyCalendar', yearMonth),

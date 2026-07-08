@@ -6,13 +6,6 @@
 @import './utilities.css';
 
 
-/* ────────────── Insights View ────────────── */
-body.organic .insights-view {
-  padding: var(--space-lg);
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
 body.organic .insights-filters {
   display: flex;
   gap: var(--space-xs);
@@ -150,7 +143,63 @@ body.organic .insights-dow-best-badge {
   white-space: nowrap;
 }
 
+body.organic .insights-dow-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+body.organic .insights-dow-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+body.organic .insights-dow-kpi-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+body.organic .insights-dow-kpi-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+body.organic .insights-dow-kpi-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  margin-top: 2px;
+}
+
 /* ────────── Sport Distribution Donut ────────── */
+body.organic .insights-sport-dist-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+body.organic .insights-sport-dist-chart {
+  position: relative;
+}
+
+body.organic .insights-sport-dist-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
 body.organic .insights-donut {
   display: flex;
   flex-direction: column;
@@ -318,6 +367,23 @@ body.organic .insights-recovery-progress {
   font-size: 13px;
   color: var(--lichen);
   margin-top: var(--space-sm);
+}
+
+body.organic .insights-recovery-baseline-bar {
+  width: 100%;
+  max-width: 240px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--smoke);
+  overflow: hidden;
+  margin: var(--space-sm) auto 0;
+}
+
+body.organic .insights-recovery-baseline-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--moss);
+  transition: width 0.3s ease;
 }
 
 /* ────────── Weight Velocity ────────── */
