@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
 import { sportIcon } from '../utils/sport-icons.js';
@@ -72,7 +73,7 @@ export async function init() {
   window._loadingAnalytics = true;
   try {
     const container = document.getElementById('view-analytics');
-    const api = window.electronAPI;
+    const api = getAPI();
     const s = strings.analytics;
 
     container.innerHTML = `
@@ -297,7 +298,7 @@ export async function init() {
       `;
       const btn = document.getElementById('analytics-go-activity');
       if (btn) btn.addEventListener('click', () => {
-        if (window.electronAPI?.navigate) window.electronAPI.navigate('activity');
+        if (api?.navigate) api.navigate('activity');
       });
     }
 

@@ -1,3 +1,4 @@
+import { getAPI } from "../../utils/api-detector.js";
 import { strings } from '../../locales/es.js';
 import { icon } from '../../utils/icons.js';
 import { safeCall } from '../../utils/safe-call.js';
@@ -14,7 +15,7 @@ function destroyTonnageChart() {
 export function mountStrengthPRs(container) {
   if (!container) return;
   container.innerHTML = skeletonCard();
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   const load = async () => {
@@ -103,7 +104,7 @@ export function mountStrengthPRs(container) {
 export function mountStrengthPlateaus(container) {
   if (!container) return;
   container.innerHTML = skeletonCard();
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   const load = async () => {
@@ -156,7 +157,7 @@ export function mountStrengthPlateaus(container) {
 export function mountStrengthScore(container) {
   if (!container) return;
   container.innerHTML = skeletonCard();
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   const load = async () => {
@@ -226,7 +227,7 @@ export function mountStrengthScore(container) {
 export function mountWeeklyTonnage(container) {
   if (!container) return;
   container.innerHTML = skeletonChart();
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   const load = async () => {

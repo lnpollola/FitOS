@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import Chart from 'chart.js/auto';
 import { strings, getMeasurementLabel } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
@@ -145,7 +146,7 @@ export async function init() {
       </div>
     `;
 
-    const api = window.electronAPI;
+    const api = getAPI();
     if (!api) { return; }
 
     const PAGE_SIZE = 10;

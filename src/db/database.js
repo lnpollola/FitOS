@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const os = require('os');
-const { app } = require('electron');
+const fs = require('fs');
 const { seedIfEmpty, migrateSeedData } = require('./seed-data');
 const EXERCISES_MIGRATION = require('./seed-data').EXERCISES || [];
 
@@ -9,7 +9,10 @@ let db;
 let healthsyncDb;
 
 function getDbPath() {
-  const userDataPath = app.getPath('userData');
+  const userDataPath = path.join(os.homedir(), '.fitos-data');
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true });
+  }
   return path.join(userDataPath, 'health-data.db');
 }
 

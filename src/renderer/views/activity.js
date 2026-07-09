@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
 import { sportIcon } from '../utils/sport-icons.js';
@@ -71,7 +72,7 @@ export async function init() {
     </div>
   `;
 
-    const api = window.electronAPI;
+    const api = getAPI();
     if (!api) return;
 
     const syncAppleHealthBtn = document.getElementById('btn-sync-apple-health');

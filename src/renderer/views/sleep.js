@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { icon } from '../utils/icons.js';
 import { chartColors } from '../utils/chart-theme.js';
@@ -7,7 +8,7 @@ import Chart from 'chart.js/auto';
 
 export async function init() {
   const container = document.getElementById('view-sleep');
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<h2 class="view-title">${strings.sleep.title || 'Análisis de Sueño'}</h2><div class="card"><p>${strings.dashboard.offline}</p></div>`;
     return;

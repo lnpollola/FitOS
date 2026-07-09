@@ -1,3 +1,4 @@
+import { getAPI } from "../../utils/api-detector.js";
 import { strings } from '../../locales/es.js';
 import { icon } from '../../utils/icons.js';
 import { sportIcon } from '../../utils/sport-icons.js';
@@ -66,7 +67,7 @@ function getPrLabelText(record) {
 export function mountPersonalRecord(container) {
   if (!container) return () => {};
   container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return () => {};
 
   let activeTab = null;
@@ -246,7 +247,7 @@ export function mountPersonalRecord(container) {
 
 export function mountRelativeEffort(container) {
   if (!container) return () => {};
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
     return () => {};
@@ -316,7 +317,7 @@ export function mountRelativeEffort(container) {
 
 export function mountTrainingLog(container) {
   if (!container) return () => {};
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
     return () => {};
@@ -472,7 +473,7 @@ export function mountTrainingLog(container) {
 
 export function mountStreak(container) {
   if (!container) return () => {};
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
     return () => {};
@@ -553,7 +554,7 @@ export function mountStreak(container) {
 
 export function mountStreakCalendar(container) {
   if (!container) return () => {};
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
     return () => {};
@@ -730,7 +731,7 @@ export function mountStreakCalendar(container) {
 
 export function mountMonthlyCalendar(container) {
   if (!container) return () => {};
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<div class="strava-panel">${skeletonCard()}</div>`;
     return () => {};
