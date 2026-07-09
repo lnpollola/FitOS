@@ -11,6 +11,7 @@ import { init as initSleep } from './views/sleep.js';
 import { init as initGoals } from './views/goals.js';
 import { icon } from './utils/icons.js';
 import { cacheStore } from './utils/cache-store.js';
+import { getAPI } from './utils/api-detector.js';
 
 function renderNavIcons() {
   document.querySelectorAll('.nav-icon').forEach(el => {
@@ -75,18 +76,17 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
 let _dataChangedTimeout;
 
-if (window.electronAPI) {
-  window.electronAPI.onNavigate((view) => showView(view));
-  window.electronAPI.onDataChanged(() => {
-    if (_dataChangedTimeout) clearTimeout(_dataChangedTimeout);
-    _dataChangedTimeout = setTimeout(() => {
-      showView(document.querySelector('.nav-item.active')?.dataset?.view || 'dashboard');
-    }, 300);
-  });
-  window.electronAPI.onDomainChanged((domain) => {
-    cacheStore.invalidate(domain);
-  });
-}
+const api = getAPI();
+api.onNavigate((view) => showView(view));
+api.onDataChanged(() => {
+  if (_dataChangedTimeout) clearTimeout(_dataChangedTimeout);
+  _dataChangedTimeout = setTimeout(() => {
+    showView(document.querySelector('.nav-item.active')?.dataset?.view || 'dashboard');
+  }, 300);
+});
+api.onDomainChanged((domain) => {
+  cacheStore.invalidate(domain);
+});
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');

@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { safeCall } from '../utils/safe-call.js';
 import { skeletonCard, skeletonRow } from '../utils/skeleton.js';
@@ -135,7 +136,7 @@ export async function init() {
     </div>
   `;
 
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   let _dayType = 'training';

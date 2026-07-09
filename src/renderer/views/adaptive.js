@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
 import { calculateBMR } from '../utils/bmr.js';
@@ -52,7 +53,7 @@ export async function init() {
     </div>
   `;
 
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   if (window._loadingEnergy) return;

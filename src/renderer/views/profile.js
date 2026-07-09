@@ -1,10 +1,11 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { safeCall } from '../utils/safe-call.js';
 import { skeletonCard } from '../utils/skeleton.js';
 
 export async function init() {
   const container = document.getElementById('view-profile');
-  const api = window.electronAPI;
+  const api = getAPI();
 
   container.innerHTML = `
     <h2 class="view-title">${strings.profile.title}</h2>

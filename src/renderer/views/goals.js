@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { icon } from '../utils/icons.js';
 import { goalProgressRing } from '../utils/goal-progress-ring.js';
@@ -11,7 +12,7 @@ let _seenCompleted = new Set();
 
 export function init() {
   const container = document.getElementById('view-goals');
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) {
     container.innerHTML = `<div class="card"><p>${strings.states.offline}</p></div>`;
     return;

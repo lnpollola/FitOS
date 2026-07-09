@@ -8,10 +8,17 @@
     "dev:server": "vite",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "dev:web": "vite --host",
+    "dev:web:full": "node src/server/dev-web.js",
     "build:renderer": "vite build",
     "build": "vite build && electron-builder",
+    "build:web": "vite build",
     "preview": "vite preview",
     "start": "electron .",
+    "start:web": "node src/server/start-web.js",
+    "rebuild:web": "node scripts/rebuild-for-web.js",
+    "rebuild:electron": "node scripts/rebuild-for-electron.js",
+    "switch:web": "node scripts/switch-mode.js web",
+    "switch:electron": "node scripts/switch-mode.js electron",
     "test": "vitest run",
     "test:watch": "vitest",
     "sync:healthsync": "electron scripts/sync-healthsync.js",
@@ -45,15 +52,17 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
-    "lucide": "^0.400.0",
     "electron-builder": "^24.9.1",
     "jsdom": "^29.1.1",
+    "lucide": "^0.400.0",
     "vite": "^5.0.12",
     "vitest": "^4.1.9",
     "wait-on": "^7.2.0"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
-    "chart.js": "^4.4.1"
+    "chart.js": "^4.4.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }

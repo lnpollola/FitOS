@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { icon } from '../utils/icons.js';
 import { sportIcon } from '../utils/sport-icons.js';
@@ -55,7 +56,7 @@ export async function init() {
   window._loadingInsights = true;
   try {
     const container = document.getElementById('view-insights');
-    const api = window.electronAPI;
+    const api = getAPI();
     const SI = strings.insights;
 
     container.innerHTML = `

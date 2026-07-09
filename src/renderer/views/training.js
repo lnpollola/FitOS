@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import Chart from 'chart.js/auto';
 import { strings } from '../locales/es.js';
 import { safeCall } from '../utils/safe-call.js';
@@ -106,7 +107,7 @@ export async function init() {
     </div>
   `;
 
-  const api = window.electronAPI;
+  const api = getAPI();
   if (!api) return;
 
   document.getElementById('exercise-form').addEventListener('submit', async (e) => {

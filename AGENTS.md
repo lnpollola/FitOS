@@ -1,27 +1,40 @@
 # FitOS (PersonalPollo) — Project Knowledge
 
 ## Descripción General
-App desktop de salud y fitness local-first construida con Electron + SQLite. Rastrea actividad Apple Watch, dieta por slots, balance energético con TDEE real, mediciones corporales y entrenamiento de fuerza. Todo en español.
+App de salud y fitness local-first con arquitectura dual: Web (producción, multi-dispositivo) + Electron (desarrollo). Rastrea actividad Apple Watch, dieta por slots, balance energético con TDEE real, mediciones corporales y entrenamiento de fuerza. Todo en español.
 
 ## Stack
-- **Desktop:** Electron ^28.1 (contextIsolation: true, nodeIntegration: false)
+- **Web (Producción):** Express + SQLite (accesible desde cualquier dispositivo)
+- **Desktop (Desarrollo):** Electron ^28.1 (contextIsolation: true, nodeIntegration: false)
 - **Frontend:** Vanilla JS (ES modules), sin framework
 - **Build:** Vite ^5.0.12 (root: `src/renderer/`, output: `dist/renderer/`)
-- **DB:** better-sqlite3 ^9.4.3 (SQLite WAL mode, foreign keys ON)
+- **DB:** better-sqlite3 ^9.4.3 (SQLite WAL mode, foreign keys ON, ubicada en `~/.fitos-data/health-data.db`)
 - **Gráficos:** Chart.js ^4.4.1
 - **Packaging:** electron-builder ^24.9.1 (NSIS/AppImage/dmg)
 
 ## Scripts Dev
-- `npm run dev` — Vite + Electron concurrently
+
+### Modo Web (PRODUCCIÓN - Multi-dispositivo)
+- `npm run switch:web && npm run build:web && npm run start:web` — Iniciar servidor web
+- `npm run dev:web:full` — Desarrollo con Vite + Express
+- `npm run rebuild:web` — Recompilar better-sqlite3 para Node.js
+
+### Modo Electron (DESARROLLO - Debugging)
+- `npm run switch:electron && npm run dev` — Iniciar Electron
 - `npm run build` — Vite build + electron-builder
-- `npm run dev:web` — Solo frontend en navegador (sin Electron)
-- `npx @electron/rebuild -o better-sqlite3` — Recompilar better-sqlite3 para la versión de Node de Electron (necesario si el módulo nativo da error de NODE_MODULE_VERSION)
+- `npm run rebuild:electron` — Recompilar better-sqlite3 para Electron
+
+### Scripts Comunes
+- `npx @electron/rebuild -o better-sqlite3` — Recompilar better-sqlite3 manualmente
+- `npm run test` — Ejecutar tests con Vitest
 
 ## Arquitectura (Capas)
 
 ```
 renderer/   →  preload/   →  main/   →  db/
 (Vista)        (Puente)      (Ctrl)     (Modelo)
+                ↑
+           server/ (API REST para modo Web)
 ```
 
 ### `src/renderer/` — Frontend SPA
@@ -39,10 +52,10 @@ renderer/   →  preload/   →  main/   →  db/
 Patrón de view:
 ```js
 import { strings } from '../locales/es.js';
+import { getAPI } from '../utils/api-detector.js';
 export function init() {
   const container = document.getElementById('view-nombre');
-  const api = window.electronAPI;
-  if (!api) return; // modo web sin Electron
+  const api = getAPI();
   container.innerHTML = `...`;
   // event listeners + async render
 }
@@ -61,8 +74,18 @@ export function init() {
   - Usa `db.transaction()` para operaciones multi-tabla (CSV import)
 - **`apple-health-import.js`**: Integración con HealthSync CLI (Go), parsea XML Apple Health
 
+### `src/server/` — API REST (Modo Web)
+- **`server.js`**: Servidor Express que sirve frontend estático + API REST en puerto 3000
+- **`api-handlers.js`**: MockIpcMain que reutiliza los handlers IPC existentes como endpoints REST
+- **`start-web.js`**: Entry point para producción web
+- **`dev-web.js`**: Entry point para desarrollo web (Vite + Express concurrently)
+
+### `src/renderer/utils/` — Utilidades Frontend
+- **`api-detector.js`**: Detecta modo (Electron/Web) y retorna API apropiada
+- **`web-api.js`**: Implementa interfaz compatible con electronAPI usando fetch()
+
 ### `src/db/` — Datos
-- **`database.js`**: 22 tablas, schema v5 con migraciones (sport_types expandido, practical_examples, HealthSync cache, exercise enrichment, food_items fiber/category)
+- **`database.js`**: 22 tablas, schema v5 con migraciones (sport_types expandido, practical_examples, HealthSync cache, exercise enrichment, food_items fiber/category). Base de datos compartida ubicada en `~/.fitos-data/health-data.db` (usada por ambos modos: Web y Electron)
 - **`seed-data.js`**: 198 alimentos, 53 ejercicios enriquecidos, 5 planes de fuerza + 12 planes HIIT/WOD/METCON/HYBRID, plantillas de 5 comidas con opciones por categoría
   - `seedIfEmpty(db)`: solo si las tablas están vacías (instalación limpia)
   - `migrateSeedData(db)`: upsert idempotente de foods/exercises/plans por nombre, bumpea `seed_version`
@@ -81,8 +104,18 @@ export function init() {
 - Handlers IPC: prefijo `db:` para CRUD (`db:getProfile`, `db:saveFoodItem`)
 - Strings UI: siempre via `locales/es.js`, nunca hardcodeados
 - CSS: custom properties, clase `.card` para paneles, `.form-group` para formularios
-- Vistas: importan `strings` y usan `window.electronAPI` (no destructurar `api` si puede ser null)
+- Vistas: usan `getAPI()` de `utils/api-detector.js` (compatible con Electron y Web)
 - Sin TypeScript, sin framework de UI, sin librería de componentes
+
+## Notas Importantes
+- La app funciona en **modo web** (sin Electron) con `npm run dev:web`, pero `window.electronAPI` será undefined
+- Los alimentos se miden en kcal/macros **por 100g**
+- Validación de forms en `src/renderer/validation.js`
+- Todos los datos son **local-first**: 0 dependencia cloud, 0 APIs externas
+- HealthSync es un CLI Go que se descarga e instala bajo demanda
+- **Base de datos compartida**: Ambos modos (Web y Electron) usan `~/.fitos-data/health-data.db`
+- **Ver `docs/ARCHITECTURE.md`** para explicación detallada de la evolución arquitectónica
+- **Ver `docs/DEPLOYMENT.md`** para guía de despliegue en producción
 
 ## Sesión — feedback-v5 (20 Jun 2026) [ARCHIVADO]
 

@@ -1,3 +1,4 @@
+import { getAPI } from "../utils/api-detector.js";
 import { strings, getSportDisplayName } from '../locales/es.js';
 import { sportIcon } from '../utils/sport-icons.js';
 import { icon } from '../utils/icons.js';
@@ -23,7 +24,7 @@ export async function init() {
   window._loadingDashboard = true;
   try {
     const container = document.getElementById('view-dashboard');
-    const api = window.electronAPI;
+    const api = getAPI();
 
     let _range = '15d';
 
@@ -377,12 +378,12 @@ export async function init() {
         `;
         goalsRow.querySelectorAll('.goal-ring-mini').forEach(el => {
           el.addEventListener('click', () => {
-            if (window.electronAPI) window.electronAPI.navigate('goals');
+            if (api) api.navigate('goals');
           });
           el.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              if (window.electronAPI) window.electronAPI.navigate('goals');
+              if (api) api.navigate('goals');
             }
           });
         });
@@ -396,7 +397,7 @@ export async function init() {
           </div>
         `;
         goalsRow.querySelector('.dashboard-card').addEventListener('click', () => {
-          if (window.electronAPI) window.electronAPI.navigate('goals');
+          if (api) api.navigate('goals');
         });
       }
 
