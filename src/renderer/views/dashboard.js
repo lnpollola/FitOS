@@ -15,7 +15,6 @@ import { getTrendArrow, trendBadge } from '../utils/trend-arrow.js';
 import {
   mountPersonalRecord,
   mountRelativeEffort,
-  mountTrainingLog,
   mountStreakCalendar,
 } from './panels/strava-panels.js';
 
@@ -50,7 +49,6 @@ export async function init() {
           <div id="strava-pr"></div>
           <div id="strava-relative-effort"></div>
         </div>
-        <div id="strava-training-log"></div>
         <div id="strava-streak-calendar"></div>
       </section>
       <div class="dashboard-grid" id="row-auto-insights" aria-live="polite"></div>
@@ -64,7 +62,6 @@ export async function init() {
     const stravaMounts = [
       mountPersonalRecord(document.getElementById('strava-pr')),
       mountRelativeEffort(document.getElementById('strava-relative-effort')),
-      mountTrainingLog(document.getElementById('strava-training-log')),
       mountStreakCalendar(document.getElementById('strava-streak-calendar')),
     ];
 
@@ -132,6 +129,7 @@ export async function init() {
       const goalsPromise = api.getGoals ? api.getGoals().catch(() => []) : Promise.resolve([]);
       const autoInsightsPromise = api.getAutoInsights ? api.getAutoInsights().catch(() => null) : Promise.resolve(null);
 
+      let rawGoals = [];
       const results = await Promise.allSettled([
         appDataPromise,
         healthMetricsPromise,
@@ -159,8 +157,22 @@ export async function init() {
       const prevSportSummary = results[8].status === 'fulfilled' ? results[8].value : [];
       const activityComparison = results[9].status === 'fulfilled' ? results[9].value : null;
       const lifetimeStats = results[10].status === 'fulfilled' ? results[10].value : { totalWeeks: 0, currentStreak: 0, totalSessions: 0 };
-      const dashboardGoals = results[11].status === 'fulfilled' ? results[11].value : [];
+      rawGoals = results[11].status === 'fulfilled' ? results[11].value : [];
       const autoInsights = results[12].status === 'fulfilled' ? results[12].value : null;
+
+      const dashboardGoals = [];
+      if (Array.isArray(rawGoals)) {
+        for (const g of rawGoals) {
+          if (g.archived) continue;
+          const progress = api.getGoalProgress ? await safeCall(api.getGoalProgress(g.id), null) : null;
+          if (progress && progress.ok) {
+            g.progress_pct = progress.progress_pct;
+          } else {
+            g.progress_pct = g.target > 0 ? Math.min(100, Math.round(((g.current || 0) / g.target) * 1000) / 10) : 0;
+          }
+          dashboardGoals.push(g);
+        }
+      }
 
       await lastImportPromise;
 
@@ -331,6 +343,38 @@ export async function init() {
       const steps15d = stepsSeries.length >= 15 ? Math.round(stepsSeries.slice(-15).reduce((a, v) => a + v, 0) / 15) : null;
       const steps1m = stepsSeries.length ? Math.round(stepsSeries.reduce((a, v) => a + v, 0) / stepsSeries.length) : null;
 
+      function trafficLight(level) {
+        const colors = { green: 'var(--success, #10b981)', yellow: 'var(--warning, #f59e0b)', red: 'var(--danger, #ef4444)' };
+        const labels = { green: 'Óptimo', yellow: 'Ajustar', red: 'Bajo' };
+        const c = colors[level] || colors.yellow;
+        return `<div class="kpi-traffic-light"><span class="kpi-traffic-light-dot" style="background:${c}"></span><span class="kpi-traffic-light-label">${labels[level]}</span></div>`;
+      }
+
+      const sleepAvgVal = sleepData?.ok && sleepData.dailySeries?.length
+        ? sleepData.dailySeries.reduce((s, d) => s + d.sleep_hours, 0) / sleepData.dailySeries.length
+        : null;
+      const sleepLight = sleepAvgVal != null ? (sleepAvgVal >= 7 ? 'green' : sleepAvgVal >= 6 ? 'yellow' : 'red') : null;
+
+      const stepsAvg = steps1m;
+      const stepsLight = stepsAvg != null ? (stepsAvg >= 10000 ? 'green' : stepsAvg >= 7000 ? 'yellow' : 'red') : null;
+
+      const exerAvgVal = metrics?.exercise_time?.length
+        ? metrics.exercise_time.reduce((s, d) => s + d.minutes, 0) / metrics.exercise_time.length
+        : null;
+      const exerLight = exerAvgVal != null ? (exerAvgVal >= 30 ? 'green' : exerAvgVal >= 15 ? 'yellow' : 'red') : null;
+
+      const walkAvgPerDay = walkTotalKm > 0 && daysInPeriod > 0 ? walkTotalKm / daysInPeriod : null;
+      const walkLight = walkAvgPerDay != null ? (walkAvgPerDay >= 5 ? 'green' : walkAvgPerDay >= 3 ? 'yellow' : 'red') : null;
+
+      const cycleAvgPerDay = cycleTotalKm > 0 && daysInPeriod > 0 ? cycleTotalKm / daysInPeriod : null;
+      const cycleLight = cycleAvgPerDay != null ? (cycleAvgPerDay >= 15 ? 'green' : cycleAvgPerDay >= 5 ? 'yellow' : 'red') : null;
+
+      const rhrVal = metrics?.resting_hr?.length ? metrics.resting_hr[metrics.resting_hr.length - 1].rhr_bpm : null;
+      const rhrLight = rhrVal != null ? (rhrVal < 65 ? 'green' : rhrVal < 80 ? 'yellow' : 'red') : null;
+
+      const hrvVal = metrics?.hrv?.length ? metrics.hrv[metrics.hrv.length - 1].hrv_ms : null;
+      const hrvLight = hrvVal != null ? (hrvVal >= 50 ? 'green' : hrvVal >= 30 ? 'yellow' : 'red') : null;
+
       let exerciseDisplay = '--', exerciseCompliance = '';
       if (metrics?.exercise_time?.length) {
         const avgEx = metrics.exercise_time.reduce((s, d) => s + d.minutes, 0) / metrics.exercise_time.length;
@@ -354,29 +398,34 @@ export async function init() {
         ? dashboardGoals.filter(g => !g.archived && g.progress_pct < 100).slice(0, 3)
         : [];
       if (activeDashboardGoals.length > 0) {
-        const goalRings = activeDashboardGoals.map(g => {
-          const ring = goalProgressRing(g.progress_pct, { size: 56, strokeWidth: 6 });
-          const label = (g.label || '').length > 20 ? (g.label || '').slice(0, 19) + '…' : (g.label || '');
-          return `<div class="goal-ring-mini" data-goal-id="${g.id}" tabindex="0" role="button" aria-label="${strings.goals.goalProgress} ${label}: ${g.progress_pct}%">
-            ${ring}
-            <span class="goal-ring-mini-label">${label}</span>
+        const goalCards = activeDashboardGoals.map(g => {
+          const ring = goalProgressRing(g.progress_pct, { size: 64, strokeWidth: 7 });
+          const label = (g.label || '').length > 25 ? (g.label || '').slice(0, 24) + '…' : (g.label || '');
+          const targetDate = g.targetDate ? new Date(g.targetDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
+          return `<div class="goal-card-mini" data-goal-id="${g.id}" tabindex="0" role="button" aria-label="${strings.goals.goalProgress} ${label}: ${g.progress_pct}%">
+            <div class="goal-card-mini-ring">${ring}</div>
+            <div class="goal-card-mini-info">
+              <div class="goal-card-mini-label">${label}</div>
+              <div class="goal-card-mini-progress">${g.progress_pct}%</div>
+              ${targetDate ? `<div class="goal-card-mini-date">${targetDate}</div>` : ''}
+            </div>
           </div>`;
         }).join('');
         const overflow = dashboardGoals.filter(g => !g.archived && g.progress_pct < 100).length;
-        if (overflow > 3) {
-          goalRings += `<div class="goal-ring-mini goal-ring-more" tabindex="0" role="button" aria-label="${strings.goals.moreGoals.replace('{n}', overflow - 3)}">
-            <div class="goal-ring-more-text">+${overflow - 3}</div>
-            <span class="goal-ring-mini-label">${strings.goals.more}</span>
-          </div>`;
-        }
+        const overflowHtml = overflow > 3 ? `<div class="goal-card-mini goal-card-more" tabindex="0" role="button" aria-label="${strings.goals.moreGoals.replace('{n}', overflow - 3)}">
+          <div class="goal-card-more-text">+${overflow - 3}</div>
+          <div class="goal-card-mini-label">${strings.goals.more}</div>
+        </div>` : '';
         goalsRow.innerHTML = `
           <div class="dashboard-card" style="grid-column:1/-1">
-            <div class="goals-summary">
-              ${goalRings}
+            <h3>${strings.goals.title}</h3>
+            <div class="goals-summary-cards">
+              ${goalCards}
+              ${overflowHtml}
             </div>
           </div>
         `;
-        goalsRow.querySelectorAll('.goal-ring-mini').forEach(el => {
+        goalsRow.querySelectorAll('.goal-card-mini').forEach(el => {
           el.addEventListener('click', () => {
             if (api) api.navigate('goals');
           });
@@ -499,6 +548,7 @@ export async function init() {
           </div>
           <div class="value">${sleepDisplay}</div>
           <div class="kpi-comparison">${sleepPhasesBar}${sleepConsistencyBadge}${sleepCompliance}</div>
+          ${sleepLight ? trafficLight(sleepLight) : ''}
         </div>
         <div class="dashboard-card">
           <div class="kpi-header">
@@ -507,6 +557,7 @@ export async function init() {
           </div>
           <div class="value">${hrvDisplay}</div>
           <div class="kpi-comparison">${hrvTrend || ''}</div>
+          ${hrvLight ? trafficLight(hrvLight) : ''}
         </div>
         <div class="dashboard-card">
           <div class="kpi-header">
@@ -515,6 +566,7 @@ export async function init() {
           </div>
           <div class="value">${rhrDisplay}</div>
           <div class="kpi-comparison">${strings.dashboard.avg7d}</div>
+          ${rhrLight ? trafficLight(rhrLight) : ''}
         </div>
         <div class="dashboard-card">
           <div class="kpi-header">
@@ -531,9 +583,9 @@ export async function init() {
           </div>
           <div class="value">${stepsSeries.length ? `<strong>${stepsSeries[stepsSeries.length - 1].toLocaleString()}</strong>` : strings.dashboard.noData}</div>
           <div class="kpi-comparison">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m?.toLocaleString() || strings.dashboard.noData}</div>
+          ${stepsLight ? trafficLight(stepsLight) : ''}
         </div>`;
 
-      // Row 2 KPIs: Ejercicio, Caminata, Ciclismo
       kpis2Row.innerHTML = `
         <div class="dashboard-card">
           <div class="kpi-header">
@@ -542,6 +594,7 @@ export async function init() {
           </div>
           <div class="value">${exerciseDisplay}</div>
           <div class="kpi-comparison">${exerciseCompliance || strings.dashboard.avgDay}</div>
+          ${exerLight ? trafficLight(exerLight) : ''}
         </div>
         <div class="dashboard-card">
           <div class="kpi-header">
@@ -550,6 +603,7 @@ export async function init() {
           </div>
           <div class="value">${walkDisplay}</div>
           <div class="kpi-comparison">${walkSub}</div>
+          ${walkLight ? trafficLight(walkLight) : ''}
         </div>
         <div class="dashboard-card">
           <div class="kpi-header">
@@ -558,6 +612,7 @@ export async function init() {
           </div>
           <div class="value">${cycleDisplay}</div>
           <div class="kpi-comparison">${cycleSub}</div>
+          ${cycleLight ? trafficLight(cycleLight) : ''}
         </div>`;
 
       if (results[0].status === 'rejected') {

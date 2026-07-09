@@ -11,6 +11,7 @@ import { getTrendArrow } from '../utils/trend-arrow.js';
 
 const RANGES = {
   '7d': { label: 'last7d', days: 7 },
+  '15d': { label: 'last15d', days: 15 },
   '1m': { label: 'last1m', days: 30 },
   '3m': { label: 'last3m', days: 90 },
   'year': { label: 'thisYear', days: null },
@@ -52,6 +53,73 @@ function movingAverage(data, window) {
   });
 }
 
+function aggregateToWeekly(data, dateKey, valueKey, aggregation = 'sum') {
+  if (!data || data.length === 0) return [];
+  
+  const weeks = new Map();
+  
+  data.forEach(d => {
+    const date = new Date(d[dateKey]);
+    const year = date.getFullYear();
+    const weekNum = getWeekNumber(date);
+    const key = `${year}-W${weekNum}`;
+    
+    if (!weeks.has(key)) {
+      weeks.set(key, { label: `S${weekNum}`, values: [], startDate: date });
+    }
+    weeks.get(key).values.push(d[valueKey]);
+  });
+  
+  const result = Array.from(weeks.values())
+    .sort((a, b) => a.startDate - b.startDate)
+    .map(w => ({
+      label: w.label,
+      value: aggregation === 'sum' 
+        ? w.values.reduce((a, b) => a + b, 0)
+        : w.values.reduce((a, b) => a + b, 0) / w.values.length
+    }));
+  
+  return result;
+}
+
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function aggregateToMonthly(data, dateKey, valueKey, aggregation = 'sum') {
+  if (!data || data.length === 0) return [];
+  
+  const months = new Map();
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  
+  data.forEach(d => {
+    const date = new Date(d[dateKey]);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const key = `${year}-${month}`;
+    
+    if (!months.has(key)) {
+      months.set(key, { label: `${monthNames[month]} ${year}`, values: [], startDate: date });
+    }
+    months.get(key).values.push(d[valueKey]);
+  });
+  
+  const result = Array.from(months.values())
+    .sort((a, b) => a.startDate - b.startDate)
+    .map(m => ({
+      label: m.label,
+      value: aggregation === 'sum' 
+        ? m.values.reduce((a, b) => a + b, 0)
+        : m.values.reduce((a, b) => a + b, 0) / m.values.length
+    }));
+  
+  return result;
+}
+
 function debounce(fn, ms) {
   let t;
   return function (...args) {
@@ -80,6 +148,7 @@ export async function init() {
       <h2 class="view-title">${s.title}</h2>
       <div class="analytics-filters" id="analytics-filters">
         <button class="filter-btn active" data-range="7d">${s.last7d}</button>
+        <button class="filter-btn" data-range="15d">${s.last15d}</button>
         <button class="filter-btn" data-range="1m">${s.last1m}</button>
         <button class="filter-btn" data-range="3m">${s.last3m}</button>
         <button class="filter-btn" data-range="year">${s.thisYear}</button>
@@ -93,10 +162,6 @@ export async function init() {
       <div class="form-error" id="analytics-error" role="alert"></div>
       <div class="analytics-kpis" id="analytics-kpis" aria-live="polite"></div>
       <div class="analytics-grid" id="analytics-chart-grid" aria-live="polite"></div>
-      <div class="card" id="analytics-ranking">
-        <h2>${s.activityRanking}</h2>
-        <div id="ranking-content" aria-live="polite"></div>
-      </div>
       <div class="secondary-section" id="secondary-section">
         <button class="secondary-toggle" id="secondary-toggle">
           <span class="arrow">▶</span> ${s.secondaryMetrics}
@@ -196,12 +261,11 @@ export async function init() {
 
         document.getElementById('analytics-kpis').innerHTML = skeletonCard().repeat(5);
         document.getElementById('analytics-chart-grid').innerHTML = skeletonChart().repeat(6);
-        document.getElementById('ranking-content').innerHTML = skeletonCard();
         document.getElementById('secondary-metrics-grid').innerHTML = skeletonCard().repeat(6);
 
         const [
           dailyRes, hrRes, hrvRes, sleepRes,
-          workoutRes, rankingRes, prevRankingRes,
+          workoutRes,
           rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes,
           prevDailyRes, prevHrvRes, prevSleepRes,
         ] = await Promise.all([
@@ -210,8 +274,6 @@ export async function init() {
           safeCall(api.getHealthHRVRange?.(from, to)),
           safeCall(api.getHealthSleepRange?.(from, to)),
           safeCall(api.getHealthWorkoutRange?.(from, to)),
-          safeCall(api.getHealthWorkoutRanking?.(from, to)),
-          safeCall(api.getHealthWorkoutRanking?.(prevRange.from, prevRange.to)),
           safeCall(api.getHealthRestingHeartRateRange?.(from, to)),
           safeCall(api.getHealthVO2MaxRange?.(from, to)),
           safeCall(api.getHealthExerciseTimeRange?.(from, to)),
@@ -223,17 +285,14 @@ export async function init() {
           safeCall(api.getHealthSleepRange?.(prevRange.from, prevRange.to)),
         ]);
 
-        const prevRankingData = prevRankingRes?.ok ? prevRankingRes.data : [];
-
-        const mainEmpty = [dailyRes, hrRes, hrvRes, sleepRes, workoutRes, rankingRes].every(isEmptyRes);
+        const mainEmpty = [dailyRes, hrRes, hrvRes, sleepRes, workoutRes].every(isEmptyRes);
         if (mainEmpty) {
           renderNoHealthDataBanner();
           return;
         }
 
         const kpiFailed = [dailyRes, prevDailyRes, hrvRes, prevHrvRes, sleepRes, prevSleepRes].every(r => !r?.ok);
-        const chartFailed = [dailyRes, hrRes, hrvRes, sleepRes, rankingRes].every(r => !r?.ok);
-        const rankingFailed = [rankingRes, workoutRes, prevRankingRes].every(r => !r?.ok);
+        const chartFailed = [dailyRes, hrRes, hrvRes, sleepRes].every(r => !r?.ok);
         const secondaryFailed = [rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes].every(r => !r?.ok);
 
         if (kpiFailed) {
@@ -255,18 +314,7 @@ export async function init() {
             onRetry: loadAll,
           });
         } else {
-          renderChartGrid(dailyRes, hrRes, hrvRes, sleepRes, rankingRes);
-        }
-
-        if (rankingFailed) {
-          renderStateCard(document.getElementById('ranking-content'), {
-            title: strings.analytics.activityRanking,
-            state: 'error',
-            subtitle: strings.states.errorLoading,
-            onRetry: loadAll,
-          });
-        } else {
-          renderRanking(rankingRes, workoutRes, prevRankingData);
+          renderChartGrid(dailyRes, hrRes, hrvRes, sleepRes);
         }
 
         if (secondaryFailed) {
@@ -287,9 +335,8 @@ export async function init() {
     function renderNoHealthDataBanner() {
       const kpiEl = document.getElementById('analytics-kpis');
       const gridEl = document.getElementById('analytics-chart-grid');
-      const rankEl = document.getElementById('ranking-content');
       const secEl = document.getElementById('secondary-metrics-grid');
-      [gridEl, rankEl, secEl].forEach(el => { if (el) el.innerHTML = ''; });
+      [gridEl, secEl].forEach(el => { if (el) el.innerHTML = ''; });
       kpiEl.innerHTML = `
         <div class="empty-state" role="alert">
           <p>${strings.analytics.noHealthData}</p>
@@ -327,11 +374,11 @@ export async function init() {
       const prevAvgHrv = prevHrv.length ? Math.round(prevHrv.reduce((a, d) => a + d.hrv_ms, 0) / prevHrv.length * 10) / 10 : null;
 
       const cards = [
-        { label: s.stepsAvg, value: avgSteps != null ? avgSteps.toLocaleString() : '--', sub: s.dailyAvg, trend: getTrendArrow(avgSteps, prevAvgSteps) },
-        { label: s.totalEnergy, value: totalEnergy != null ? `${totalEnergy.toLocaleString()} ${s.kcal}` : '--', sub: s.kcal, trend: getTrendArrow(totalEnergy, prevTotalEnergy) },
-        { label: s.hrAvg, value: avgHr != null ? `${avgHr} ${s.bpm}` : `-- ${s.bpm}`, sub: s.bpm, trend: getTrendArrow(avgHr, prevAvgHr) },
-        { label: s.sleepAvg, value: avgSleep != null ? `${avgSleep} ${s.hours}` : '--', sub: s.hours, trend: getTrendArrow(avgSleep, prevAvgSleep) },
-        { label: s.hrvAvg, value: avgHrv != null ? `${avgHrv} ${s.ms}` : '--', sub: s.ms, trend: getTrendArrow(avgHrv, prevAvgHrv) },
+        { label: s.stepsAvg, value: avgSteps != null ? avgSteps.toLocaleString() : '--', trend: getTrendArrow(avgSteps, prevAvgSteps) },
+        { label: s.totalEnergy, value: totalEnergy != null ? `${totalEnergy.toLocaleString()} ${s.kcal}` : '--', trend: getTrendArrow(totalEnergy, prevTotalEnergy) },
+        { label: s.hrAvg, value: avgHr != null ? `${avgHr} ${s.bpm}` : `-- ${s.bpm}`, trend: getTrendArrow(avgHr, prevAvgHr) },
+        { label: s.sleepAvg, value: avgSleep != null ? `${avgSleep} ${s.hours}` : '--', trend: getTrendArrow(avgSleep, prevAvgSleep) },
+        { label: s.hrvAvg, value: avgHrv != null ? `${avgHrv} ${s.ms}` : '--', trend: getTrendArrow(avgHrv, prevAvgHrv) },
       ];
 
       el.innerHTML = cards.map(c => `
@@ -341,12 +388,11 @@ export async function init() {
             <div class="kpi-value">${c.value}</div>
             <div class="kpi-trend ${c.trend.cls}">${c.trend.arrow}</div>
           </div>
-          <div class="kpi-sub">${c.sub}</div>
         </div>
       `).join('');
     }
 
-    function renderChartGrid(dailyRes, hrRes, hrvRes, sleepRes, rankingRes) {
+    function renderChartGrid(dailyRes, hrRes, hrvRes, sleepRes) {
       const grid = document.getElementById('analytics-chart-grid');
       const s = strings.analytics;
 
@@ -356,7 +402,7 @@ export async function init() {
         <div class="chart-card"><h3>${s.energyChart}</h3><div class="chart-container"><canvas id="chart-energy"></canvas></div></div>
         <div class="chart-card"><h3>${s.hrvChart}</h3><div class="chart-container"><canvas id="chart-hrv"></canvas></div></div>
         <div class="chart-card"><h3>${s.sleepChart}</h3><div class="chart-container"><canvas id="chart-sleep"></canvas></div></div>
-        <div class="chart-card"><h3>${s.activitiesChart}</h3><div class="chart-container"><canvas id="chart-activities"></canvas></div></div>
+        <div class="chart-card"><h3>${s.sleepDetailChart}</h3><div class="chart-container"><canvas id="chart-sleep-detail"></canvas></div></div>
       `;
 
       renderStepsChart(dailyRes);
@@ -364,7 +410,7 @@ export async function init() {
       renderEnergyChart(dailyRes);
       renderHRVChart(hrvRes);
       renderSleepChart(sleepRes);
-      renderActivityRankingChart(rankingRes);
+      renderSleepDetailChart(sleepRes);
     }
 
     function renderStepsChart(dailyRes) {
@@ -373,15 +419,33 @@ export async function init() {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const data = dailyRes?.ok ? dailyRes.data : [];
-      const days = data.map(d => d.dia);
-      const steps = data.map(d => d.steps);
-
-      if (!steps.length) {
+      
+      if (!data.length) {
         canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noSteps}</div>`;
         return;
       }
 
-      const ma7 = movingAverage(steps, 7);
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let days, steps, ma7;
+      
+      if (useMonthly) {
+        const monthlyData = aggregateToMonthly(data, 'dia', 'steps', 'sum');
+        days = monthlyData.map(d => d.label);
+        steps = monthlyData.map(d => d.value);
+        ma7 = [];
+      } else if (useWeekly) {
+        const weeklyData = aggregateToWeekly(data, 'dia', 'steps', 'sum');
+        days = weeklyData.map(d => d.label);
+        steps = weeklyData.map(d => d.value);
+        ma7 = [];
+      } else {
+        const sorted = [...data].sort((a, b) => new Date(a.dia) - new Date(b.dia));
+        days = sorted.map(d => d.dia);
+        steps = sorted.map(d => d.steps);
+        ma7 = movingAverage(steps, 7);
+      }
 
       window._stepsChart = new Chart(ctx, {
         type: 'line',
@@ -398,7 +462,7 @@ export async function init() {
               pointRadius: 2,
               pointHoverRadius: 5,
             },
-            {
+            ...(ma7.length > 0 ? [{
               label: strings.analytics.ma7,
               data: ma7,
               borderColor: chartColors.textSecondary,
@@ -408,7 +472,7 @@ export async function init() {
               pointHoverRadius: 5,
               tension: 0.3,
               fill: false,
-            },
+            }] : []),
           ],
         },
         options: {
@@ -432,14 +496,38 @@ export async function init() {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const data = hrRes?.ok ? hrRes.data : [];
-      const days = data.map(d => d.date);
-      const avg = data.map(d => d.avg_bpm);
-      const minV = data.map(d => d.min_bpm);
-      const maxV = data.map(d => d.max_bpm);
-
+      
       if (!data.length) {
         canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noHr}</div>`;
         return;
+      }
+
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let days, avg, minV, maxV;
+      
+      if (useMonthly) {
+        const monthlyAvg = aggregateToMonthly(data, 'date', 'avg_bpm', 'avg');
+        const monthlyMin = aggregateToMonthly(data, 'date', 'min_bpm', 'min');
+        const monthlyMax = aggregateToMonthly(data, 'date', 'max_bpm', 'max');
+        days = monthlyAvg.map(d => d.label);
+        avg = monthlyAvg.map(d => d.value);
+        minV = monthlyMin.map(d => d.value);
+        maxV = monthlyMax.map(d => d.value);
+      } else if (useWeekly) {
+        const weeklyAvg = aggregateToWeekly(data, 'date', 'avg_bpm', 'avg');
+        const weeklyMin = aggregateToWeekly(data, 'date', 'min_bpm', 'min');
+        const weeklyMax = aggregateToWeekly(data, 'date', 'max_bpm', 'max');
+        days = weeklyAvg.map(d => d.label);
+        avg = weeklyAvg.map(d => d.value);
+        minV = weeklyMin.map(d => d.value);
+        maxV = weeklyMax.map(d => d.value);
+      } else {
+        days = data.map(d => d.date);
+        avg = data.map(d => d.avg_bpm);
+        minV = data.map(d => d.min_bpm);
+        maxV = data.map(d => d.max_bpm);
       }
 
       window._hrChart = new Chart(ctx, {
@@ -500,13 +588,34 @@ export async function init() {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const data = dailyRes?.ok ? dailyRes.data : [];
-      const days = data.map(d => d.dia);
-      const active = data.map(d => d.kcal_activas);
-      const basal = data.map(d => d.kcal_basales);
-
-      if (!days.length) {
+      
+      if (!data.length) {
         canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noEnergy}</div>`;
         return;
+      }
+
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let days, active, basal;
+      
+      if (useMonthly) {
+        const monthlyActive = aggregateToMonthly(data, 'dia', 'kcal_activas', 'sum');
+        const monthlyBasal = aggregateToMonthly(data, 'dia', 'kcal_basales', 'sum');
+        days = monthlyActive.map(d => d.label);
+        active = monthlyActive.map(d => d.value);
+        basal = monthlyBasal.map(d => d.value);
+      } else if (useWeekly) {
+        const weeklyActive = aggregateToWeekly(data, 'dia', 'kcal_activas', 'sum');
+        const weeklyBasal = aggregateToWeekly(data, 'dia', 'kcal_basales', 'sum');
+        days = weeklyActive.map(d => d.label);
+        active = weeklyActive.map(d => d.value);
+        basal = weeklyBasal.map(d => d.value);
+      } else {
+        const sorted = [...data].sort((a, b) => new Date(a.dia) - new Date(b.dia));
+        days = sorted.map(d => d.dia);
+        active = sorted.map(d => d.kcal_activas);
+        basal = sorted.map(d => d.kcal_basales);
       }
 
       const avgActive = Math.round(active.reduce((a, b) => a + b, 0) / active.length);
@@ -572,12 +681,28 @@ export async function init() {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const data = hrvRes?.ok ? hrvRes.data : [];
-      const days = data.map(d => d.date);
-      const values = data.map(d => d.hrv_ms);
-
-      if (!days.length) {
+      
+      if (!data.length) {
         canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noHrv}</div>`;
         return;
+      }
+
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let days, values;
+      
+      if (useMonthly) {
+        const monthlyData = aggregateToMonthly(data, 'date', 'hrv_ms', 'avg');
+        days = monthlyData.map(d => d.label);
+        values = monthlyData.map(d => d.value);
+      } else if (useWeekly) {
+        const weeklyData = aggregateToWeekly(data, 'date', 'hrv_ms', 'avg');
+        days = weeklyData.map(d => d.label);
+        values = weeklyData.map(d => d.value);
+      } else {
+        days = data.map(d => d.date);
+        values = data.map(d => d.hrv_ms);
       }
 
       window._hrvChart = new Chart(ctx, {
@@ -616,15 +741,32 @@ export async function init() {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const data = sleepRes?.ok ? sleepRes.data : [];
-      const days = data.map(d => d.night);
-      const hours = data.map(d => d.hours);
-
-      if (!days.length) {
+      
+      if (!data.length) {
         canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noSleep}</div>`;
         return;
       }
 
-      const ma7 = movingAverage(hours, 7);
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let days, hours, ma7;
+      
+      if (useMonthly) {
+        const monthlyData = aggregateToMonthly(data, 'night', 'hours', 'avg');
+        days = monthlyData.map(d => d.label);
+        hours = monthlyData.map(d => d.value);
+        ma7 = [];
+      } else if (useWeekly) {
+        const weeklyData = aggregateToWeekly(data, 'night', 'hours', 'avg');
+        days = weeklyData.map(d => d.label);
+        hours = weeklyData.map(d => d.value);
+        ma7 = [];
+      } else {
+        days = data.map(d => d.night);
+        hours = data.map(d => d.hours);
+        ma7 = movingAverage(hours, 7);
+      }
 
       window._sleepChart = new Chart(ctx, {
         type: 'bar',
@@ -638,7 +780,7 @@ export async function init() {
               borderRadius: 3,
               order: 2,
             },
-            {
+            ...(ma7.length > 0 ? [{
               label: strings.analytics.ma7,
               data: ma7,
               type: 'line',
@@ -649,7 +791,7 @@ export async function init() {
               tension: 0.3,
               fill: false,
               order: 1,
-            },
+            }] : []),
           ],
         },
         options: {
@@ -667,98 +809,96 @@ export async function init() {
       });
     }
 
-    function renderActivityRankingChart(rankingRes) {
-      if (window._activityChart) { window._activityChart.destroy(); window._activityChart = null; }
-      const canvas = document.getElementById('chart-activities');
+    function renderSleepDetailChart(sleepRes) {
+      if (window._sleepDetailChart) { window._sleepDetailChart.destroy(); window._sleepDetailChart = null; }
+      const canvas = document.getElementById('chart-sleep-detail');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      const data = rankingRes?.ok ? rankingRes.data : [];
-
+      const data = sleepRes?.ok ? sleepRes.data : [];
+      
       if (!data.length) {
-        canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noActivities}</div>`;
+        canvas.parentElement.innerHTML = `<div class="chart-empty">${strings.analytics.noSleep}</div>`;
         return;
       }
 
-      const labels = data.map(d => `${getSportDisplayName(d.activity_type)}`);
-      const kcal = data.map(d => d.total_kcal);
-      const colors = activityPalette(labels.length);
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let days, deep, rem, light;
+      
+      if (useMonthly) {
+        const monthlyDeep = aggregateToMonthly(data, 'night', 'deep', 'avg');
+        const monthlyRem = aggregateToMonthly(data, 'night', 'rem', 'avg');
+        const monthlyLight = aggregateToMonthly(data, 'night', 'light', 'avg');
+        days = monthlyDeep.map(d => d.label);
+        deep = monthlyDeep.map(d => d.value);
+        rem = monthlyRem.map(d => d.value);
+        light = monthlyLight.map(d => d.value);
+      } else if (useWeekly) {
+        const weeklyDeep = aggregateToWeekly(data, 'night', 'deep', 'avg');
+        const weeklyRem = aggregateToWeekly(data, 'night', 'rem', 'avg');
+        const weeklyLight = aggregateToWeekly(data, 'night', 'light', 'avg');
+        days = weeklyDeep.map(d => d.label);
+        deep = weeklyDeep.map(d => d.value);
+        rem = weeklyRem.map(d => d.value);
+        light = weeklyLight.map(d => d.value);
+      } else {
+        days = data.map(d => d.night);
+        deep = data.map(d => d.deep || 0);
+        rem = data.map(d => d.rem || 0);
+        light = data.map(d => d.light || 0);
+      }
 
-      window._activityChart = new Chart(ctx, {
+      window._sleepDetailChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels,
-          datasets: [{
-            label: strings.analytics.kcal,
-            data: kcal,
-            backgroundColor: colors,
-            borderRadius: 3,
-          }],
+          labels: days,
+          datasets: [
+            {
+              label: 'Profundo',
+              data: deep,
+              backgroundColor: '#1e3a8a',
+              borderRadius: 0,
+            },
+            {
+              label: 'REM',
+              data: rem,
+              backgroundColor: '#7c3aed',
+              borderRadius: 0,
+            },
+            {
+              label: 'Ligero',
+              data: light,
+              backgroundColor: '#94a3b8',
+              borderRadius: 0,
+            },
+          ],
         },
         options: {
-          indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
-            tooltip: { backgroundColor: TOOLTIP_BG, borderRadius: 6, padding: 10, titleColor: chartColors.textPrimary, bodyColor: chartColors.textSecondary },
+            legend: { position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+            tooltip: { 
+              backgroundColor: TOOLTIP_BG, 
+              borderRadius: 6, 
+              padding: 10, 
+              titleColor: chartColors.textPrimary, 
+              bodyColor: chartColors.textSecondary,
+              callbacks: {
+                label: (context) => {
+                  const value = context.parsed.y;
+                  return `${context.dataset.label}: ${value.toFixed(1)}h`;
+                }
+              }
+            },
           },
           scales: {
-            x: { beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { color: chartColors.grid } },
-            y: { ticks: { color: chartColors.textSecondary, font: { size: 10 } }, grid: { display: false } },
+            x: { stacked: true, ticks: { color: chartColors.textSecondary, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: chartColors.textSecondary, font: { size: 10 }, callback: (value) => value + 'h' }, grid: { color: chartColors.grid } },
           },
         },
       });
-    }
-
-    function renderRanking(rankingRes, workoutRes, prevRankingData) {
-      const el = document.getElementById('ranking-content');
-      const s = strings.analytics;
-      const ranking = rankingRes?.ok ? rankingRes.data : [];
-
-      if (!ranking.length) {
-        el.innerHTML = `<div class="empty-state"><p>${s.noActivities}</p></div>`;
-        return;
-      }
-
-      function getTypeTrend(type) {
-        const prev = prevRankingData.find(r => r.activity_type === type);
-        if (!prev) return { arrow: '―', cls: 'text-muted' };
-        const cur = ranking.find(r => r.activity_type === type);
-        if (!cur) return { arrow: '―', cls: 'text-muted' };
-        if (cur.total_kcal > prev.total_kcal) return { arrow: '▲', cls: 'text-success' };
-        if (cur.total_kcal < prev.total_kcal) return { arrow: '▼', cls: 'text-danger' };
-        return { arrow: '―', cls: 'text-muted' };
-      }
-
-      el.innerHTML = `
-        <div class="data-table-wrapper">
-          <table class="data-table">
-            <thead><tr>
-              <th>${s.type}</th>
-              <th>${s.count}</th>
-              <th>${s.hoursLabel}</th>
-              <th>${s.kcal}</th>
-              <th>${s.kcalPerSession}</th>
-              <th>${s.trend}</th>
-            </tr></thead>
-            <tbody>
-              ${ranking.map(r => {
-                const trend = getTypeTrend(r.activity_type);
-                return `
-                  <tr>
-                    <td><strong>${sportIcon(r.activity_type, 14)} ${getSportDisplayName(r.activity_type)}</strong></td>
-                    <td>${r.count}</td>
-                    <td>${r.total_hours}</td>
-                    <td>${r.total_kcal.toLocaleString()}</td>
-                    <td>${r.count ? Math.round(r.total_kcal / r.count) : 0}</td>
-                    <td class="${trend.cls}">${trend.arrow}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
     }
 
     function renderSecondaryMetrics(rhrRes, vo2Res, exerciseRes, distanceRes, speedRes, flightsRes) {
@@ -837,8 +977,24 @@ export async function init() {
         return;
       }
 
-      const labels = data.map(d => d.date);
-      const values = data.map(d => d[valueKey]);
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let labels, values;
+      
+      if (useMonthly) {
+        const monthlyData = aggregateToMonthly(data, 'date', valueKey, 'avg');
+        labels = monthlyData.map(d => d.label);
+        values = monthlyData.map(d => d.value);
+      } else if (useWeekly) {
+        const weeklyData = aggregateToWeekly(data, 'date', valueKey, 'avg');
+        labels = weeklyData.map(d => d.label);
+        values = weeklyData.map(d => d.value);
+      } else {
+        const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+        labels = sorted.map(d => d.date);
+        values = sorted.map(d => d[valueKey]);
+      }
 
       window[chartKey] = new Chart(ctx, {
         type: 'line',
@@ -878,8 +1034,24 @@ export async function init() {
         return;
       }
 
-      const labels = data.map(d => d.date);
-      const values = data.map(d => d[valueKey]);
+      const useWeekly = _state.range === '1m' || _state.range === '3m';
+      const useMonthly = _state.range === 'year';
+      
+      let labels, values;
+      
+      if (useMonthly) {
+        const monthlyData = aggregateToMonthly(data, 'date', valueKey, 'sum');
+        labels = monthlyData.map(d => d.label);
+        values = monthlyData.map(d => d.value);
+      } else if (useWeekly) {
+        const weeklyData = aggregateToWeekly(data, 'date', valueKey, 'sum');
+        labels = weeklyData.map(d => d.label);
+        values = weeklyData.map(d => d.value);
+      } else {
+        const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+        labels = sorted.map(d => d.date);
+        values = sorted.map(d => d[valueKey]);
+      }
 
       window[chartKey2] = new Chart(ctx, {
         type: 'line',

@@ -733,6 +733,7 @@ export const strings = {
   analytics: {
     title: 'Tendencias de Salud',
     last7d: '7 días',
+    last15d: '15 días',
     last1m: '1 mes',
     last3m: '3 meses',
     thisYear: 'Este año',
@@ -759,6 +760,7 @@ export const strings = {
     energyChart: 'Energía activa y basal',
     hrvChart: 'HRV (Variabilidad Cardíaca)',
     sleepChart: 'Horas de sueño',
+    sleepDetailChart: 'Análisis de sueño',
     activitiesChart: 'Actividades por calorías',
     totalSteps: 'Total pasos',
     dailyAvg: 'Promedio diario',
@@ -1043,8 +1045,11 @@ export const strings = {
       title: 'Récord personal',
       tabs: {
         running: 'Running',
+        walking: 'Caminata',
         cycling: 'Ciclismo',
         strength: 'Fuerza',
+        HIIT: 'HIIT',
+        boxing: 'Boxeo',
       },
       rankLabels: ['1.º', '2.º', '3.º'],
       distanceLabels: {

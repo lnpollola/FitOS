@@ -40,12 +40,12 @@ function getRangeDates(range) {
 }
 
 const SPORT_DONUT_COLORS = [
-  'var(--moss)',
-  'var(--moss-ink)',
-  'var(--moss-mist)',
-  'var(--lichen)',
-  'var(--smoke)',
-  'var(--ember)',
+  '#4E5D3F',
+  '#2F3D26',
+  '#D7DAC7',
+  '#8A8870',
+  '#C75B3B',
+  '#E6E0D2',
 ];
 
 const SPANISH_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -245,9 +245,41 @@ export async function init() {
       svg += '</svg>';
 
       const activeDays = points.filter(p => p.minutes > 0).length;
+      const inactiveDays = points.length - activeDays;
+      const highActivityDays = points.filter(p => p.minutes >= 60).length;
+      const lowActivityDays = points.filter(p => p.minutes > 0 && p.minutes < 30).length;
+      const totalMinutes = points.reduce((s, p) => s + p.minutes, 0);
+      const avgMinutesPerActiveDay = activeDays > 0 ? Math.round(totalMinutes / activeDays) : 0;
+      const totalActivities = points.filter(p => p.sessions > 0).reduce((s, p) => s + (p.sessions || 0), 0);
+
       const caption = activeDays < 7 ? `<p class="insights-heatmap-caption">${SI.heatmap.caption.replace('{n}', activeDays)}</p>` : '';
 
-      el.innerHTML = `<div class="insights-heatmap">${svg}</div>${caption}`;
+      const summaryHtml = `
+        <div class="insights-heatmap-summary">
+          <div class="insights-heatmap-stat">
+            <span class="insights-heatmap-stat-value">${activeDays}</span>
+            <span class="insights-heatmap-stat-label">Días activos</span>
+          </div>
+          <div class="insights-heatmap-stat">
+            <span class="insights-heatmap-stat-value">${inactiveDays}</span>
+            <span class="insights-heatmap-stat-label">Días sin actividad</span>
+          </div>
+          <div class="insights-heatmap-stat">
+            <span class="insights-heatmap-stat-value">${highActivityDays}</span>
+            <span class="insights-heatmap-stat-label">Alta actividad (≥60min)</span>
+          </div>
+          <div class="insights-heatmap-stat">
+            <span class="insights-heatmap-stat-value">${lowActivityDays}</span>
+            <span class="insights-heatmap-stat-label">Baja actividad (&lt;30min)</span>
+          </div>
+          <div class="insights-heatmap-stat">
+            <span class="insights-heatmap-stat-value">${avgMinutesPerActiveDay}</span>
+            <span class="insights-heatmap-stat-label">Min prom/día activo</span>
+          </div>
+        </div>
+      `;
+
+      el.innerHTML = `<div class="insights-heatmap">${svg}</div>${summaryHtml}${caption}`;
       return false;
     }
 
@@ -398,6 +430,7 @@ export async function init() {
               </div>
             </div>
           </div>
+          <div class="insights-sport-dist-divider" aria-hidden="true"></div>
           <div class="insights-sport-dist-metrics">
             <div class="insights-donut-legend">
               ${sports.map((s, i) => `

@@ -108,7 +108,26 @@ function register(ipcMain, getDb, getHS) {
   });
 
   ipcMain.handle('health:getSleepRange', (_event, from, to) => {
-    try { const hs = getHSOrInit(); return { ok: true, data: hs.prepare("SELECT date(start_date, '-6 hours') as night, ROUND(SUM((julianday(end_date) - julianday(start_date)) * 24), 2) as hours FROM sleep WHERE value LIKE '%Asleep%' AND date(start_date, '-6 hours') BETWEEN ? AND ? GROUP BY night ORDER BY night ASC").all(from, to) }; } catch (e) { return { ok: false, error: e.message }; }
+    try { 
+      const hs = getHSOrInit(); 
+      const sleepData = hs.prepare("SELECT date(start_date, '-6 hours') as night, ROUND(SUM((julianday(end_date) - julianday(start_date)) * 24), 2) as hours FROM sleep WHERE value LIKE '%Asleep%' AND date(start_date, '-6 hours') BETWEEN ? AND ? GROUP BY night ORDER BY night ASC").all(from, to);
+      
+      const db = getDb();
+      const phasesData = db.prepare('SELECT date, sleep_deep, sleep_rem, sleep_light FROM activity_days WHERE date >= ? AND date <= ? AND sleep_hours IS NOT NULL ORDER BY date ASC').all(from, to);
+      
+      const mergedData = sleepData.map(s => {
+        const phase = phasesData.find(p => p.date === s.night);
+        return {
+          night: s.night,
+          hours: s.hours,
+          deep: phase?.sleep_deep || null,
+          rem: phase?.sleep_rem || null,
+          light: phase?.sleep_light || null
+        };
+      });
+      
+      return { ok: true, data: mergedData }; 
+    } catch (e) { return { ok: false, error: e.message }; }
   });
 
   ipcMain.handle('health:getWorkoutRange', (_event, from, to) => {

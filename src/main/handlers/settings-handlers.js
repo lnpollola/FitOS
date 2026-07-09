@@ -37,13 +37,14 @@ function register(ipcMain, getDb, getHS) {
   ipcMain.handle('db:getWeightStats', (_event, from, to) => {
     const db = getDb();
     const entries = db.prepare('SELECT date, weight_kg FROM weight_entries WHERE date >= ? AND date <= ? ORDER BY date ASC').all(from, to);
-    if (entries.length < 2) return { first: null, last: null, min: null, max: null, avg: null, trend: null, count: entries.length };
+    if (entries.length === 0) return { first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0, series: [] };
     const weights = entries.map(e => e.weight_kg);
     const first = weights[0];
     const last = weights[weights.length - 1];
     const min = Math.min(...weights);
     const max = Math.max(...weights);
     const avg = weights.reduce((s, w) => s + w, 0) / weights.length;
+    if (entries.length < 2) return { first, last, min, max, avg, trend: null, count: entries.length, series: weights };
     const n = weights.length;
     const indices = weights.map((_, i) => i);
     const sumX = indices.reduce((s, x) => s + x, 0);
@@ -51,7 +52,7 @@ function register(ipcMain, getDb, getHS) {
     const sumXY = indices.reduce((s, x, i) => s + x * weights[i], 0);
     const sumXX = indices.reduce((s, x) => s + x * x, 0);
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    return { first, last, min, max, avg, trend: slope, count: entries.length };
+    return { first, last, min, max, avg, trend: slope, count: entries.length, series: weights };
   });
 
   ipcMain.handle('export:data', async () => {

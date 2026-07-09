@@ -51,16 +51,16 @@ describe('Strava-style summary panels', () => {
   it('PR banner renders medal badge when record exists', async () => {
     window.electronAPI.getPersonalRecords = () => Promise.resolve({
       records: [
-        { sport_type: 'running', distance_key: '5', distance_label: '5 km', distance_km: 5, time_min: 25, achieved_at: '2026-06-15', rank: 1 }
+        { sport_type: 'walking', distance_key: '5', distance_label: '5 km', distance_km: 5, time_min: 25, achieved_at: '2026-06-15', rank: 1 }
       ],
       by_sport: {
-        running: [
-          { sport_type: 'running', distance_key: '5', distance_label: '5 km', distance_km: 5, time_min: 25, achieved_at: '2026-06-15', rank: 1 }
+        walking: [
+          { sport_type: 'walking', distance_key: '5', distance_label: '5 km', distance_km: 5, time_min: 25, achieved_at: '2026-06-15', rank: 1 }
         ],
         cycling: [],
         strength: []
       },
-      primary_sport: 'running',
+      primary_sport: 'walking',
       total: 1,
     });
     const { mountPersonalRecord } = await import('../../src/renderer/views/panels/strava-panels.js');
