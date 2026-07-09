@@ -173,7 +173,8 @@ function renderGoalCard(goal, isCompleted) {
 function setupEventListeners(container, api) {
   container.addEventListener('click', async (e) => {
     const goalCard = e.target.closest('.goal-card');
-    const goalId = e.target.dataset.goalId;
+    const goalIdEl = e.target.closest('[data-goal-id]');
+    const goalId = goalIdEl?.dataset.goalId;
 
     if (e.target.closest('#btn-new-goal') || e.target.closest('#btn-empty-new-goal')) {
       showGoalForm(container, api, null);

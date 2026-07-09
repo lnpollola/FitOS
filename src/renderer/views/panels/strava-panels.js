@@ -108,14 +108,14 @@ export function mountPersonalRecord(container) {
   };
 
   const renderTabs = () => {
-    const tabs = ['running', 'cycling', 'strength'];
+    const tabs = ['walking', 'cycling', 'strength', 'HIIT', 'boxing'];
     return `<div class="strava-pr-tabs" role="tablist">
       ${tabs.map(tab => `
         <button class="strava-pr-tab ${activeTab === tab ? 'strava-pr-tab--active' : ''}" 
                 role="tab" 
                 aria-selected="${activeTab === tab}" 
                 data-tab="${tab}">
-          ${SP.prBanner.tabs[tab]}
+          ${SP.prBanner.tabs[tab] || tab}
         </button>
       `).join('')}
     </div>`;
@@ -236,7 +236,10 @@ export function mountPersonalRecord(container) {
       return;
     }
     allData = data;
-    activeTab = data.primary_sport || 'running';
+    activeTab = data.primary_sport || 'walking';
+    if (activeTab === 'running') activeTab = 'walking';
+    const validTabs = ['walking', 'cycling', 'strength', 'HIIT', 'boxing'];
+    if (!validTabs.includes(activeTab)) activeTab = 'walking';
     renderCurrentView();
   };
 
@@ -566,6 +569,13 @@ export function mountStreakCalendar(container) {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     })(),
+    logWeekStart: (() => {
+      const d = new Date();
+      const dow = d.getDay() || 7;
+      const m = new Date(d);
+      m.setDate(d.getDate() - (dow - 1));
+      return toIsoDate(m);
+    })(),
   };
 
   const renderLoading = () => {
@@ -588,7 +598,88 @@ export function mountStreakCalendar(container) {
     });
   };
 
-  const renderContent = (streakData, calendarData) => {
+  const shiftLogWeek = (deltaWeeks) => {
+    const d = new Date(state.logWeekStart + 'T00:00:00');
+    d.setDate(d.getDate() + (deltaWeeks * 7));
+    state.logWeekStart = toIsoDate(d);
+    load();
+  };
+
+  const goToCurrentLogWeek = () => {
+    const d = new Date();
+    const dow = d.getDay() || 7;
+    const m = new Date(d);
+    m.setDate(d.getDate() - (dow - 1));
+    state.logWeekStart = toIsoDate(m);
+    load();
+  };
+
+  const renderTrainingLog = (logData) => {
+    const days = logData?.days || [];
+    const totalMin = days.reduce((s, d) => s + (Number(d.duration_minutes) || 0), 0);
+    const maxMin = Math.max(...days.map(d => Number(d.duration_minutes) || 0), 1);
+    const MIN_R = 8, MAX_R = 28;
+    const range = `${formatDateShort(new Date(logData.week_start + 'T00:00:00'))} – ${formatDateShort(new Date(logData.week_end + 'T00:00:00'))} ${new Date(logData.week_end + 'T00:00:00').getFullYear()}`;
+    const dowLabels = SP.trainingLog.days;
+    const isCurrentWeek = logData.is_current;
+
+    const sportSummary = {};
+    days.forEach(d => {
+      if (d.sport_type && Number(d.duration_minutes) > 0) {
+        if (!sportSummary[d.sport_type]) sportSummary[d.sport_type] = 0;
+        sportSummary[d.sport_type] += Number(d.duration_minutes);
+      }
+    });
+    const summaryParts = Object.entries(sportSummary).map(([type, min]) => {
+      return `${sportIcon(type, 12)} ${formatDuration(min)}`;
+    });
+    const summaryHtml = summaryParts.length > 0
+      ? `<div class="strava-training-log-summary">${summaryParts.join(' · ')}</div>`
+      : '';
+
+    const bubblesHtml = days.map((d, i) => {
+      const minutes = Number(d.duration_minutes) || 0;
+      const hasActivity = minutes > 0;
+      const r = hasActivity
+        ? Math.round(MIN_R + (minutes / maxMin) * (MAX_R - MIN_R))
+        : 8;
+      const showLabel = minutes >= 60;
+      const label = showLabel ? formatDuration(minutes) : '';
+      const dayName = dowLabels[i];
+      const aria = d.date
+        ? `${dayName} ${formatDateLong(new Date(d.date + 'T00:00:00'))}, ${formatDuration(minutes)} de entrenamiento`
+        : dayName;
+      return `
+        <div class="strava-bubble-col">
+          <div class="strava-bubble-day">${dayName}</div>
+          ${hasActivity
+            ? `<button class="strava-bubble" style="width:${r * 2}px;height:${r * 2}px" aria-label="${aria}" data-bubble-date="${d.date}"></button>`
+            : `<div class="strava-bubble-empty" aria-label="${aria}"></div>`}
+          <div class="strava-bubble-label">${label}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="strava-training-log-section">
+        <div class="strava-training-log-header">
+          <button class="strava-calendar-nav-btn" data-log-nav="prev" aria-label="Semana anterior">${icon('chevron-left', 14)}</button>
+          <div class="strava-training-log-range">${range}</div>
+          <button class="strava-calendar-nav-btn" data-log-nav="next" aria-label="Semana siguiente">${icon('chevron-right', 14)}</button>
+          ${!isCurrentWeek ? `<button class="strava-calendar-today-btn" data-log-today>${SP.calendar.today}</button>` : ''}
+        </div>
+        ${summaryHtml}
+        <div class="strava-bubbles" role="region" aria-label="${SP.trainingLog.title}">
+          ${bubblesHtml}
+        </div>
+        <div style="text-align:right;margin-top:var(--space-2)">
+          <span class="strava-training-log-total">${formatDuration(totalMin)}</span>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderContent = (streakData, calendarData, logData) => {
     const weeks = Number(streakData.weeks) || 0;
     const acts = Number(streakData.total_activities) || 0;
     const isActive = !!streakData.is_active;
@@ -638,7 +729,7 @@ export function mountStreakCalendar(container) {
     if (weeks === 0) {
       streakHtml = `
         <div class="strava-streak-calendar-left">
-          <h3 class="strava-panel-title">${SP.streak.title}</h3>
+          <h3 class="strava-panel-title">${SP.streak.combinedTitle}</h3>
           <div class="strava-streak-empty">${SP.streak.broken}</div>
           <p class="strava-helper-text-sm-left">${SP.streak.startPrompt}</p>
         </div>
@@ -646,7 +737,7 @@ export function mountStreakCalendar(container) {
     } else {
       streakHtml = `
         <div class="strava-streak-calendar-left">
-          <h3 class="strava-panel-title">${SP.streak.title}</h3>
+          <h3 class="strava-panel-title">${SP.streak.combinedTitle}</h3>
           <div class="strava-streak-metrics">
             <div class="strava-streak-metric">
               <div class="strava-streak-value">${weeks}</div>
@@ -661,6 +752,8 @@ export function mountStreakCalendar(container) {
         </div>
       `;
     }
+
+    const trainingLogHtml = logData ? renderTrainingLog(logData) : '';
 
     const panel = document.createElement('div');
     panel.className = 'strava-panel strava-streak-calendar';
@@ -680,6 +773,7 @@ export function mountStreakCalendar(container) {
           ${weekStatusCells}
         </div>
       </div>
+      ${trainingLogHtml}
     `;
     container.innerHTML = '';
     container.appendChild(panel);
@@ -693,7 +787,20 @@ export function mountStreakCalendar(container) {
     if (prev) prev.addEventListener('click', () => shiftMonth(-1));
     if (next) next.addEventListener('click', () => shiftMonth(1));
     if (today) today.addEventListener('click', () => goToToday());
+
+    const logPrev = panel.querySelector('[data-log-nav="prev"]');
+    const logNext = panel.querySelector('[data-log-nav="next"]');
+    const logToday = panel.querySelector('[data-log-today]');
+    if (logPrev) logPrev.addEventListener('click', () => shiftLogWeek(-1));
+    if (logNext) logNext.addEventListener('click', () => shiftLogWeek(1));
+    if (logToday) logToday.addEventListener('click', () => goToCurrentLogWeek());
+
     panel.querySelectorAll('[data-cal-date]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (api.navigate) api.navigate('activity');
+      });
+    });
+    panel.querySelectorAll('[data-bubble-date]').forEach(btn => {
       btn.addEventListener('click', () => {
         if (api.navigate) api.navigate('activity');
       });
@@ -715,13 +822,14 @@ export function mountStreakCalendar(container) {
 
   const load = async () => {
     renderLoading();
-    const [streakData, calendarData] = await Promise.all([
+    const [streakData, calendarData, logData] = await Promise.all([
       safeCall(api.getStreak(), null),
       safeCall(api.getMonthlyCalendar(state.yearMonth), null),
+      safeCall(api.getTrainingLogWeek(state.logWeekStart), null),
     ]);
     if (cancelled) return;
     if (!streakData || !calendarData) { renderError(); return; }
-    renderContent(streakData, calendarData);
+    renderContent(streakData, calendarData, logData);
   };
 
   load();

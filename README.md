@@ -12,10 +12,10 @@
 
 ---
 
-<img src="https://img.shields.io/badge/FitOS-v0.5.0-4E5D3F?style=for-the-badge&logo=data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%23F4EFE6%22%20d%3D%22M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm-1%2014v-4H7l5-8v4h4l-5%208z%22%2F%3E%3C%2Fsvg%3E" alt="FitOS v0.5.0"/>
+<img src="https://img.shields.io/badge/FitOS-v0.7.0-4E5D3F?style=for-the-badge&logo=data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%23F4EFE6%22%20d%3D%22M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm-1%2014v-4H7l5-8v4h4l-5%208z%22%2F%3E%3C%2Fsvg%3E" alt="FitOS v0.7.0"/>
 <img src="https://img.shields.io/badge/Electron-28.1-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron 28.1"/>
 <img src="https://img.shields.io/badge/SQLite-WAL_Mode-2F3D26?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite WAL"/>
-<img src="https://img.shields.io/badge/Vitest-299_passing-4E5D3F?style=for-the-badge&logo=vitest&logoColor=white" alt="299 Tests"/>
+<img src="https://img.shields.io/badge/Vitest-299_tests-4E5D3F?style=for-the-badge&logo=vitest&logoColor=white" alt="299 Tests"/>
 <img src="https://img.shields.io/badge/license-MIT-C75B3B?style=for-the-badge" alt="MIT License"/>
 <img src="https://img.shields.io/badge/dise%C3%B1o-libreta_de_campo-8A8870?style=for-the-badge" alt="Diseño Libreta de Campo"/>
 
@@ -84,13 +84,14 @@ Tokens definidos en `body.organic` y propagados a las 9 vistas via `#view-<nombr
 
 ---
 
-## 🖥️ Vistas (10)
+## 🖥️ Vistas (11)
 
 | Vista | ID | Qué verás |
 |---|---|---|
-| **Panel** | `dashboard` | Hero con anillo de crecimiento + balance semanal grande + leyenda; 9+ cards (peso, pasos, FC reposo, HRV, sueño, SpO₂, ejercicio, consistencia, constancia); selector 7d/15d/1m/3m; sparklines moss/ember/lichen; cards colapsables |
-| **Tendencias** | `analytics` | Visión global de salud: pasos, FC, energía, HRV, sueño, ranking de actividades, VO₂ max, FC reposo, minutos de ejercicio |
-| **Actividad** | `activity` | Importación Apple Health XML + CSV, resumen semanal con gráfico dual kcal/duración, ranking ordenable con sparklines, comparación 15d/1m/3m |
+| **Panel** | `dashboard` | Hero con anillo de crecimiento + balance semanal grande con desglose de energía; sparklines en KPIs (peso, pasos, FC reposo, HRV, sueño, SpO₂, ejercicio); selector 7d/15d/1m/3m; paneles Strava (PRs por deporte, esfuerzo relativo, registro de entrenamiento, streak + calendario); auto-insights; goals summary |
+| **Patrones** | `insights` | Heatmap año en movimiento, día típico de la semana, distribución de deportes (donut + métricas), score de recuperación (HRV + FC reposo + sueño), velocidad de peso, ratio cintura-cadera, auto-insights |
+| **Tendencias** | `analytics` | Visión global de salud: pasos, FC, energía, HRV, sueño con gráficos reactivos al periodo (7d/15d/1m/3m/año), agrupación semanal/mensual, KPIs de contexto, flechas de tendencia |
+| **Actividad** | `activity` | Importación Apple Health XML + CSV con un solo botón "Sincronizar", detección de anomalías, resumen semanal con gráfico dual kcal/duración, ranking ordenable con sparklines, comparación 15d/1m/3m |
 | **Sueño** | `sleep` | Duración, fases (profundo/REM/ligero), consistencia 7d/15d, cumplimiento vs objetivo |
 | **Plan de Dieta** | `diet` | 5 columnas de comidas con opciones clickables, gestor de alimentos con paginación y filtros, platos elaborados, auto-generador de plan desde déficit objetivo |
 | **Balance Energético** | `energy` | Desglose GET (TMB + deporte + NEAT) en barras apiladas, gauge de adherencia semicircular, balance semanal con target −400 kcal, detección de recomposición |
@@ -110,7 +111,7 @@ Tokens definidos en `body.organic` y propagados a las 9 vistas via `#view-<nombr
 | **UI** | Chart.js 4.4 + Lucide SVG | 20 íconos tree-shakeados, microcharts reutilizables |
 | **Tipografía** | Fraunces + Source Sans 3 | Cargadas via Google Fonts, fallback a Georgia/Inter |
 | **Base de datos** | better-sqlite3 9.6 | SQLite WAL mode, foreign keys ON, schema v5 |
-| **Tests** | Vitest + jsdom | 299 tests en 30 archivos: unitarios + smoke |
+| **Tests** | Vitest + jsdom | 299 tests en 32 archivos: unitarios + smoke |
 | **Salud** | HealthSync CLI (Go) | Parseo de XML Apple Health |
 | **Build** | Vite + electron-builder | AppImage / NSIS / dmg |
 
@@ -150,7 +151,7 @@ FitOS está construido en **4 capas estrictamente separadas**. Cada capa tiene u
 ├───────────────────────────────────────────────────────────┤
 │  main/  (Lógica)                                          │
 │  handlers/     · ipc-handlers.js · apple-health-import.js │
-│  9 módulos por dominio — patrón register(ipcMain, ...)    │
+│  11 módulos por dominio — patrón register(ipcMain, ...)   │
 ├───────────────────────────────────────────────────────────┤
 │  db/  (Datos)                                             │
 │  database.js · seed-data.js · import-export.js            │
@@ -166,7 +167,7 @@ Electron tiene un modelo de seguridad particular: el **renderer** (lo que ve el 
 |---|---|---|
 | `renderer/` | Interfaz de usuario | Vanilla JS sin framework — sin migraciones futuras, cada vista exporta `init()` |
 | `preload/` | Puente de seguridad | `contextBridge` expone solo funciones necesarias. Cero lógica de negocio |
-| `main/` | Lógica de negocio | 10 módulos por dominio — `ipc-handlers.js` mantiene 30 líneas |
+| `main/` | Lógica de negocio | 11 módulos por dominio — `ipc-handlers.js` mantiene 30 líneas |
 | `db/` | Persistencia y modelo | SQLite con migraciones versionadas, foreign keys, WAL mode y caches agregados |
 
 ### Flujo de datos — ejemplo concreto
@@ -203,13 +204,13 @@ Cuando un usuario guarda un alimento en la vista Dieta:
 | Caché | Ubicación | TTL | Propósito |
 |---|---|---|---|
 | **Cliente** | `renderer/utils/cache-store.js` (Map en memoria) | 30s + invalidación por evento | Evita llamadas IPC innecesarias al navegar entre vistas |
-| **Servidor** | `activity_summary_cache` en SQLite | Persistente | Agregaciones precomputadas (7/15/30 días) para el dashboard; incluye 7 métricas HealthSync |
+| **Servidor** | `activity_summary_cache` en SQLite | Persistente | Agregaciones precomputadas (7/15/30 días) para el dashboard; incluye 8 métricas HealthSync |
 
 La caché de servidor acelera consultas pesadas (dashboard con múltiples agregaciones). La de cliente evita viajes IPC redundantes cuando los datos no cambiaron. Ambas se invalidan coordinadamente vía `notifyDomain` + `EventTarget`.
 
 ### CSS modular
 
-`main.css` se compone de 6 archivos con el **mismo hash de bundle** que el monolítico original:
+`main.css` se compone de 7 archivos con el **mismo hash de bundle** que el monolítico original:
 
 | Archivo | Contenido |
 |---|---|
@@ -219,6 +220,7 @@ La caché de servidor acelera consultas pesadas (dashboard con múltiples agrega
 | `forms.css` | `.form-group`, inputs, botones, checkboxes, spinners |
 | `tables.css` | `.data-table`, sticky headers, alineación de celdas |
 | `utilities.css` | `.text-xs`, `.flex-gap-sm`, `.sr-only`, colores de estado |
+| `insights.css` | Estilos específicos para la vista de Patrones (heatmap, donut, recovery) |
 
 ---
 
@@ -229,8 +231,9 @@ src/
 ├── renderer/                  # Frontend SPA
 │   ├── index.html             # Shell HTML con sidebar navegable
 │   ├── app.js                 # Router manual, init global, eventos
-│   ├── views/                 # 10 vistas — cada una exporta init()
+│   ├── views/                 # 11 vistas — cada una exporta init()
 │   │   ├── dashboard.js
+│   │   ├── insights.js
 │   │   ├── activity.js
 │   │   ├── diet.js
 │   │   ├── energy.js
@@ -256,22 +259,24 @@ src/
 │   │   ├── validation.js      # Validación de formularios
 │   │   ├── goal-progress-ring.js  # SVG donut de progreso configurable
 │   │   ├── goals.js           # Helpers: progreso, cuenta regresiva, filtros
-│   │   └── confetti.js        # Animación canvas de confeti
-│   └── styles/                # CSS modular (6 archivos + main)
+│   │   ├── confetti.js        # Animación canvas de confeti
+│   │   └── kpi-derivation.js  # Cálculos derivados: pace projection, effort, streak
+│   └── styles/                # CSS modular (7 archivos + main)
 │       ├── main.css           # Solo @imports en orden de cascada
 │       ├── base.css
 │       ├── layout.css
 │       ├── cards.css
 │       ├── forms.css
 │       ├── tables.css
-│       └── utilities.css
+│       ├── utilities.css
+│       └── insights.css
 │
 ├── preload/
 │   └── preload.js             # contextBridge, exposición IPC
 │
 ├── main/
 │   ├── main.js                # Ventana Electron, menú nativo
-│   ├── ipc-handlers.js        # Registro de 10 módulos (30 líneas)
+│   ├── ipc-handlers.js        # Registro de 11 módulos (30 líneas)
 │   ├── apple-health-import.js
 │   ├── healthsync-cli.js
 │   └── handlers/              # Handlers IPC por dominio
@@ -284,7 +289,8 @@ src/
 │       ├── dashboard-handlers.js
 │       ├── health-handlers.js
 │       ├── settings-handlers.js
-│       └── goals-handlers.js
+│       ├── goals-handlers.js
+│       └── insights-handlers.js
 │
 ├── db/
 │   ├── database.js            # Schema v5, migraciones, populateCache
@@ -296,7 +302,7 @@ src/
 │   └── reset-healthsync.js
 │
 └── tests/
-    ├── unit/                  # 17 archivos de tests unitarios
+    ├── unit/                  # 24 archivos de tests unitarios
     └── smoke/                 # 8 tests de integración de vistas
 ```
 
@@ -311,10 +317,22 @@ src/
 - **Déficit y progresión seguros por defecto** — valores conservadores out-of-the-box
 - **Cero cloud** — datos locales siempre, exportables en JSON en cualquier momento
 - **Estética intencional** — la "libreta de campo" reduce la fricción cognitiva y se aleja del template SaaS
+- **Insights accionables** — la vista Patrones convierte datos crudos en narrativas de patrones ("tu mejor semana en 3 meses", "los lunes corres 28% más")
 
 ---
 
 ## 📦 Changelog
+
+### v0.7.0 — Insights y Refinamiento UX *(8 Jul 2026)*
+
+- **Nueva vista: Patrones** (`insights`) — análisis de patrones de entrenamiento y recuperación con 7 secciones: heatmap año en movimiento, día típico de la semana, distribución de deportes, score de recuperación, velocidad de peso, ratio cintura-cadera, y auto-insights
+- **Panel UX/UI mejorado** — sparklines en KPIs, balance semanal con desglose de calorías, último peso visible, explicación de HRV/FCR, streak + calendario combinados, auto-insights integrados
+- **Strength training insights** — 1RM estimado (Epley), PRs por ejercicio, detección de mesetas, score de fuerza por grupo muscular, tendencia de volumen semanal
+- **Apple Health data integrity** — un solo botón "Sincronizar", validación de binario, detección de anomalías, reset & re-sincronizar, progreso en tiempo real
+- **Tendencias refinadas** — gráficos reactivos al periodo (7d/1m/3m), flechas de tendencia junto al valor, KPIs de contexto en energía, selector 15d, agrupación semanal/mensual
+- **Objetivos mejorados** — fix de cálculo de progreso, botones de acción más visibles, mejor integración con el dashboard
+- **Codebase cleanup** — eliminación de 25 preload APIs sin usar, ~200 líneas CSS duplicado, micro-mejoras de UX (tooltips, keyboard navigation, transiciones)
+- **32 archivos de tests** — 299 tests pasando (unitarios + smoke)
 
 ### v0.6.0 — Goals Tracker *(27 Jun 2026)*
 
@@ -388,6 +406,36 @@ opsx-explore → opsx-propose → opsx-apply → opsx-archive
 
 Los comandos están en `.opencode/commands/opsx-*.md`. Antes de proponer un cambio, leé [`openspec/specs/spec.md`](openspec/specs/spec.md).
 
+### Guía rápida para contribuciones
+
+1. **Explorar** — Usá `/opsx-explore` para investigar el problema y definir el alcance
+2. **Proponer** — Usá `/opsx-propose` para generar el proposal con specs y tasks
+3. **Implementar** — Usá `/opsx-apply` para ejecutar las tasks contra las specs
+4. **Archivar** — Usá `/opsx-archive` para fusionar las specs y archivar el cambio
+
+### Estructura de un cambio
+
+```
+openspec/changes/archive/<fecha>-<nombre>/
+├── proposal.md          # Por qué y qué cambia
+├── design.md            # Decisiones técnicas
+├── specs/               # Delta specs (Gherkin)
+└── tasks.md             # Lista de tareas
+```
+
+### Tests
+
+Todos los cambios deben mantener o mejorar la cobertura de tests:
+
+```bash
+npm test                 # 299 tests (unitarios + smoke)
+```
+
+Antes de hacer commit, aseguráte de que:
+- Todos los tests pasan
+- El build funciona (`npm run build`)
+- No hay regresiones en las vistas existentes
+
 ---
 
 ## 📄 Licencia
@@ -398,4 +446,6 @@ MIT © Leandro Pollola — Ver [`LICENSE`](LICENSE) para más detalles.
 
 <div align="center">
 <sub>Construido con 🌿 en Valencia · Local-first, sin cloud, sin dependencias externas</sub>
+<br>
+<sub>11 vistas · 299 tests · 11 módulos de handlers · Diseño orgánico "libreta de campo"</sub>
 </div>

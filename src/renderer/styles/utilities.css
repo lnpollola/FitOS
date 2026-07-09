@@ -264,6 +264,19 @@ legend {
     display: none;
   }
 
+  #sidebar.sidebar-collapsed .nav-section-label {
+    display: none;
+  }
+
+  #sidebar.sidebar-collapsed .nav-section-chevron {
+    display: none;
+  }
+
+  #sidebar.sidebar-collapsed .nav-section {
+    margin: 2px 0;
+    padding: 0 var(--space-2);
+  }
+
   #sidebar.sidebar-collapsed .nav-item {
     padding: var(--space-3) var(--space-2);
     justify-content: center;
