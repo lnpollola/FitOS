@@ -69,7 +69,7 @@ FitOS convierte datos reales de actividad y mediciones en decisiones semanales d
 
 ---
 
-## 🌿 Diseño orgánico "libreta de campo"
+## 🌿 Diseño orgánico 
 
 FitOS adopta una identidad visual intencional — **no es el template SaaS de Inter + slate + teal**. La estética evoca una libreta de campo de un cuerpo vivo:
 
