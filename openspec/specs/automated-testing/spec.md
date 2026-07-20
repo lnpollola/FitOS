@@ -14,13 +14,13 @@ The project SHALL use Vitest as the test runner, configured to work with the exi
 - **GIVEN** the project has Vite configured
 - **WHEN** `npm test` is executed
 - **THEN** Vitest SHALL run in CI mode (`vitest run`)
-- **THEN** all test files under `tests/` SHALL be discovered and executed
+- **THEN** all test files under `tests/unit/`, `tests/smoke/`, and `tests/regression/` SHALL be discovered and executed
 - **WHEN** `npm run test:watch` is executed
 - **THEN** Vitest SHALL run in watch mode
 
 ### Requirement: Smoke tests for all views
 
-Each of the 8 views SHALL have a smoke test that verifies `init()` completes without throwing when `window.electronAPI` is properly mocked.
+Each of the 11 views (dashboard, activity, diet, energy/adaptive, measurements, training, analytics, insights, profile, sleep, goals) SHALL have a smoke test that verifies `init()` completes without throwing when `window.electronAPI` is properly mocked.
 
 #### Scenario: Activity view smoke test
 - **GIVEN** `window.electronAPI` is mocked with all required methods returning resolved promises

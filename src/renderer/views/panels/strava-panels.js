@@ -5,6 +5,7 @@ import { sportIcon } from '../../utils/sport-icons.js';
 import { safeCall } from '../../utils/safe-call.js';
 import { renderStateCard } from '../../utils/state-card.js';
 import { skeletonCard } from '../../utils/skeleton.js';
+import { formatNumber } from '../../utils/formatters.js';
 import {
   formatDuration,
   formatDateLong,
@@ -44,7 +45,7 @@ function formatPrTime(timeMin) {
 function formatPrValue(record) {
   if (record.is_volume) {
     const kg = Math.round(record.volume_kg || 0);
-    return `${kg.toLocaleString('es')} kg`;
+    return `${formatNumber(kg)} kg`;
   }
   if (record.is_distance) {
     const km = record.distance_km;

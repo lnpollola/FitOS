@@ -1,6 +1,6 @@
 import { getAPI } from "../utils/api-detector.js";
-import Chart from 'chart.js/auto';
 import { strings, getMeasurementLabel } from '../locales/es.js';
+import { createChart } from '../charts/chart-manager.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
 import { safeCall } from '../utils/safe-call.js';
 import { skeletonCard, skeletonRow, skeletonChart } from '../utils/skeleton.js';
@@ -8,6 +8,7 @@ import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 import { icon } from '../utils/icons.js';
 import { renderStateCard } from '../utils/state-card.js';
 import { getTrendArrow } from '../utils/trend-arrow.js';
+import { formatValue } from '../utils/formatters.js';
 
 const METRIC_COLUMNS = [
   'chest_cm', 'neck_cm', 'shoulders_cm', 'biceps_left_cm', 'biceps_right_cm',
@@ -38,7 +39,7 @@ function formatDelta(delta, metricKey) {
   const sign = delta > 0 ? '+' : '';
   const isNeg = metricKey.includes('waist') || metricKey === 'weight_kg';
   const cls = isNeg ? (delta > 0 ? 'style="color:var(--danger)"' : 'style="color:var(--success)"') : (delta > 0 ? 'style="color:var(--success)"' : 'style="color:var(--danger)"');
-  return `<span ${cls}>${sign}${delta.toFixed(1)}</span>`;
+  return `<span ${cls}>${sign}${formatValue(delta, 1)}</span>`;
 }
 
 function formField(metric) {
@@ -309,7 +310,6 @@ export async function init() {
       if (!canvas) return;
       const emptyEl = document.getElementById('weight-chart-empty');
       const ctx = canvas.getContext('2d');
-      if (window._weightChart) window._weightChart.destroy();
 
       if (isIpcError(weights)) {
         canvas.style.display = 'none';
@@ -337,7 +337,7 @@ export async function init() {
         movingAvg.push(avg);
       }
 
-      window._weightChart = new Chart(ctx, {
+      createChart('weight', ctx, {
         type: 'line',
         data: {
           labels,
@@ -446,9 +446,6 @@ export async function init() {
         const canvas = document.getElementById(`chart-${col}`);
         if (!canvas) continue;
 
-        const chartKey = `_meas${col.replace(/_/g, '')}Chart`;
-        if (window[chartKey]) window[chartKey].destroy();
-
         const filtered = sorted.map(s => ({ date: s.date, val: s[col] })).filter(p => p.val != null);
         const labels = filtered.map(p => p.date);
         const data = filtered.map(p => p.val);
@@ -460,7 +457,7 @@ export async function init() {
 
         const ctx = canvas.getContext('2d');
 
-        window[chartKey] = new Chart(ctx, {
+        createChart('meas-' + col, ctx, {
           type: 'line',
           data: {
             labels,
@@ -494,7 +491,6 @@ export async function init() {
       if (!canvas) return;
       const emptyEl = document.getElementById('bodyfat-chart-empty');
       const ctx = canvas.getContext('2d');
-      if (window._bfChart) window._bfChart.destroy();
 
       if (isIpcError(sets) || isIpcError(profile)) {
         canvas.style.display = 'none';
@@ -529,7 +525,7 @@ export async function init() {
       canvas.style.display = 'block';
       if (emptyEl) emptyEl.style.display = 'none';
 
-      window._bfChart = new Chart(ctx, {
+      createChart('bodyfat', ctx, {
         type: 'line',
         data: {
           labels,
@@ -564,8 +560,6 @@ export async function init() {
       const emptyEl = document.getElementById('evolution-chart-empty');
       const kpiEl = document.getElementById('evolution-kpis');
       if (!canvas || !emptyEl || !kpiEl) return;
-
-      if (window._evolutionChart) window._evolutionChart.destroy();
 
       if (isIpcError(sets)) {
         canvas.style.display = 'none';
@@ -641,7 +635,7 @@ export async function init() {
       kpiEl.innerHTML = kpis.join('');
 
       const ctx = canvas.getContext('2d');
-      window._evolutionChart = new Chart(ctx, {
+      createChart('evolution', ctx, {
         type: 'line',
         data: { labels, datasets },
         options: {

@@ -1,5 +1,7 @@
-function register(ipcMain, getDb, getHS) {
-  ipcMain.handle('db:getDashboardData', () => {
+const { safeHandle } = require('../utils/safe-handler');
+
+function register(ipcMain, getDb, getHS, notifyDomain) {
+  safeHandle(ipcMain, 'db:getDashboardData', () => {
     const db = getDb();
     const today = new Date().toISOString().split('T')[0];
 
@@ -50,46 +52,34 @@ function register(ipcMain, getDb, getHS) {
     return { todayCalories: todayCalories > 0 ? todayCalories : null, weekBalance, latestWeight: latestWeight?.weight_kg || null, measurementDelta, nextWorkout: nextWorkout?.date || null };
   });
 
-  ipcMain.handle('db:getSleepData', (_event, from, to) => {
+  safeHandle(ipcMain, 'db:getSleepAnalysis', (from, to) => {
     const db = getDb();
-    const data = db.prepare('SELECT date, sleep_hours FROM activity_days WHERE date >= ? AND date <= ? AND sleep_hours IS NOT NULL ORDER BY date').all(from, to);
-    let avg7d = null;
-    if (data.length > 0) { const last7 = data.slice(-7); avg7d = last7.reduce((s, d) => s + d.sleep_hours, 0) / last7.length; }
-    return { ok: true, data, avg7d };
+    const data = db.prepare('SELECT date, sleep_hours, sleep_deep, sleep_rem, sleep_light FROM activity_days WHERE date >= ? AND date <= ? AND sleep_hours IS NOT NULL ORDER BY date ASC').all(from, to);
+    if (data.length === 0) return { ok: true, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null, consistency: null, dailySeries: [], trendArrow: null };
+    const totalAvg = data.reduce((s, d) => s + d.sleep_hours, 0) / data.length;
+    const deepValues = data.filter(d => d.sleep_deep != null);
+    const remValues = data.filter(d => d.sleep_rem != null);
+    const lightValues = data.filter(d => d.sleep_light != null);
+    const deepAvg = deepValues.length > 0 ? deepValues.reduce((s, d) => s + d.sleep_deep, 0) / deepValues.length : null;
+    const remAvg = remValues.length > 0 ? remValues.reduce((s, d) => s + d.sleep_rem, 0) / remValues.length : null;
+    const lightAvg = lightValues.length > 0 ? lightValues.reduce((s, d) => s + d.sleep_light, 0) / lightValues.length : null;
+    const mean = totalAvg;
+    const variance = data.reduce((s, d) => s + Math.pow(d.sleep_hours - mean, 2), 0) / data.length;
+    const stdDev = Math.sqrt(variance);
+    const consistency = Math.max(0, Math.min(100, 100 - stdDev * 20));
+    const midPoint = Math.floor(data.length / 2);
+    const firstHalfAvg = data.slice(0, midPoint).reduce((s, d) => s + d.sleep_hours, 0) / Math.max(1, midPoint);
+    const secondHalfAvg = data.slice(midPoint).reduce((s, d) => s + d.sleep_hours, 0) / Math.max(1, data.length - midPoint);
+    const pctChange = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+    const trendArrow = pctChange > 5 ? 'up' : pctChange < -5 ? 'down' : 'flat';
+    return { ok: true, totalAvg, deepAvg, remAvg, lightAvg, consistency, dailySeries: data, trendArrow };
   });
 
-  ipcMain.handle('db:getSleepAnalysis', (_event, from, to) => {
-    try {
-      const db = getDb();
-      const data = db.prepare('SELECT date, sleep_hours, sleep_deep, sleep_rem, sleep_light FROM activity_days WHERE date >= ? AND date <= ? AND sleep_hours IS NOT NULL ORDER BY date ASC').all(from, to);
-      if (data.length === 0) return { ok: true, totalAvg: null, deepAvg: null, remAvg: null, lightAvg: null, consistency: null, dailySeries: [], trendArrow: null };
-      const totalAvg = data.reduce((s, d) => s + d.sleep_hours, 0) / data.length;
-      const deepValues = data.filter(d => d.sleep_deep != null);
-      const remValues = data.filter(d => d.sleep_rem != null);
-      const lightValues = data.filter(d => d.sleep_light != null);
-      const deepAvg = deepValues.length > 0 ? deepValues.reduce((s, d) => s + d.sleep_deep, 0) / deepValues.length : null;
-      const remAvg = remValues.length > 0 ? remValues.reduce((s, d) => s + d.sleep_rem, 0) / remValues.length : null;
-      const lightAvg = lightValues.length > 0 ? lightValues.reduce((s, d) => s + d.sleep_light, 0) / lightValues.length : null;
-      const mean = totalAvg;
-      const variance = data.reduce((s, d) => s + Math.pow(d.sleep_hours - mean, 2), 0) / data.length;
-      const stdDev = Math.sqrt(variance);
-      const consistency = Math.max(0, Math.min(100, 100 - stdDev * 20));
-      const midPoint = Math.floor(data.length / 2);
-      const firstHalfAvg = data.slice(0, midPoint).reduce((s, d) => s + d.sleep_hours, 0) / Math.max(1, midPoint);
-      const secondHalfAvg = data.slice(midPoint).reduce((s, d) => s + d.sleep_hours, 0) / Math.max(1, data.length - midPoint);
-      const pctChange = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
-      const trendArrow = pctChange > 5 ? 'up' : pctChange < -5 ? 'down' : 'flat';
-      return { ok: true, totalAvg, deepAvg, remAvg, lightAvg, consistency, dailySeries: data, trendArrow };
-    } catch (e) { return { ok: false, error: e.message }; }
-  });
-
-  ipcMain.handle('db:getCyclingDistance', (_event, from, to) => {
-    try {
-      const hs = getHS();
-      if (!hs) return { ok: false, error: 'HealthSync not available' };
-      const data = hs.prepare('SELECT date(start_date) as date, ROUND(SUM(value), 3) as km FROM distance_cycling WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC').all(from, to);
-      return { ok: true, data };
-    } catch (e) { return { ok: false, error: e.message }; }
+  safeHandle(ipcMain, 'db:getCyclingDistance', (from, to) => {
+    const hs = getHS();
+    if (!hs) return { ok: false, error: 'HealthSync not available' };
+    const data = hs.prepare('SELECT date(start_date) as date, ROUND(SUM(value), 3) as km FROM distance_cycling WHERE date(start_date) BETWEEN ? AND ? GROUP BY date ORDER BY date ASC').all(from, to);
+    return { ok: true, data };
   });
 }
 

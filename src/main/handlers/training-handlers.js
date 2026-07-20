@@ -1,22 +1,24 @@
-function register(ipcMain, getDb, getHS) {
-  ipcMain.handle('db:getExerciseLibrary', () => {
+const { safeHandle } = require('../utils/safe-handler');
+
+function register(ipcMain, getDb, getHS, notifyDomain) {
+  safeHandle(ipcMain, 'db:getExerciseLibrary', () => {
     const db = getDb();
     return db.prepare('SELECT * FROM exercise_library ORDER BY name').all();
   });
 
-  ipcMain.handle('db:saveExercise', (_event, exercise) => {
+  safeHandle(ipcMain, 'db:saveExercise', (exercise) => {
     const db = getDb();
     db.prepare('INSERT INTO exercise_library (name, muscle_group, equipment, movement_pattern) VALUES (@name, @muscle_group, @equipment, @movement_pattern)').run(exercise);
     return true;
   });
 
-  ipcMain.handle('db:deleteExercise', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteExercise', (id) => {
     const db = getDb();
     db.prepare('DELETE FROM exercise_library WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:getTrainingSessions', () => {
+  safeHandle(ipcMain, 'db:getTrainingSessions', () => {
     const db = getDb();
     return db.prepare(`
       SELECT ts.*, tr.name as routine_name
@@ -25,7 +27,7 @@ function register(ipcMain, getDb, getHS) {
     `).all();
   });
 
-  ipcMain.handle('db:saveTrainingSession', (_event, session) => {
+  safeHandle(ipcMain, 'db:saveTrainingSession', (session) => {
     const db = getDb();
     if (session.id) {
       db.prepare('UPDATE training_sessions SET date = @date, routine_id = @routine_id, notes = @notes WHERE id = @id').run(session);
@@ -35,19 +37,19 @@ function register(ipcMain, getDb, getHS) {
     return { ok: true, id: result.lastInsertRowid };
   });
 
-  ipcMain.handle('db:deleteTrainingSession', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteTrainingSession', (id) => {
     const db = getDb();
     db.prepare('DELETE FROM training_sets WHERE session_id = ?').run(id);
     db.prepare('DELETE FROM training_sessions WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:getTrainingSets', (_event, sessionId) => {
+  safeHandle(ipcMain, 'db:getTrainingSets', (sessionId) => {
     const db = getDb();
     return db.prepare('SELECT * FROM training_sets WHERE session_id = ? ORDER BY set_number').all(sessionId);
   });
 
-  ipcMain.handle('db:saveTrainingSet', (_event, set) => {
+  safeHandle(ipcMain, 'db:saveTrainingSet', (set) => {
     const db = getDb();
     if (set.id) {
       db.prepare('UPDATE training_sets SET session_id = @session_id, exercise_id = @exercise_id, set_number = @set_number, load_kg = @load_kg, reps = @reps, rpe = @rpe WHERE id = @id').run(set);
@@ -57,18 +59,18 @@ function register(ipcMain, getDb, getHS) {
     return { ok: true, id: result.lastInsertRowid };
   });
 
-  ipcMain.handle('db:deleteTrainingSet', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteTrainingSet', (id) => {
     const db = getDb();
     db.prepare('DELETE FROM training_sets WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:getTrainingRoutines', () => {
+  safeHandle(ipcMain, 'db:getTrainingRoutines', () => {
     const db = getDb();
     return db.prepare('SELECT * FROM training_routines ORDER BY name').all();
   });
 
-  ipcMain.handle('db:saveTrainingRoutine', (_event, routine) => {
+  safeHandle(ipcMain, 'db:saveTrainingRoutine', (routine) => {
     const db = getDb();
     if (routine.id) {
       db.prepare('UPDATE training_routines SET name = @name WHERE id = @id').run(routine);
@@ -78,29 +80,23 @@ function register(ipcMain, getDb, getHS) {
     return { ok: true, id: result.lastInsertRowid };
   });
 
-  ipcMain.handle('db:deleteTrainingRoutine', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteTrainingRoutine', (id) => {
     const db = getDb();
     db.prepare('UPDATE training_sessions SET routine_id = NULL WHERE routine_id = ?').run(id);
     db.prepare('DELETE FROM training_routines WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:getWorkoutPlans', () => {
+  safeHandle(ipcMain, 'db:getWorkoutPlans', () => {
     const db = getDb();
     return db.prepare('SELECT * FROM workout_plans ORDER BY min_sessions, name').all();
   });
 
-  ipcMain.handle('db:getPlanDays', (_event, planId) => {
+  safeHandle(ipcMain, 'db:getPlanDays', (planId) => {
     const db = getDb();
     return db.prepare('SELECT * FROM workout_plan_days WHERE plan_id = ? ORDER BY day_number').all(planId);
   });
 
-  ipcMain.handle('db:getExercisesByIds', (_event, ids) => {
-    const db = getDb();
-    if (!ids || ids.length === 0) return [];
-    const placeholders = ids.map(() => '?').join(',');
-    return db.prepare(`SELECT * FROM exercise_library WHERE id IN (${placeholders})`).all(...ids);
-  });
 }
 
 module.exports = { register };

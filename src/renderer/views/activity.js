@@ -1,6 +1,6 @@
 import { getAPI } from "../utils/api-detector.js";
-import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
+import { createChart } from '../charts/chart-manager.js';
 import { sportIcon } from '../utils/sport-icons.js';
 import { getRangeDates } from '../utils/date-range.js';
 import { safeCall } from '../utils/safe-call.js';
@@ -8,6 +8,7 @@ import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 import { skeletonCard } from '../utils/skeleton.js';
 import { renderStateCard } from '../utils/state-card.js';
 import { icon } from '../utils/icons.js';
+import { formatNumber, formatDateTime } from '../utils/formatters.js';
 
 export async function init() {
   if (window._loadingActivity) return;
@@ -110,7 +111,7 @@ export async function init() {
       const ts = await safeCall(api.getLastImportTimestamp(), null);
       if (ts) {
         const d = new Date(ts);
-        lastImportInfo.textContent = `${strings.activity.lastImport}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        lastImportInfo.textContent = `${strings.activity.lastImport}: ${formatDateTime(d)}`;
       } else {
         lastImportInfo.textContent = strings.activity.lastImportNever;
       }
@@ -143,10 +144,10 @@ export async function init() {
       const { sportDuplicates, weightDuplicates } = anomalies;
       const parts = [];
       if (sportDuplicates > 0) {
-        parts.push(strings.activity.anomalyBannerSport.replace('{n}', sportDuplicates.toLocaleString()));
+        parts.push(strings.activity.anomalyBannerSport.replace('{n}', formatNumber(sportDuplicates)));
       }
       if (weightDuplicates > 0) {
-        parts.push(strings.activity.anomalyBannerWeight.replace('{n}', weightDuplicates.toLocaleString()));
+        parts.push(strings.activity.anomalyBannerWeight.replace('{n}', formatNumber(weightDuplicates)));
       }
       const msg = parts.length === 2
         ? strings.activity.anomalyBannerBoth.replace('{a}', parts[0]).replace('{b}', parts[1])
@@ -458,7 +459,7 @@ export async function init() {
           <td>${d.date}</td>
           <td>
             <div style="display:flex;align-items:center;gap:4px">
-              <span>${d.steps != null ? d.steps.toLocaleString() : '--'}</span>
+              <span>${d.steps != null ? formatNumber(d.steps) : '--'}</span>
               <span class="${arrowSteps.cls}" style="font-size:10px">${arrowSteps.arrow}</span>
             </div>
             <canvas id="spk-steps-${id}" width="60" height="18" style="display:${d.steps != null ? 'block' : 'none'};margin-top:2px"></canvas>
@@ -604,7 +605,7 @@ export async function init() {
         </div>
         <div class="analytics-kpi-card">
           <div class="kpi-label">${strings.activity.calories}</div>
-          <div class="kpi-value">${totalKcal.toLocaleString()}</div>
+          <div class="kpi-value">${formatNumber(totalKcal)}</div>
           <div class="kpi-sub">${strings.dashboard.kcalTotal}</div>
         </div>
         <div class="analytics-kpi-card">
@@ -648,7 +649,7 @@ export async function init() {
                   <td><strong>${sportIcon(type, 14)} ${getSportDisplayName(type)}</strong></td>
                   <td>${data.count}</td>
                   <td>${kmCell}</td>
-                  <td>${data.totalKcal.toLocaleString()} <span class="${trend.cls}" style="font-size:10px;margin-left:2px" title="${comparisonTip}">${trend.arrow}</span></td>
+                  <td>${formatNumber(data.totalKcal)} <span class="${trend.cls}" style="font-size:10px;margin-left:2px" title="${comparisonTip}">${trend.arrow}</span></td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -702,7 +703,7 @@ export async function init() {
         if (currentSessions > 0) {
           compEl.style.display = 'flex';
           compEl.innerHTML = `
-            ${comparisonKpi(strings.dashboard.sessions, currentSessions, prevSessions, n => n.toLocaleString())}
+            ${comparisonKpi(strings.dashboard.sessions, currentSessions, prevSessions, n => formatNumber(n))}
             ${comparisonKpi(strings.activity.totalHours, currentMin / 60, prevSessions ? prevMin / 60 : null, n => n.toFixed(1))}
             ${comparisonKpi(strings.activity.activeDays, currentActiveDays, previousActiveDays, n => n.toString())}
             ${currentDistance > 0 || prevDistance > 0
@@ -726,7 +727,6 @@ export async function init() {
       if (!canvas) return;
 
       if (!summary || summary.length === 0) {
-        if (window._weeklyChart) { window._weeklyChart.destroy(); window._weeklyChart = null; }
         const existing = chartContainer.querySelector('.chart-empty-state');
         if (!existing) {
           const msg = document.createElement('div');
@@ -743,7 +743,6 @@ export async function init() {
       if (existingEmpty) existingEmpty.remove();
 
       const ctx = canvas.getContext('2d');
-      if (window._weeklyChart) window._weeklyChart.destroy();
 
       const ordered = [...summary].sort((a, b) => b.count - a.count);
       const prevMap = {};
@@ -752,7 +751,7 @@ export async function init() {
       const accent = chartColors.accent;
       const warning = chartColors.warning;
 
-      window._weeklyChart = new Chart(ctx, {
+      createChart('weekly', ctx, {
         type: 'bar',
         data: {
           labels,

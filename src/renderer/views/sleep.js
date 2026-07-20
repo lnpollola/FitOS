@@ -4,7 +4,7 @@ import { icon } from '../utils/icons.js';
 import { chartColors } from '../utils/chart-theme.js';
 import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 import { safeCall } from '../utils/safe-call.js';
-import Chart from 'chart.js/auto';
+import { createChart } from '../charts/chart-manager.js';
 
 export async function init() {
   const container = document.getElementById('view-sleep');
@@ -77,7 +77,6 @@ function renderTimelineChart(data) {
     document.getElementById('sleep-timeline-card').style.display = 'none';
     return;
   }
-  if (window._sleepTimelineChart) window._sleepTimelineChart.destroy();
   const series = data.dailySeries;
   const labels = series.map(d => d.date || d.dia);
   const hours = series.map(d => d.sleep_hours);
@@ -87,7 +86,7 @@ function renderTimelineChart(data) {
   });
   const ctx = document.getElementById('sleep-timeline-chart')?.getContext('2d');
   if (!ctx) return;
-  window._sleepTimelineChart = new Chart(ctx, {
+  createChart('timeline', ctx, {
     type: 'line',
     data: {
       labels,
@@ -118,11 +117,10 @@ function renderPhasesChart(data) {
     `;
     return;
   }
-  if (window._sleepPhasesChart) window._sleepPhasesChart.destroy();
   const ctx = document.getElementById('sleep-phases-chart')?.getContext('2d');
   if (!ctx) return;
   const labels = [strings.sleep.phases || 'Fases'];
-  window._sleepPhasesChart = new Chart(ctx, {
+  createChart('phases', ctx, {
     type: 'bar',
     data: {
       labels,

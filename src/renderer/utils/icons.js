@@ -1,4 +1,4 @@
-import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, Download, Upload, Menu, LayoutDashboard, Ruler, ScanLine, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpRightFromSquare, CircleUser, Circle, CircleDot, Layers, Flame, Trophy, Zap, Medal, Target, Share2, Swords, Flower2, Sparkles, Lightbulb, HeartPulse, Bed } from 'lucide';
+import { Check, ArrowUp, ArrowDown, Minus, Activity, Footprints, Bike, Waves, Dumbbell, Heart, Scale, Moon, TrendingUp, TrendingDown, AlertCircle, RefreshCw, Plus, LayoutDashboard, Ruler, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Circle, CircleDot, Layers, Flame, Trophy, Medal, Target, Share2, Swords, Flower2, Sparkles, HeartPulse, Bed, Info, AlertTriangle, CheckCircle, BadgeCheck, Pencil, Trash2, Archive, X } from 'lucide';
 
 const iconRegistry = {
   check: Check, 'arrow-up': ArrowUp, 'arrow-down': ArrowDown,
@@ -7,18 +7,20 @@ const iconRegistry = {
   heart: Heart, scale: Scale, moon: Moon,
   'trending-up': TrendingUp, 'trending-down': TrendingDown,
   'alert-circle': AlertCircle, 'refresh-cw': RefreshCw,
-  plus: Plus, download: Download, upload: Upload,
-  menu: Menu, 'layout-dashboard': LayoutDashboard,
-  ruler: Ruler, 'scan-line': ScanLine,
+  plus: Plus, 'layout-dashboard': LayoutDashboard,
+  ruler: Ruler,
   'chevron-down': ChevronDown, 'chevron-up': ChevronUp,
   'chevron-left': ChevronLeft, 'chevron-right': ChevronRight,
-  'arrow-up-right-from-square': ArrowUpRightFromSquare,
-  'circle-user': CircleUser, circle: Circle, 'circle-dot': CircleDot, layers: Layers,
-  flame: Flame, trophy: Trophy, zap: Zap,
+  circle: Circle, 'circle-dot': CircleDot, layers: Layers,
+  flame: Flame, trophy: Trophy,
   medal: Medal, target: Target, 'share-2': Share2,
   swords: Swords, 'flower-2': Flower2,
-  sparkles: Sparkles, lightbulb: Lightbulb,
+  sparkles: Sparkles,
   'heart-pulse': HeartPulse, bed: Bed,
+  info: Info, 'alert-triangle': AlertTriangle,
+  'check-circle': CheckCircle, 'badge-check': BadgeCheck,
+  pencil: Pencil, 'trash-2': Trash2,
+  archive: Archive, x: X,
 };
 
 function renderAttributes(attrs) {

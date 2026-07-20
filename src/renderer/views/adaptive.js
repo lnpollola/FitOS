@@ -2,8 +2,8 @@ import { getAPI } from "../utils/api-detector.js";
 import { strings } from '../locales/es.js';
 import { calculateBodyFat } from '../utils/body-fat.js';
 import { calculateBMR } from '../utils/bmr.js';
-import Chart from 'chart.js/auto';
 import { safeCall } from '../utils/safe-call.js';
+import { createChart } from '../charts/chart-manager.js';
 import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 import { skeletonCard, skeletonChart } from '../utils/skeleton.js';
 import { renderStateCard } from '../utils/state-card.js';
@@ -223,7 +223,6 @@ export async function init() {
   }
 
   async function loadRecomp() {
-    if (window._recompChart) { window._recompChart.destroy(); window._recompChart = null; }
     const el = document.getElementById('recomp-detection');
     el.innerHTML = skeletonChart();
     try {
@@ -302,7 +301,7 @@ export async function init() {
 
       const ctx = document.getElementById('recomp-chart')?.getContext('2d');
       if (ctx) {
-        window._recompChart = new Chart(ctx, {
+        createChart('recompChart', ctx, {
           type: 'line',
           data: {
             labels: recent.map(s => s.date.slice(5)),

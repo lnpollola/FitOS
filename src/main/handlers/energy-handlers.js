@@ -1,10 +1,12 @@
-function register(ipcMain, getDb, getHS) {
+const { safeHandle } = require('../utils/safe-handler');
+
+function register(ipcMain, getDb, getHS, notifyDomain) {
   function bmr(profile) {
     if (profile.sex === 'male') return 10 * profile.weight_kg + 6.25 * profile.height_cm - 5 * profile.age + 5;
     return 10 * profile.weight_kg + 6.25 * profile.height_cm - 5 * profile.age - 161;
   }
 
-  ipcMain.handle('db:getEnergyBalance', (_event, date) => {
+  safeHandle(ipcMain, 'db:getEnergyBalance', (date) => {
     const db = getDb();
     const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
     if (!profile) return null;
@@ -22,7 +24,7 @@ function register(ipcMain, getDb, getHS) {
     return { bmr: b, sport_calories: sportCal?.total || 0, neat, tdee: b + (sportCal?.total || 0) + neat, planned_intake: plannedIntake };
   });
 
-  ipcMain.handle('db:getWeeklyBalance', () => {
+  safeHandle(ipcMain, 'db:getWeeklyBalance', () => {
     const db = getDb();
     const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
     if (!profile) return null;
@@ -47,32 +49,30 @@ function register(ipcMain, getDb, getHS) {
     return { net_balance: netBalance, days_logged: days.length };
   });
 
-  ipcMain.handle('db:adjustMealGrams', (_event, { carbDelta, fatDelta }) => {
-    try {
-      const db = getDb();
-      const changes = [];
-      const carbComponents = db.prepare(`
-        SELECT mc.id, mc.default_grams, fi.name as food_name
-        FROM meal_components mc JOIN food_items fi ON mc.food_item_id = fi.id
-        WHERE fi.carbs_per_100g > fi.protein_per_100g AND fi.carbs_per_100g > fi.fat_per_100g
-      `).all();
-      for (const c of carbComponents) {
-        const newGrams = Math.max(0, c.default_grams + carbDelta);
-        db.prepare('UPDATE meal_components SET default_grams = ? WHERE id = ?').run(newGrams, c.id);
-        changes.push({ name: c.food_name, oldGrams: c.default_grams, newGrams });
-      }
-      const fatComponents = db.prepare(`
-        SELECT mc.id, mc.default_grams, fi.name as food_name
-        FROM meal_components mc JOIN food_items fi ON mc.food_item_id = fi.id
-        WHERE fi.fat_per_100g > fi.protein_per_100g AND fi.fat_per_100g > fi.carbs_per_100g
-      `).all();
-      for (const f of fatComponents) {
-        const newGrams = Math.max(0, f.default_grams + fatDelta);
-        db.prepare('UPDATE meal_components SET default_grams = ? WHERE id = ?').run(newGrams, f.id);
-        changes.push({ name: f.food_name, oldGrams: f.default_grams, newGrams });
-      }
-      return { ok: true, changes };
-    } catch (e) { return { ok: false, error: e.message }; }
+  safeHandle(ipcMain, 'db:adjustMealGrams', ({ carbDelta, fatDelta }) => {
+    const db = getDb();
+    const changes = [];
+    const carbComponents = db.prepare(`
+      SELECT mc.id, mc.default_grams, fi.name as food_name
+      FROM meal_components mc JOIN food_items fi ON mc.food_item_id = fi.id
+      WHERE fi.carbs_per_100g > fi.protein_per_100g AND fi.carbs_per_100g > fi.fat_per_100g
+    `).all();
+    for (const c of carbComponents) {
+      const newGrams = Math.max(0, c.default_grams + carbDelta);
+      db.prepare('UPDATE meal_components SET default_grams = ? WHERE id = ?').run(newGrams, c.id);
+      changes.push({ name: c.food_name, oldGrams: c.default_grams, newGrams });
+    }
+    const fatComponents = db.prepare(`
+      SELECT mc.id, mc.default_grams, fi.name as food_name
+      FROM meal_components mc JOIN food_items fi ON mc.food_item_id = fi.id
+      WHERE fi.fat_per_100g > fi.protein_per_100g AND fi.fat_per_100g > fi.carbs_per_100g
+    `).all();
+    for (const f of fatComponents) {
+      const newGrams = Math.max(0, f.default_grams + fatDelta);
+      db.prepare('UPDATE meal_components SET default_grams = ? WHERE id = ?').run(newGrams, f.id);
+      changes.push({ name: f.food_name, oldGrams: f.default_grams, newGrams });
+    }
+    return { ok: true, changes };
   });
 }
 

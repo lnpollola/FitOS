@@ -1,10 +1,9 @@
 const concurrently = require('concurrently');
-const path = require('path');
 
 concurrently(
   [
     { command: 'npx vite --host', name: 'vite', prefixColor: 'green' },
-    { command: 'npx wait-on http://localhost:5173 && node src/server/start-web.js', name: 'server', prefixColor: 'blue' }
+    { command: 'npx wait-on http://localhost:5173 && DEV_MODE=true node src/server/start-web.js', name: 'server', prefixColor: 'blue' }
   ],
   {
     killOthers: ['failure', 'success'],

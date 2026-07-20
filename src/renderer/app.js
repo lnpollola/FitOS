@@ -1,17 +1,6 @@
-import { init as initDashboard } from './views/dashboard.js';
-import { init as initActivity } from './views/activity.js';
-import { init as initDiet } from './views/diet.js';
-import { init as initAdaptive } from './views/adaptive.js';
-import { init as initMeasurements } from './views/measurements.js';
-import { init as initTraining } from './views/training.js';
-import { init as initProfile } from './views/profile.js';
-import { init as initAnalytics } from './views/analytics.js';
-import { init as initInsights } from './views/insights.js';
-import { init as initSleep } from './views/sleep.js';
-import { init as initGoals } from './views/goals.js';
 import { icon } from './utils/icons.js';
-import { cacheStore } from './utils/cache-store.js';
 import { getAPI } from './utils/api-detector.js';
+import { destroyAllCharts } from './charts/chart-manager.js';
 
 function renderNavIcons() {
   document.querySelectorAll('.nav-icon').forEach(el => {
@@ -28,29 +17,26 @@ function renderNavIcons() {
 renderNavIcons();
 
 const views = {
-  dashboard: initDashboard,
-  activity: initActivity,
-  diet: initDiet,
-  energy: initAdaptive,
-  measurements: initMeasurements,
-  training: initTraining,
-  analytics: initAnalytics,
-  insights: initInsights,
-  profile: initProfile,
-  sleep: initSleep,
-  goals: initGoals,
+  dashboard: () => import('./views/dashboard.js'),
+  activity: () => import('./views/activity.js'),
+  diet: () => import('./views/diet.js'),
+  energy: () => import('./views/adaptive.js'),
+  measurements: () => import('./views/measurements.js'),
+  training: () => import('./views/training.js'),
+  analytics: () => import('./views/analytics.js'),
+  insights: () => import('./views/insights.js'),
+  profile: () => import('./views/profile.js'),
+  sleep: () => import('./views/sleep.js'),
+  goals: () => import('./views/goals.js'),
 };
 
-function destroyAllCharts() {
-  const chartKeys = Object.keys(window).filter(k => k.startsWith('_') && k.endsWith('Chart'));
-  chartKeys.forEach(k => {
-    if (window[k]) { window[k].destroy(); window[k] = null; }
-  });
-}
-
 let _navigateTimeout;
+let _loadingView;
 
-function showView(viewName) {
+async function showView(viewName) {
+  if (_loadingView === viewName) return;
+  _loadingView = viewName;
+
   if (_navigateTimeout) clearTimeout(_navigateTimeout);
 
   destroyAllCharts();
@@ -67,7 +53,21 @@ function showView(viewName) {
     navEl.setAttribute('aria-current', 'page');
   }
 
-  if (views[viewName]) views[viewName]();
+  const loader = views[viewName];
+  if (loader) {
+    try {
+      const module = await loader();
+      module.init();
+    } catch (e) {
+      console.error(`Failed to load view: ${viewName}`, e);
+      if (viewEl) {
+        const { renderStateCard } = await import('./utils/state-card.js');
+        renderStateCard(viewEl, { state: 'error', title: 'Error al cargar la vista' });
+      }
+    }
+  }
+
+  _loadingView = null;
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -81,13 +81,10 @@ api.onNavigate((view) => showView(view));
 api.onDataChanged(() => {
   if (_dataChangedTimeout) clearTimeout(_dataChangedTimeout);
   _dataChangedTimeout = setTimeout(() => {
-    showView(document.querySelector('.nav-item.active')?.dataset?.view || 'dashboard');
+    const currentView = document.querySelector('.nav-item.active')?.dataset?.view || 'dashboard';
+    showView(currentView);
   }, 300);
 });
-api.onDomainChanged((domain) => {
-  cacheStore.invalidate(domain);
-});
-
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
@@ -159,3 +156,5 @@ function initSidebarSections() {
 }
 
 initSidebarSections();
+
+export { views };

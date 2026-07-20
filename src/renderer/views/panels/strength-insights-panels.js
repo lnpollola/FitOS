@@ -4,12 +4,13 @@ import { icon } from '../../utils/icons.js';
 import { safeCall } from '../../utils/safe-call.js';
 import { skeletonCard, skeletonChart } from '../../utils/skeleton.js';
 import { chartColors } from '../../utils/chart-theme.js';
-import Chart from 'chart.js/auto';
+import { createChart, destroyChart } from '../../charts/chart-manager.js';
+import { formatNumber } from '../../utils/formatters.js';
 
 const SI = strings.strengthInsights;
 
 function destroyTonnageChart() {
-  if (window._tonnageChart) { window._tonnageChart.destroy(); window._tonnageChart = null; }
+  destroyChart('tonnage');
 }
 
 export function mountStrengthPRs(container) {
@@ -77,7 +78,7 @@ export function mountStrengthPRs(container) {
           const rankLabel = SI.personalRecords.rankLabels[vp.rank - 1] || '';
           html += `<div class="strength-volume-pr-item">
             <span>${rankLabel} ${vp.date || ''} (${vp.exercise_count} ejercicios, ${vp.set_count} series)</span>
-            <span style="font-family:var(--font-mono);color:var(--accent)">${(vp.volume_kg || 0).toLocaleString('es')} kg</span>
+            <span style="font-family:var(--font-mono);color:var(--accent)">${formatNumber(vp.volume_kg || 0)} kg</span>
           </div>`;
         }
         html += `</div>`;
@@ -289,7 +290,7 @@ export function mountWeeklyTonnage(container) {
     const canvasId = 'strength-tonnage-chart';
     const directionClass = data.direction === 'up' ? 'strength-tonnage-direction--up' : data.direction === 'down' ? 'strength-tonnage-direction--down' : 'strength-tonnage-direction--flat';
     const directionIcon = data.direction === 'up' ? icon('arrow-up', 12) : data.direction === 'down' ? icon('arrow-down', 12) : icon('minus', 12);
-    const deltaLabel = data.delta_pct != null ? SI.weeklyTonnage.deltaFormat.replace('{delta}', (data.delta_kg || 0).toLocaleString('es')).replace('{pct}', data.delta_pct) : '';
+    const deltaLabel = data.delta_pct != null ? SI.weeklyTonnage.deltaFormat.replace('{delta}', formatNumber(data.delta_kg || 0)).replace('{pct}', data.delta_pct) : '';
     const trendLabel = SI.weeklyTonnage[data.direction] || '';
 
     container.innerHTML = `<div class="strava-panel">
@@ -297,12 +298,12 @@ export function mountWeeklyTonnage(container) {
       <div class="chart-container" style="height:200px"><canvas id="${canvasId}"></canvas></div>
       <div class="strength-tonnage-summary">
         <div class="strength-tonnage-metric">
-          <div class="strength-tonnage-metric-value">${(data.current_12w_total || 0).toLocaleString('es')} kg</div>
+          <div class="strength-tonnage-metric-value">${formatNumber(data.current_12w_total || 0)} kg</div>
           <div class="strength-tonnage-metric-label">${SI.weeklyTonnage.currentPeriod}</div>
         </div>
         ${data.previous_12w_total != null ? `
         <div class="strength-tonnage-metric">
-          <div class="strength-tonnage-metric-value">${(data.previous_12w_total || 0).toLocaleString('es')} kg</div>
+          <div class="strength-tonnage-metric-value">${formatNumber(data.previous_12w_total || 0)} kg</div>
           <div class="strength-tonnage-metric-label">${SI.weeklyTonnage.previousPeriod}</div>
         </div>
         <div class="strength-tonnage-metric">
@@ -315,7 +316,7 @@ export function mountWeeklyTonnage(container) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    window._tonnageChart = new Chart(ctx, {
+    createChart('tonnage', ctx, {
       type: 'bar',
       data: {
         labels,
@@ -332,7 +333,7 @@ export function mountWeeklyTonnage(container) {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (item) => `${(Number(item.raw) || 0).toLocaleString('es')} kg`,
+              label: (item) => `${formatNumber(Number(item.raw) || 0)} kg`,
             },
           },
         },

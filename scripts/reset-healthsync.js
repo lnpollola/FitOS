@@ -5,25 +5,8 @@ const os = require('os');
 const userDataPath = path.join(os.homedir(), '.config', 'personal-pollo');
 const dbPath = path.join(userDataPath, 'health-data.db');
 
-const Module = require('module');
-const fakeElectron = {
-  app: {
-    getPath: (name) => name === 'userData' ? userDataPath : os.homedir(),
-    whenReady: () => Promise.resolve(),
-    on: () => {},
-    commandLine: { appendSwitch: () => {} },
-  },
-  BrowserWindow: class { static getAllWindows() { return []; } on(_e, _cb) {} webContents = { send: () => {} }; isDestroyed() { return false; } },
-  Menu: { buildFromTemplate: () => ({}), setApplicationMenu: () => {} },
-  dialog: {},
-  screen: { getPrimaryDisplay: () => ({ workArea: { width: 1200, height: 800 } }) },
-};
-const origResolve = Module._resolveFilename;
-Module._resolveFilename = function (request, ...args) {
-  if (request === 'electron') return 'electron';
-  return origResolve.call(this, request, ...args);
-};
-require.cache.electron = { id: 'electron', filename: 'electron', loaded: true, exports: fakeElectron };
+const { mockElectron } = require(path.join(__dirname, 'lib', 'electron-mock'));
+mockElectron(userDataPath);
 
 const { initDatabase, initHealthsyncDb } = require(path.join(__dirname, '..', 'src', 'db', 'database'));
 const { resetHealthsyncData, syncAppleHealth, getHealthsyncDbInfo, HEALTHSYNC_DB } = require(path.join(__dirname, '..', 'src', 'main', 'apple-health-import'));

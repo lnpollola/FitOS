@@ -75,9 +75,6 @@ describe('Insights view smoke test', () => {
   afterEach(() => {
     delete window.electronAPI;
     delete window._loadingInsights;
-    delete window._insightsDowChart;
-    delete window._insightsDonutChart;
-    delete window._insightsVelocityChart;
     document.body.innerHTML = '';
   });
 
