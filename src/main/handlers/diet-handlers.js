@@ -1,13 +1,14 @@
 const { refreshCaches } = require('../../db/database');
+const { safeHandle } = require('../utils/safe-handler');
 
-function register(ipcMain, getDb, getHS) {
-  ipcMain.handle('db:getFoodItems', (_event, includeHidden) => {
+function register(ipcMain, getDb, getHS, notifyDomain) {
+  safeHandle(ipcMain, 'db:getFoodItems', (includeHidden) => {
     const db = getDb();
     if (includeHidden) return db.prepare('SELECT * FROM food_items ORDER BY name').all();
     return db.prepare('SELECT * FROM food_items WHERE is_hidden = 0 ORDER BY name').all();
   });
 
-  ipcMain.handle('db:saveFoodItem', (_event, item) => {
+  safeHandle(ipcMain, 'db:saveFoodItem', (item) => {
     const db = getDb();
     db.prepare(`
       INSERT INTO food_items (name, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g)
@@ -16,19 +17,19 @@ function register(ipcMain, getDb, getHS) {
     return true;
   });
 
-  ipcMain.handle('db:hideFoodItem', (_event, id) => {
+  safeHandle(ipcMain, 'db:hideFoodItem', (id) => {
     const db = getDb();
     db.prepare('UPDATE food_items SET is_hidden = 1 WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:unhideFoodItem', (_event, id) => {
+  safeHandle(ipcMain, 'db:unhideFoodItem', (id) => {
     const db = getDb();
     db.prepare('UPDATE food_items SET is_hidden = 0 WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:searchFoodItems', (_event, query) => {
+  safeHandle(ipcMain, 'db:searchFoodItems', (query) => {
     const db = getDb();
     if (!query || query.trim().length < 2) return [];
     return db.prepare(`
@@ -37,7 +38,7 @@ function register(ipcMain, getDb, getHS) {
     `).all(`%${query.trim()}%`);
   });
 
-  ipcMain.handle('db:getMealTemplates', () => {
+  safeHandle(ipcMain, 'db:getMealTemplates', () => {
     const db = getDb();
     const templates = db.prepare('SELECT * FROM meal_templates ORDER BY slot_order').all();
     for (const t of templates) {
@@ -57,7 +58,7 @@ function register(ipcMain, getDb, getHS) {
     return templates;
   });
 
-  ipcMain.handle('db:getDailyPlan', (_event, date) => {
+  safeHandle(ipcMain, 'db:getDailyPlan', (date) => {
     const db = getDb();
     return db.prepare(`
       SELECT dpe.*, fi.name as food_name, fi.kcal_per_100g, fi.protein_per_100g, fi.carbs_per_100g, fi.fat_per_100g
@@ -68,7 +69,7 @@ function register(ipcMain, getDb, getHS) {
     `).all(date);
   });
 
-  ipcMain.handle('db:saveDailyPlanEntry', (_event, entry) => {
+  safeHandle(ipcMain, 'db:saveDailyPlanEntry', (entry) => {
     const db = getDb();
     let plan = db.prepare('SELECT id FROM daily_plans WHERE date = ?').get(entry.date);
     if (!plan) {
@@ -79,13 +80,13 @@ function register(ipcMain, getDb, getHS) {
     return true;
   });
 
-  ipcMain.handle('db:updateDailyPlanEntry', (_event, id, grams) => {
+  safeHandle(ipcMain, 'db:updateDailyPlanEntry', (id, grams) => {
     const db = getDb();
     db.prepare('UPDATE daily_plan_entries SET grams = ? WHERE id = ?').run(grams, id);
     return true;
   });
 
-  ipcMain.handle('db:deleteDailyPlanEntries', (_event, date) => {
+  safeHandle(ipcMain, 'db:deleteDailyPlanEntries', (date) => {
     const db = getDb();
     const plan = db.prepare('SELECT id FROM daily_plans WHERE date = ?').get(date);
     if (plan) {
@@ -95,13 +96,13 @@ function register(ipcMain, getDb, getHS) {
     return true;
   });
 
-  ipcMain.handle('db:deleteDailyPlanEntry', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteDailyPlanEntry', (id) => {
     const db = getDb();
     db.prepare('DELETE FROM daily_plan_entries WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:saveDish', (_event, dish) => {
+  safeHandle(ipcMain, 'db:saveDish', (dish) => {
     const db = getDb();
     if (dish.id) {
       db.prepare(`
@@ -119,12 +120,12 @@ function register(ipcMain, getDb, getHS) {
     return result.lastInsertRowid;
   });
 
-  ipcMain.handle('db:getDishes', () => {
+  safeHandle(ipcMain, 'db:getDishes', () => {
     const db = getDb();
     return db.prepare('SELECT * FROM elaborated_dishes ORDER BY name').all();
   });
 
-  ipcMain.handle('db:getDishIngredients', (_event, dishId) => {
+  safeHandle(ipcMain, 'db:getDishIngredients', (dishId) => {
     const db = getDb();
     return db.prepare(`
       SELECT di.*, fi.name as food_name, fi.kcal_per_100g, fi.protein_per_100g, fi.carbs_per_100g, fi.fat_per_100g
@@ -133,38 +134,24 @@ function register(ipcMain, getDb, getHS) {
     `).all(dishId);
   });
 
-  ipcMain.handle('db:deleteDish', (_event, dishId) => {
+  safeHandle(ipcMain, 'db:deleteDish', (dishId) => {
     const db = getDb();
     db.prepare('DELETE FROM elaborated_dishes WHERE id = ?').run(dishId);
     return true;
   });
 
-  ipcMain.handle('db:saveDishIngredient', (_event, ingredient) => {
+  safeHandle(ipcMain, 'db:saveDishIngredient', (ingredient) => {
     const db = getDb();
     db.prepare('INSERT INTO dish_ingredients (dish_id, food_item_id, grams) VALUES (@dish_id, @food_item_id, @grams)').run(ingredient);
     return true;
   });
 
-  ipcMain.handle('db:linkDishToMeal', (_event, link) => {
+  safeHandle(ipcMain, 'db:linkDishToMeal', (link) => {
     const db = getDb();
     db.prepare('INSERT INTO meal_dish_options (meal_template_id, dish_id, sort_order) VALUES (@meal_template_id, @dish_id, @sort_order)').run(link);
     return true;
   });
 
-  ipcMain.handle('db:getDishesForMeal', (_event, mealTemplateId) => {
-    const db = getDb();
-    return db.prepare(`
-      SELECT mdo.*, ed.name as dish_name, ed.total_kcal, ed.total_protein, ed.total_carbs, ed.total_fat
-      FROM meal_dish_options mdo JOIN elaborated_dishes ed ON mdo.dish_id = ed.id
-      WHERE mdo.meal_template_id = ? ORDER BY mdo.sort_order
-    `).all(mealTemplateId);
-  });
-
-  ipcMain.handle('db:unlinkDish', (_event, id) => {
-    const db = getDb();
-    db.prepare('DELETE FROM meal_dish_options WHERE id = ?').run(id);
-    return true;
-  });
 }
 
 module.exports = { register };

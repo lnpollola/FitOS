@@ -18,7 +18,7 @@ import {
   mountStrengthScore,
   mountWeeklyTonnage,
 } from './panels/strength-insights-panels.js';
-import Chart from 'chart.js/auto';
+import { createChart, destroyChart } from '../charts/chart-manager.js';
 
 function toIsoDate(d) {
   const dt = d instanceof Date ? d : new Date(d);
@@ -128,9 +128,8 @@ export async function init() {
     }
 
     function destroyCharts() {
-      ['_insightsDowChart', '_insightsDonutChart', '_insightsVelocityChart'].forEach(k => {
-        if (window[k]) { window[k].destroy(); window[k] = null; }
-      });
+      destroyChart('dayOfWeek');
+      destroyChart('sportDist');
     }
 
     async function loadAll() {
@@ -341,7 +340,7 @@ export async function init() {
       const ctx = document.getElementById(canvasId);
       if (!ctx) return false;
 
-      window._insightsDowChart = new Chart(ctx, {
+      createChart('dayOfWeek', ctx, {
         type: 'bar',
         data: {
           labels,
@@ -448,7 +447,7 @@ export async function init() {
       const ctx = document.getElementById(canvasId);
       if (!ctx) return false;
 
-      window._insightsDonutChart = new Chart(ctx, {
+      createChart('sportDist', ctx, {
         type: 'doughnut',
         data: {
           labels,

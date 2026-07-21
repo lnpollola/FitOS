@@ -32,3 +32,6 @@ release/
 
 # Vite build cache
 .vite/
+
+# Runtime state
+.current-mode

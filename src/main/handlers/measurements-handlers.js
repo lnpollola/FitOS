@@ -1,17 +1,18 @@
 const { refreshCaches } = require('../../db/database');
+const { safeHandle } = require('../utils/safe-handler');
 
-function register(ipcMain, getDb, getHS) {
-  ipcMain.handle('db:getMeasurementSets', () => {
+function register(ipcMain, getDb, getHS, notifyDomain) {
+  safeHandle(ipcMain, 'db:getMeasurementSets', () => {
     const db = getDb();
-    return db.prepare('SELECT * FROM measurement_sets ORDER BY date DESC').all();
+    return db.prepare('SELECT * FROM measurement_sets ORDER BY date DESC LIMIT 365').all();
   });
 
-  ipcMain.handle('db:getLatestMeasurementSet', () => {
+  safeHandle(ipcMain, 'db:getLatestMeasurementSet', () => {
     const db = getDb();
     return db.prepare('SELECT * FROM measurement_sets ORDER BY date DESC LIMIT 1').get() || null;
   });
 
-  ipcMain.handle('db:saveMeasurementSet', (_event, set) => {
+  safeHandle(ipcMain, 'db:saveMeasurementSet', (set) => {
     const db = getDb();
     const columns = Object.keys(set).filter(k => k !== 'date' && k !== 'id');
     const placeholders = columns.map(c => `@${c}`).join(', ');
@@ -27,25 +28,25 @@ function register(ipcMain, getDb, getHS) {
     return true;
   });
 
-  ipcMain.handle('db:deleteMeasurementSet', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteMeasurementSet', (id) => {
     const db = getDb();
     db.prepare('DELETE FROM measurement_sets WHERE id = ?').run(id);
     return true;
   });
 
-  ipcMain.handle('db:getWeightEntries', () => {
+  safeHandle(ipcMain, 'db:getWeightEntries', () => {
     const db = getDb();
-    return db.prepare('SELECT * FROM weight_entries ORDER BY date DESC').all();
+    return db.prepare('SELECT * FROM weight_entries ORDER BY date DESC LIMIT 365').all();
   });
 
-  ipcMain.handle('db:saveWeightEntry', (_event, entry) => {
+  safeHandle(ipcMain, 'db:saveWeightEntry', (entry) => {
     const db = getDb();
     db.prepare('INSERT INTO weight_entries (date, weight_kg) VALUES (@date, @weight_kg)').run(entry);
     refreshCaches(); if (notifyDomain) notifyDomain("measurements");
     return true;
   });
 
-  ipcMain.handle('db:deleteWeightEntry', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteWeightEntry', (id) => {
     const db = getDb();
     db.prepare('DELETE FROM weight_entries WHERE id = ?').run(id);
     return true;

@@ -1,40 +1,27 @@
 const { dialog } = require('electron');
+const { safeHandle } = require('../utils/safe-handler');
 const { exportAllData, importAllData } = require('../../db/import-export');
 
-function register(ipcMain, getDb, getHS) {
-  ipcMain.handle('db:getSetting', (_event, key) => {
+function register(ipcMain, getDb, getHS, notifyDomain) {
+  safeHandle(ipcMain, 'db:getSetting', (key) => {
     const db = getDb();
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
     return row?.value || null;
   });
 
-  ipcMain.handle('db:setSetting', (_event, key, value) => {
+  safeHandle(ipcMain, 'db:setSetting', (key, value) => {
     const db = getDb();
     db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?').run(key, value, value);
     return true;
   });
 
-  ipcMain.handle('db:getLastImportTimestamp', () => {
+  safeHandle(ipcMain, 'db:getLastImportTimestamp', () => {
     const db = getDb();
     const row = db.prepare("SELECT value FROM settings WHERE key = 'health_last_import'").get();
     return row?.value || null;
   });
 
-  ipcMain.handle('db:setLastImportTimestamp', (_event, timestamp) => {
-    const db = getDb();
-    db.prepare("INSERT INTO settings (key, value) VALUES ('health_last_import', ?) ON CONFLICT(key) DO UPDATE SET value = ?").run(timestamp, timestamp);
-    return true;
-  });
-
-  ipcMain.handle('db:getTrendWeight', () => {
-    const db = getDb();
-    const weights = db.prepare('SELECT date, weight_kg FROM weight_entries ORDER BY date DESC LIMIT 14').all();
-    if (weights.length === 0) return null;
-    const avg = weights.reduce((sum, w) => sum + w.weight_kg, 0) / weights.length;
-    return { trendWeight: avg, daysLogged: weights.length, firstDate: weights[0].date, lastDate: weights[weights.length - 1].date };
-  });
-
-  ipcMain.handle('db:getWeightStats', (_event, from, to) => {
+  safeHandle(ipcMain, 'db:getWeightStats', (from, to) => {
     const db = getDb();
     const entries = db.prepare('SELECT date, weight_kg FROM weight_entries WHERE date >= ? AND date <= ? ORDER BY date ASC').all(from, to);
     if (entries.length === 0) return { first: null, last: null, min: null, max: null, avg: null, trend: null, count: 0, series: [] };
@@ -55,17 +42,17 @@ function register(ipcMain, getDb, getHS) {
     return { first, last, min, max, avg, trend: slope, count: entries.length, series: weights };
   });
 
-  ipcMain.handle('export:data', async () => {
+  safeHandle(ipcMain, 'export:data', async () => {
     const result = await dialog.showSaveDialog({ defaultPath: `health-data-${new Date().toISOString().split('T')[0]}.json`, filters: [{ name: 'JSON', extensions: ['json'] }] });
     if (!result.canceled && result.filePath) { try { exportAllData(result.filePath); return true; } catch (e) { return false; } }
     return false;
   });
 
-  ipcMain.handle('import:data', async () => {
+  safeHandle(ipcMain, 'import:data', async () => {
     const result = await dialog.showOpenDialog({ filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] });
     if (!result.canceled && result.filePaths[0]) {
       const { response } = await dialog.showMessageBox({ type: 'warning', buttons: ['Cancel', 'Import'], defaultId: 0, message: 'This will replace all existing data. Are you sure?' });
-      if (response === 1) { try { importAllData(result.filePaths[0]); return true; } catch (e) { return false; } }
+      if (response === 1) { try { importAllData(result.filePaths[0]); if (notifyDomain) notifyDomain("settings"); return true; } catch (e) { return false; } }
     }
     return false;
   });

@@ -1,14 +1,15 @@
+const { safeHandle } = require('../utils/safe-handler');
 const GOALS_KEY = 'goals';
 
-function register(ipcMain, getDb) {
-  ipcMain.handle('db:getGoals', () => {
+function register(ipcMain, getDb, getHS, notifyDomain) {
+  safeHandle(ipcMain, 'db:getGoals', () => {
     const db = getDb();
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(GOALS_KEY);
     if (!row) return [];
     try { return JSON.parse(row.value); } catch { return []; }
   });
 
-  ipcMain.handle('db:saveGoal', (_event, goal) => {
+  safeHandle(ipcMain, 'db:saveGoal', (goal) => {
     const db = getDb();
     const validation = validateGoal(goal);
     if (!validation.valid) return { ok: false, error: validation.error };
@@ -31,7 +32,7 @@ function register(ipcMain, getDb) {
     return { ok: true, goal: saved };
   });
 
-  ipcMain.handle('db:deleteGoal', (_event, id) => {
+  safeHandle(ipcMain, 'db:deleteGoal', (id) => {
     const db = getDb();
     const tx = db.transaction(() => {
       const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(GOALS_KEY);
@@ -48,7 +49,7 @@ function register(ipcMain, getDb) {
     return found ? { ok: true } : { ok: false, error: 'Goal not found' };
   });
 
-  ipcMain.handle('db:archiveGoal', (_event, id) => {
+  safeHandle(ipcMain, 'db:archiveGoal', (id) => {
     const db = getDb();
     const tx = db.transaction(() => {
       const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(GOALS_KEY);
@@ -67,7 +68,7 @@ function register(ipcMain, getDb) {
     return found ? { ok: true } : { ok: false, error: 'Goal not found' };
   });
 
-  ipcMain.handle('db:getGoalProgress', (_event, goalId) => {
+  safeHandle(ipcMain, 'db:getGoalProgress', (goalId) => {
     const db = getDb();
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(GOALS_KEY);
     if (!row) return { ok: false, error: 'No goals' };

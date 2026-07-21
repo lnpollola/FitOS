@@ -1,6 +1,6 @@
 import { getAPI } from "../utils/api-detector.js";
-import Chart from 'chart.js/auto';
 import { strings, getSportDisplayName } from '../locales/es.js';
+import { createChart } from '../charts/chart-manager.js';
 import { sportIcon } from '../utils/sport-icons.js';
 import { getRangeDates } from '../utils/date-range.js';
 import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
@@ -8,6 +8,7 @@ import { skeletonCard, skeletonChart, skeletonRow } from '../utils/skeleton.js';
 import { safeCall } from '../utils/safe-call.js';
 import { renderStateCard } from '../utils/state-card.js';
 import { getTrendArrow } from '../utils/trend-arrow.js';
+import { formatNumber } from '../utils/formatters.js';
 
 const RANGES = {
   '7d': { label: 'last7d', days: 7 },
@@ -374,8 +375,8 @@ export async function init() {
       const prevAvgHrv = prevHrv.length ? Math.round(prevHrv.reduce((a, d) => a + d.hrv_ms, 0) / prevHrv.length * 10) / 10 : null;
 
       const cards = [
-        { label: s.stepsAvg, value: avgSteps != null ? avgSteps.toLocaleString() : '--', trend: getTrendArrow(avgSteps, prevAvgSteps) },
-        { label: s.totalEnergy, value: totalEnergy != null ? `${totalEnergy.toLocaleString()} ${s.kcal}` : '--', trend: getTrendArrow(totalEnergy, prevTotalEnergy) },
+        { label: s.stepsAvg, value: avgSteps != null ? formatNumber(avgSteps) : '--', trend: getTrendArrow(avgSteps, prevAvgSteps) },
+        { label: s.totalEnergy, value: totalEnergy != null ? `${formatNumber(totalEnergy)} ${s.kcal}` : '--', trend: getTrendArrow(totalEnergy, prevTotalEnergy) },
         { label: s.hrAvg, value: avgHr != null ? `${avgHr} ${s.bpm}` : `-- ${s.bpm}`, trend: getTrendArrow(avgHr, prevAvgHr) },
         { label: s.sleepAvg, value: avgSleep != null ? `${avgSleep} ${s.hours}` : '--', trend: getTrendArrow(avgSleep, prevAvgSleep) },
         { label: s.hrvAvg, value: avgHrv != null ? `${avgHrv} ${s.ms}` : '--', trend: getTrendArrow(avgHrv, prevAvgHrv) },
@@ -414,7 +415,6 @@ export async function init() {
     }
 
     function renderStepsChart(dailyRes) {
-      if (window._stepsChart) { window._stepsChart.destroy(); window._stepsChart = null; }
       const canvas = document.getElementById('chart-steps');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -447,7 +447,7 @@ export async function init() {
         ma7 = movingAverage(steps, 7);
       }
 
-      window._stepsChart = new Chart(ctx, {
+      createChart('steps', ctx, {
         type: 'line',
         data: {
           labels: days,
@@ -491,7 +491,6 @@ export async function init() {
     }
 
     function renderHRChart(hrRes) {
-      if (window._hrChart) { window._hrChart.destroy(); window._hrChart = null; }
       const canvas = document.getElementById('chart-hr');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -530,7 +529,7 @@ export async function init() {
         maxV = data.map(d => d.max_bpm);
       }
 
-      window._hrChart = new Chart(ctx, {
+      createChart('hr', ctx, {
         type: 'line',
         data: {
           labels: days,
@@ -583,7 +582,6 @@ export async function init() {
     }
 
     function renderEnergyChart(dailyRes) {
-      if (window._energyChart) { window._energyChart.destroy(); window._energyChart = null; }
       const canvas = document.getElementById('chart-energy');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -641,7 +639,7 @@ export async function init() {
 
       canvas.parentElement.insertAdjacentHTML('beforebegin', contextKpis);
 
-      window._energyChart = new Chart(ctx, {
+      createChart('energy', ctx, {
         type: 'bar',
         data: {
           labels: days,
@@ -676,7 +674,6 @@ export async function init() {
     }
 
     function renderHRVChart(hrvRes) {
-      if (window._hrvChart) { window._hrvChart.destroy(); window._hrvChart = null; }
       const canvas = document.getElementById('chart-hrv');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -705,7 +702,7 @@ export async function init() {
         values = data.map(d => d.hrv_ms);
       }
 
-      window._hrvChart = new Chart(ctx, {
+      createChart('hrv', ctx, {
         type: 'line',
         data: {
           labels: days,
@@ -736,7 +733,6 @@ export async function init() {
     }
 
     function renderSleepChart(sleepRes) {
-      if (window._sleepChart) { window._sleepChart.destroy(); window._sleepChart = null; }
       const canvas = document.getElementById('chart-sleep');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -768,7 +764,7 @@ export async function init() {
         ma7 = movingAverage(hours, 7);
       }
 
-      window._sleepChart = new Chart(ctx, {
+      createChart('sleep', ctx, {
         type: 'bar',
         data: {
           labels: days,
@@ -810,7 +806,6 @@ export async function init() {
     }
 
     function renderSleepDetailChart(sleepRes) {
-      if (window._sleepDetailChart) { window._sleepDetailChart.destroy(); window._sleepDetailChart = null; }
       const canvas = document.getElementById('chart-sleep-detail');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -849,7 +844,7 @@ export async function init() {
         light = data.map(d => d.light || 0);
       }
 
-      window._sleepDetailChart = new Chart(ctx, {
+      createChart('sleepDetail', ctx, {
         type: 'bar',
         data: {
           labels: days,
@@ -966,8 +961,6 @@ export async function init() {
     }
 
     function renderMiniChart(id, data, valueKey, emptyMsg, color, unit) {
-      const chartKey = `_${id}Chart`;
-      if (window[chartKey]) { window[chartKey].destroy(); window[chartKey] = null; }
       const canvas = document.getElementById(`mini-${id}`);
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -996,7 +989,7 @@ export async function init() {
         values = sorted.map(d => d[valueKey]);
       }
 
-      window[chartKey] = new Chart(ctx, {
+      createChart(id, ctx, {
         type: 'line',
         data: {
           labels,
@@ -1023,8 +1016,6 @@ export async function init() {
     }
 
     function renderMiniDistanceChart(id, data, valueKey, emptyMsg, color, unit) {
-      const chartKey2 = `_${id.replace('-', '')}Chart`;
-      if (window[chartKey2]) { window[chartKey2].destroy(); window[chartKey2] = null; }
       const canvas = document.getElementById(`mini-${id}`);
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -1053,7 +1044,7 @@ export async function init() {
         values = sorted.map(d => d[valueKey]);
       }
 
-      window[chartKey2] = new Chart(ctx, {
+      createChart(id, ctx, {
         type: 'line',
         data: {
           labels,

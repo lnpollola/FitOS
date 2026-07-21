@@ -1,6 +1,6 @@
 import { getAPI } from "../utils/api-detector.js";
-import Chart from 'chart.js/auto';
 import { strings } from '../locales/es.js';
+import { createChart } from '../charts/chart-manager.js';
 import { safeCall } from '../utils/safe-call.js';
 import { chartColors, chartColorWithAlpha } from '../utils/chart-theme.js';
 import { skeletonCard, skeletonRow } from '../utils/skeleton.js';
@@ -845,7 +845,6 @@ export async function init() {
       return;
     }
     const ctx = canvas.getContext('2d');
-    if (window._progChart) { window._progChart.destroy(); window._progChart = null; }
 
     if (sessions.length < 2) {
       canvas.style.display = 'none';
@@ -866,7 +865,7 @@ export async function init() {
       labels.push(s.date);
     }
 
-    window._progChart = new Chart(ctx, {
+    createChart('progression', ctx, {
       type: 'line',
       data: {
         labels,

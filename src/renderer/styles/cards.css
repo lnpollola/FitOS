@@ -2362,12 +2362,6 @@
   color: var(--text-primary);
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-}
-
 .form-actions {
   display: flex;
   gap: var(--space-2);
@@ -2390,22 +2384,6 @@
 .btn-icon:hover {
   color: var(--text-primary);
   background: var(--bg-hover, rgba(255,255,255,0.05));
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: #fff;
-  border: none;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: opacity 0.2s;
-}
-
-.btn-danger:hover {
-  opacity: 0.85;
 }
 
 .btn-ghost {

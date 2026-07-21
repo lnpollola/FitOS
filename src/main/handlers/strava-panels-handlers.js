@@ -154,7 +154,7 @@ function getWeekSportData(db, from, to) {
   return { rows, totals, neatEffort: Math.floor(neatEffort) };
 }
 
-function register(ipcMain, getDb, _getHS, _notifyDomain) {
+function register(ipcMain, getDb, getHS, notifyDomain) {
   ipcMain.handle('db:getPersonalRecords', () => {
     const db = getDb();
     const all = db.prepare(`

@@ -6,6 +6,7 @@ import { computeDaysRemaining, sortGoalsByDeadline } from '../utils/goals.js';
 import { triggerConfetti } from '../utils/confetti.js';
 import { skeletonCard } from '../utils/skeleton.js';
 import { safeCall } from '../utils/safe-call.js';
+import { escapeHtml } from '../utils/formatters.js';
 
 let _celebrationQueue = [];
 let _seenCompleted = new Set();
@@ -398,10 +399,4 @@ function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>"']/g, function (m) {
-    const esc = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    return esc[m] || m;
-  });
-}
+

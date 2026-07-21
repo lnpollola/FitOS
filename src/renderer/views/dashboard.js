@@ -12,6 +12,7 @@ import { sparkline, computeTrendDirection } from '../utils/sparkline.js';
 import { growthRing } from '../utils/growth-ring.js';
 import { renderStateCard } from '../utils/state-card.js';
 import { getTrendArrow, trendBadge } from '../utils/trend-arrow.js';
+import { formatNumber, formatDateShort, formatDateTime, formatKcal } from '../utils/formatters.js';
 import {
   mountPersonalRecord,
   mountRelativeEffort,
@@ -100,7 +101,7 @@ export async function init() {
         const updateEl = document.getElementById('last-update');
         if (data) {
           const d = new Date(data);
-          updateEl.textContent = `${strings.dashboard.lastUpdate}: ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+          updateEl.textContent = `${strings.dashboard.lastUpdate}: ${formatDateTime(d)}`;
         } else {
           updateEl.textContent = strings.dashboard.noImportData;
         }
@@ -245,11 +246,11 @@ export async function init() {
 
       const infoItems = [];
       if (appData?.todayCalories != null) {
-        infoItems.push(`<span class="text-xs text-muted">${strings.dashboard.plannedIntakeLabel}: <strong>${Math.round(appData.todayCalories).toLocaleString()} kcal</strong></span>`);
+        infoItems.push(`<span class="text-xs text-muted">${strings.dashboard.plannedIntakeLabel}: <strong>${formatKcal(Math.round(appData.todayCalories))}</strong></span>`);
       }
       if (appData?.nextWorkout) {
         const d = new Date(appData.nextWorkout);
-        infoItems.push(`<span class="text-xs text-muted">${strings.dashboard.nextWorkoutLabel}: <strong>${d.toLocaleDateString()}</strong></span>`);
+        infoItems.push(`<span class="text-xs text-muted">${strings.dashboard.nextWorkoutLabel}: <strong>${formatDateShort(d)}</strong></span>`);
       }
 
       let hrvDisplay = '--', rhrDisplay = '--', hrvTrend = '';
@@ -385,7 +386,7 @@ export async function init() {
       }
 
       const todayCaloriesHtml = appData?.todayCalories != null
-        ? `<strong>${Math.round(appData.todayCalories).toLocaleString()} kcal</strong>`
+        ? `<strong>${formatKcal(Math.round(appData.todayCalories))}</strong>`
         : strings.dashboard.noData;
 
       let balanceDetail = '';
@@ -401,7 +402,7 @@ export async function init() {
         const goalCards = activeDashboardGoals.map(g => {
           const ring = goalProgressRing(g.progress_pct, { size: 64, strokeWidth: 7 });
           const label = (g.label || '').length > 25 ? (g.label || '').slice(0, 24) + '…' : (g.label || '');
-          const targetDate = g.targetDate ? new Date(g.targetDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
+          const targetDate = g.targetDate ? formatDateShort(g.targetDate) : '';
           return `<div class="goal-card-mini" data-goal-id="${g.id}" tabindex="0" role="button" aria-label="${strings.goals.goalProgress} ${label}: ${g.progress_pct}%">
             <div class="goal-card-mini-ring">${ring}</div>
             <div class="goal-card-mini-info">
@@ -460,7 +461,7 @@ export async function init() {
       let lastWeightHtml = '';
       if (weightStats?.count > 0 && weightStats.last != null) {
         const lastWeightEntry = appData?.weightEntries?.[appData.weightEntries.length - 1];
-        const lastWeightDate = lastWeightEntry?.date ? new Date(lastWeightEntry.date).toLocaleDateString() : '';
+        const lastWeightDate = lastWeightEntry?.date ? formatDateShort(lastWeightEntry.date) : '';
         const lastWeightSource = lastWeightEntry?.source === 'manual' ? strings.dashboard.manualEntry : strings.dashboard.appleWatch;
         lastWeightHtml = `<div class="hero-last-weight">
           <span class="hero-last-weight-label">${strings.dashboard.latestWeight}:</span>
@@ -581,8 +582,8 @@ export async function init() {
             <h3>${strings.dashboard.dailySteps}</h3>
             ${stepsSeries.length >= 2 ? sparkline(stepsSeries, { width: 60, height: 20, stroke: `var(--${stepsColor})`, showMean: false }) : ''}
           </div>
-          <div class="value">${stepsSeries.length ? `<strong>${stepsSeries[stepsSeries.length - 1].toLocaleString()}</strong>` : strings.dashboard.noData}</div>
-          <div class="kpi-comparison">${strings.dashboard.avgDay}: ${steps7d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d?.toLocaleString() || strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m?.toLocaleString() || strings.dashboard.noData}</div>
+          <div class="value">${stepsSeries.length ? `<strong>${formatNumber(stepsSeries[stepsSeries.length - 1])}</strong>` : strings.dashboard.noData}</div>
+          <div class="kpi-comparison">${strings.dashboard.avgDay}: ${steps7d != null ? formatNumber(steps7d) : strings.dashboard.noData} · ${strings.dashboard.steps15d} ${steps15d != null ? formatNumber(steps15d) : strings.dashboard.noData} · ${strings.dashboard.steps1m} ${steps1m != null ? formatNumber(steps1m) : strings.dashboard.noData}</div>
           ${stepsLight ? trafficLight(stepsLight) : ''}
         </div>`;
 
@@ -675,7 +676,7 @@ export async function init() {
           const sub = `<strong>${a.count}</strong> ${strings.dashboard.sessions}${extras.length ? ' · ' + extras.join(' · ') : ''}${popHtml}`;
           return `<div class="dashboard-card">
             <h3>${sportIcon(a.sport_type, 14)} ${getSportDisplayName(a.sport_type)}</h3>
-            <div class="value">${a.total_kcal.toLocaleString()} kcal</div>
+            <div class="value">${formatKcal(a.total_kcal)}</div>
             <div class="subtitle">${sub}</div>
           </div>`;
         }).join('');
@@ -684,7 +685,7 @@ export async function init() {
             <h3>${strings.dashboard.activitySummary}</h3>
             <div class="flex-gap-md" style="margin-top:var(--space-1);flex-wrap:wrap;gap:var(--space-3)">
               <div><span class="value" style="color:#fff;font-size:20px">${totalSessions}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.sessionCount}</div></div>
-              <div><span class="value" style="color:#fff;font-size:20px">${totalKcal.toLocaleString()}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
+              <div><span class="value" style="color:#fff;font-size:20px">${formatNumber(totalKcal)}</span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.dashboard.kcalTotal}</div></div>
               <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${currentActiveDays} <span style="font-size:14px">${activeDaysTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.activeDays} ${strings.activity.activeDaysOf.replace('{total}', periodLengthDays)}</div></div>
               <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${totalDistance.toFixed(1)} ${strings.dashboard.unitKm} <span style="font-size:14px">${distanceTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.distanceKm}</div></div>
               <div title="${comparisonTip}"><span class="value" style="color:#fff;font-size:20px">${Math.round(totalDuration)} <span style="font-size:13px;opacity:0.7">${strings.activity.minutesUnit}</span> <span style="font-size:14px">${durationTrend.arrow}</span></span><div class="subtitle" style="color:rgba(255,255,255,0.7)">${strings.activity.totalMinutes}</div></div>

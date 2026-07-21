@@ -38,7 +38,7 @@ renderer/   →  preload/   →  main/   →  db/
 ```
 
 ### `src/renderer/` — Frontend SPA
-- **`app.js`**: Router manual, mapea `data-view` → función `init()`, CSS class `active-view`, `aria-current` nav, sidebar collapse on resize
+- **`app.js`**: Router manual, mapea `data-view` → función `init()`, CSS class `active-view`, `aria-current` nav, sidebar collapse on resize. Usa `import()` dinámico para cargar vistas bajo demanda (lazy loading)
 - **`views/*.js`**: Cada view exporta `init()`, importa `strings` de `locales/es.js`
 - **`locales/es.js`**: ~650 líneas con todos los strings en español. Objeto `strings` anidado por dominio, incluye `strings.states.*` para estados UI
 - **`styles/main.css`**: ~880 líneas, design system con CSS custom properties, espacio/escala z, utilidades (`.text-xs`, `.flex-gap-md`), componentes (`.card-accent`, `.compliance-ok`), skeleton, responsive breakpoints
@@ -49,10 +49,13 @@ renderer/   →  preload/   →  main/   →  db/
 - **`utils/skeleton.js`**: Exporta `skeletonCard()`, `skeletonRow(count)`, `skeletonChart()` que devuelven HTML con `.skeleton` + `strings.states.loading` sr-only text
 - **`utils/state-card.js`**: Exporta `renderStateCard(container, { title, state, valueHtml, subtitle, onRetry })` con estados `loading`/`empty`/`error`/`data`, usa `role="alert"` en error
 
-Patrón de view:
+Patrón de view (usando formateo compartido y chart-manager):
 ```js
 import { strings } from '../locales/es.js';
 import { getAPI } from '../utils/api-detector.js';
+import { formatNumber, formatDateShort } from '../utils/formatters.js';
+import { createChart } from '../charts/chart-manager.js';
+
 export function init() {
   const container = document.getElementById('view-nombre');
   const api = getAPI();
@@ -69,10 +72,12 @@ export function init() {
 ### `src/main/` — Lógica de negocio + Electron
 - **`main.js`**: Crea ventana 1200x800, carga Vite dev o dist/, menú nativo (File, View, Help)
 - **`ipc-handlers.js`**: 654 líneas, 40+ handlers `ipcMain.handle('db:*', ...)`. Cada handler es un caso de uso:
-  - Profile, ActivityDays, SportActivities, FoodItems, MealTemplates, DailyPlans, MeasurementSets, WeightEntries, ExerciseLibrary, TrainingSessions/Sets, TrainingRoutines, EnergyBalance, Settings, TrendWeight, RecompData, Dashboard, ElaboratedDishes, WorkoutPlans, Export/Import
+  - Profile, FoodItems, MealTemplates, DailyPlans, MeasurementSets, WeightEntries, ExerciseLibrary, TrainingSessions/Sets, TrainingRoutines, EnergyBalance, Settings, Dashboard, ElaboratedDishes, WorkoutPlans, Export/Import
   - **Energy Balance**: BMR por Mifflin-St Jeor, NEAT = pasos * 0.04, TDEE = BMR + sport + NEAT
   - Usa `db.transaction()` para operaciones multi-tabla (CSV import)
 - **`apple-health-import.js`**: Integración con HealthSync CLI (Go), parsea XML Apple Health
+- **`utils/safe-handler.js`**: Exporta `safeHandle(ipc, channel, handler)` que envuelve cada handler con try/catch automático y logging, devuelve `{ok: false, error}` ante fallos
+- **`handlers/`**: 13 archivos individuales por dominio (profile, activity, dashboard, diet, energy, goals, health, measurements, settings, strava-panels, training, insights, strength-insights). Cada uno exporta `register(ipc, getDb, getHS, notifyDomain)` usando `safeHandle`
 
 ### `src/server/` — API REST (Modo Web)
 - **`server.js`**: Servidor Express que sirve frontend estático + API REST en puerto 3000
@@ -82,7 +87,19 @@ export function init() {
 
 ### `src/renderer/utils/` — Utilidades Frontend
 - **`api-detector.js`**: Detecta modo (Electron/Web) y retorna API apropiada
-- **`web-api.js`**: Implementa interfaz compatible con electronAPI usando fetch()
+- **`web-api.js`**: Implementa interfaz compatible con electronAPI usando fetch() (generada desde `src/shared/api-channels.js`)
+- **`formatters.js`**: Formateo compartido (formatNumber, formatDateShort, formatDuration, formatKcal, escapeHtml, etc.)
+- **`safe-call.js`**: Wrapper de llamadas IPC con fallback
+- **`kpi-derivation.js`**: Cómputos puros de KPIs (11 funciones, testables)
+- **`chart-theme.js`**: Tema Chart.js desde CSS custom properties
+- **`sport-icons.js`**: Mapeo sport_type → Lucide icon
+- **`skeleton.js`**: Componentes de skeleton loading
+- **`state-card.js`**: Estados loading/empty/error/data
+- **`icons.js`**: SVG icon system via Lucide
+- **`bmr.js`**: Cálculo de TMB (Mifflin-St Jeor) compartido
+
+### `src/renderer/charts/` — Gestión de Charts
+- **`chart-manager.js`**: Registry con Map que reemplaza window._*Chart globales. Exporta `createChart(id, ctx, config)`, `getChart(id)`, `destroyChart(id)`, `destroyAllCharts()`. Destruye automáticamente al recrear con mismo ID.
 
 ### `src/db/` — Datos
 - **`database.js`**: 22 tablas, schema v5 con migraciones (sport_types expandido, practical_examples, HealthSync cache, exercise enrichment, food_items fiber/category). Base de datos compartida ubicada en `~/.fitos-data/health-data.db` (usada por ambos modos: Web y Electron)
@@ -97,6 +114,8 @@ export function init() {
 ## Tablas Principales
 `user_profile`, `activity_days`, `sport_activities`, `food_items`, `meal_templates`, `meal_components`, `meal_options`, `daily_plans`, `daily_plan_entries`, `measurement_sets`, `weight_entries`, `training_routines`, `training_routine_days`, `exercise_library`, `training_sessions`, `training_sets`, `settings`, `elaborated_dishes`, `dish_ingredients`, `meal_dish_options`, `workout_plans`, `workout_plan_days`
 
+- **`ipc-handlers.js`** está deprecado/adelgazado. Los handlers ahora residen en `src/main/handlers/*.js` (13 archivos individuales por dominio). Usar `safeHandle(ipc, channel, handler)` de `src/main/utils/safe-handler.js` para nuevos handlers.
+
 ## Convenciones de Código
 - **No comentarios** en código salvo que se pida explícitamente
 - Backend (main/db): CommonJS (`require`/`module.exports`)
@@ -106,11 +125,16 @@ export function init() {
 - CSS: custom properties, clase `.card` para paneles, `.form-group` para formularios
 - Vistas: usan `getAPI()` de `utils/api-detector.js` (compatible con Electron y Web)
 - Sin TypeScript, sin framework de UI, sin librería de componentes
+- Nuevos handlers: usar `safeHandle(ipc, channel, handler)` en vez de `ipcMain.handle()` raw
+- Charts: usar `createChart(id, ctx, config)` de `charts/chart-manager.js` en vez de globales `window._*Chart`
+- Formateo: usar formatters compartidos de `utils/formatters.js` en vez de inline `toLocaleString`/`toLocaleDateString`
+- Vistas: el router usa `import()` dinámico, no imports estáticos en `app.js`
+- Canales IPC: `src/shared/api-channels.js` es el single source of truth
+- Bridge: `scripts/generate-api-bridge.js` genera `preload.js` y `web-api.js` desde el manifiesto
 
 ## Notas Importantes
 - La app funciona en **modo web** (sin Electron) con `npm run dev:web`, pero `window.electronAPI` será undefined
 - Los alimentos se miden en kcal/macros **por 100g**
-- Validación de forms en `src/renderer/validation.js`
 - Todos los datos son **local-first**: 0 dependencia cloud, 0 APIs externas
 - HealthSync es un CLI Go que se descarga e instala bajo demanda
 - **Base de datos compartida**: Ambos modos (Web y Electron) usan `~/.fitos-data/health-data.db`
@@ -176,7 +200,7 @@ Ciclo de vida:
 
 Los comandos están en `.opencode/commands/opsx-*.md`. Skills en `.opencode/skills/openspec-*/SKILL.md`.
 
-## Vistas Implementadas (10)
+## Vistas Implementadas (11)
 | View | ID | Funcionalidad |
 |---|---|---|
 | Dashboard | `dashboard` | Hero con anillo de crecimiento, Strava panels, 9+ KPIs con sparklines, selector de rango, sección de deportes |
@@ -199,13 +223,6 @@ Roadmap incremental sobre el dashboard, definido durante explore-mode el 27 Jun 
 - **Phase 2 — `summary-insights-view`** (implementado): Nueva vista `insights` entre Panel y Tendencias. Year-in-motion heatmap, day-of-week histogram, sport distribution donut, recovery score composite (HRV+RHR+sleep), weight velocity chart, waist-to-hip ratio card, auto-insight cards. Code name en inglés, UI en español.
 - **Phase 3 — `strength-training-insights`** (próximo): 1RM Epley, PR por ejercicio, plateau detector, volume PR, strength score.
 - **Phase 4 — `goals-tracker`** (implementado): Goals configurables con progress rings y countdown, persistidos en `settings`.
-
-## Notas Importantes
-- La app funciona en **modo web** (sin Electron) con `npm run dev:web`, pero `window.electronAPI` será undefined
-- Los alimentos se miden en kcal/macros **por 100g**
-- Validación de forms en `src/renderer/validation.js`
-- Todos los datos son **local-first**: 0 dependencia cloud, 0 APIs externas
-- HealthSync es un CLI Go que se descarga e instala bajo demanda
 
 ## Sesión — panel-ux-ui-kpis-summarized (27 Jun 2026) [IMPLEMENTADO]
 
@@ -250,3 +267,20 @@ Roadmap incremental sobre el dashboard, definido durante explore-mode el 27 Jun 
 - Card resumen en dashboard con hasta 3 anillos clickables (56×56 px), overflow "+N más", empty state "Define tu primer objetivo"
 - **299/299 tests pasan** (7 unit goal-progress-ring + 11 unit goals-utils + 3 unit confetti + 5 smoke goals + 273 existentes)
 - 0 breaking changes, 0 nuevas dependencias, 0 schema changes
+
+## Sesión — architecture-optimization-v2 (20 Jul 2026) [IMPLEMENTADO]
+
+### Estado: Completo — pendiente de archivar vía `/opsx-archive`
+- **137/137 tareas** implementadas (12 workstreams, todas marcadas [x])
+- **Bridge unificado**: `src/shared/api-channels.js` como single source of truth + `scripts/generate-api-bridge.js` genera `preload.js` y `web-api.js` con test anti-drift
+- **11 handlers huérfanos eliminados**: `db:getSportActivities`, `db:saveSportActivity`, `db:saveActivityDay`, `db:importActivityCSV`, `db:getWeeklySportSummary` (activity), `db:getSleepData` (dashboard), `db:getTrendWeight` (settings), `db:getDishesForMeal`, `db:unlinkDish` (diet), `db:getExercisesByIds` (training), `db:setLastImportTimestamp` (settings)
+- **Chart manager**: `src/renderer/charts/chart-manager.js` con registry `Map` reemplazando globales `window._*Chart` (20 call sites migrados)
+- **Lazy loading**: vistas cargadas via `import()` dinámico en el router, sin imports estáticos en `app.js`
+- **Shared formatters**: `src/renderer/utils/formatters.js` canónico + migración de ~27 inline locale calls
+- **safeHandle wrapper**: `src/main/utils/safe-handler.js` con try/catch consistente en los 13 handler files + firma estandarizada `(ipc, getDb, getHS, notifyDomain)`
+- **CSS dedup**: 72 clases duplicadas resueltas entre 7 archivos + test de unicidad
+- **Bug fixes**: measurement save `ReferenceError` (notifyDomain), 8 iconos rotos reparados, IPC listener leak, data-changed emitido tras import, LIMIT 365 en queries unbounded
+- **Dead code removido**: `cache-store.js`, `validation.js`
+- **Scripts de build arreglados**: `path.join(__dirname, '..')` en ambos rebuild scripts, vitest incluye regression tests
+- **Tests**: suite completa ejecutándose al 100% (unit + smoke + regression + anti-drift + CSS uniqueness)
+- 0 breaking changes, 0 nuevas dependencias externas, 0 schema changes
